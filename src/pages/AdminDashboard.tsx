@@ -1,0 +1,1408 @@
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Card, CardTitle, CardDescription } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Input, Label } from '@/components/ui/Input'
+import { Logo } from '@/components/Logo'
+import { Avatar } from '@/components/Avatar'
+import { AvatarUpload } from '@/components/AvatarUpload'
+import { SoundToggle } from '@/components/SoundToggle'
+import { SectionWatermark } from '@/components/SectionWatermark'
+import { VerseReference } from '@/components/VerseReference'
+import { DayAccentBand } from '@/components/DayAccentBand'
+import {
+  getClasses,
+  getCourses,
+  getStudents,
+  getSubmissions,
+  getClassCourses,
+  getStudentProgress,
+  getAttendances,
+  setAccessActive,
+  setMeditationGrade,
+  setModeratorRole,
+  getModerators,
+  getModeratorClasses,
+  getModeratorSchedules,
+  setModeratorClasses,
+  addModeratorSchedule,
+  deleteModeratorSchedule,
+  adminCreateUser,
+  getStreaks,
+  getAllBadges,
+  getAllResumes,
+  getAllMiniTaskResponses,
+  getWebhookConfig,
+  saveWebhookConfig,
+  WebhookConfig,
+  ClassRow,
+  Course,
+  StudentProfile,
+  Submission,
+  StudentProgress,
+  ModeratorProfile,
+  ModeratorSchedule,
+  Attendance,
+  Streak,
+  BadgeRow,
+  MiniTaskResponseRow,
+} from '@/lib/courses'
+import { getCurrentProfile, signOut } from '@/lib/auth'
+import { exportToCSV, exportToPDF, exportStudentBulletinPDF, ExportRow } from '@/lib/export'
+
+type Section = 'vue' | 'classes' | 'etudiants' | 'moderateurs' | 'export'
+
+const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
+
+interface AdminProfile {
+  id: string
+  first_name: string
+  last_name: string
+  avatar_url: string | null
+}
+
+export default function AdminDashboard() {
+  const navigate = useNavigate()
+
+  const [section, setSection] = useState<Section>('vue')
+
+  const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null)
+  const [students, setStudents] = useState<StudentProfile[]>([])
+  const [classes, setClasses] = useState<ClassRow[]>([])
+  const [courses, setCourses] = useState<Course[]>([])
+  const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [attendances, setAttendances] = useState<Attendance[]>([])
+  const [streaks, setStreaks] = useState<Streak[]>([])
+  const [allBadges, setAllBadges] = useState<BadgeRow[]>([])
+  const [allResumes, setAllResumes] = useState<{ student_id: string; course_id: string }[]>([])
+  const [miniResponses, setMiniResponses] = useState<MiniTaskResponseRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const [selectedClassId, setSelectedClassId] = useState<string>('')
+  const [classCourses, setClassCourses] = useState<Course[]>([])
+  const [classStudents, setClassStudents] = useState<StudentProfile[]>([])
+
+  const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null)
+  const [bulletin, setBulletin] = useState<{ progress: StudentProgress; courses: Course[] } | null>(null)
+  const [bulletinLoading, setBulletinLoading] = useState(false)
+  const [meditationDraft, setMeditationDraft] = useState('')
+  const [bulletinMsg, setBulletinMsg] = useState<string | null>(null)
+  const [accessMsg, setAccessMsg] = useState<string | null>(null)
+  const [exportClassId, setExportClassId] = useState('')
+
+  const [moderators, setModerators] = useState<ModeratorProfile[]>([])
+  const [moderatorClasses, setModeratorClassesState] = useState<Record<string, string[]>>({})
+  const [moderatorSchedules, setModeratorSchedulesState] = useState<Record<string, ModeratorSchedule[]>>({})
+  const [moderatorMsg, setModeratorMsg] = useState<string | null>(null)
+  const [promoteStudentId, setPromoteStudentId] = useState('')
+  const [slotDrafts, setSlotDrafts] = useState<
+    Record<string, { day: string; start: string; end: string; notes: string }>
+  >({})
+  const [slotSavingId, setSlotSavingId] = useState<string | null>(null)
+
+  const [newAccount, setNewAccount] = useState({
+    email: '',
+    password: '',
+    firstName: '',
+    lastName: '',
+    role: 'MODERATEUR',
+    phone: '',
+    tribe: '',
+    department: '',
+  })
+  const [accountMsg, setAccountMsg] = useState<string | null>(null)
+  const [accountSaving, setAccountSaving] = useState(false)
+
+  const [webhook, setWebhook] = useState<WebhookConfig | null>(null)
+  const [webhookUrl, setWebhookUrl] = useState('')
+  const [webhookActive, setWebhookActive] = useState(true)
+  const [webhookMsg, setWebhookMsg] = useState<string | null>(null)
+
+  useEffect(() => {
+    getCurrentProfile()
+      .then((p) => {
+        if (p) setAdminProfile(p as AdminProfile)
+      })
+      .catch(() => undefined)
+    Promise.all([
+      getStudents(),
+      getClasses(),
+      getCourses(),
+      getSubmissions(),
+      getAttendances(),
+      getStreaks(),
+      getAllBadges(),
+      getAllResumes(),
+      getAllMiniTaskResponses(),
+    ])
+      .then(([s, c, co, su, at, st, badges, resumes, minis]) => {
+        setStudents(s)
+        setClasses(c)
+        setCourses(co)
+        setSubmissions(su)
+        setAttendances(at)
+        setStreaks(st)
+        setAllBadges(badges)
+        setAllResumes(resumes)
+        setMiniResponses(minis)
+        if (c.length > 0) setSelectedClassId(c[0].id)
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Erreur de chargement.'))
+      .finally(() => setLoading(false))
+    loadModerators().catch(() => undefined)
+    getWebhookConfig()
+      .then((cfg) => {
+        if (cfg) {
+          setWebhook(cfg)
+          setWebhookUrl(cfg.url ?? '')
+          setWebhookActive(cfg.active)
+        }
+      })
+      .catch(() => undefined)
+  }, [])
+
+  const loadModerators = useCallback(async () => {
+    const mods = await getModerators()
+    setModerators(mods)
+    const classesMap: Record<string, string[]> = {}
+    const schedulesMap: Record<string, ModeratorSchedule[]> = {}
+    await Promise.all(
+      mods.map(async (m) => {
+        const [cls, sched] = await Promise.all([
+          getModeratorClasses(m.id),
+          getModeratorSchedules(m.id),
+        ])
+        classesMap[m.id] = cls.map((c) => c.id)
+        schedulesMap[m.id] = sched
+      })
+    )
+    setModeratorClassesState(classesMap)
+    setModeratorSchedulesState(schedulesMap)
+  }, [])
+
+  const byClass = useMemo(() => {
+    const studentCount = new Map<string, number>()
+    for (const s of students) {
+      if (s.class_id) studentCount.set(s.class_id, (studentCount.get(s.class_id) ?? 0) + 1)
+    }
+    const courseCount = new Map<string, number>()
+    for (const c of courses) {
+      if (c.class_id) courseCount.set(c.class_id, (courseCount.get(c.class_id) ?? 0) + 1)
+    }
+    return classes.map((c) => ({
+      className: c.name,
+      students: studentCount.get(c.id) ?? 0,
+      courses: courseCount.get(c.id) ?? 0,
+    }))
+  }, [classes, students, courses])
+
+  const graded = useMemo(() => submissions.filter((s) => s.grade !== null && s.grade !== undefined), [submissions])
+  const averageGrade = graded.length
+    ? (graded.reduce((acc, s) => acc + Number(s.grade), 0) / graded.length).toFixed(2)
+    : '—'
+
+  const submissionsByStudent = useMemo(() => {
+    const map = new Map<string, Submission[]>()
+    for (const s of submissions) {
+      const list = map.get(s.student_id) ?? []
+      list.push(s)
+      map.set(s.student_id, list)
+    }
+    return map
+  }, [submissions])
+
+  const averagePresence = useMemo(() => {
+    const coursesByClass = new Map<string, number>()
+    for (const c of courses) {
+      if (c.class_id) coursesByClass.set(c.class_id, (coursesByClass.get(c.class_id) ?? 0) + 1)
+    }
+    const attendedByStudent = new Map<string, number>()
+    for (const a of attendances) {
+      attendedByStudent.set(a.student_id, (attendedByStudent.get(a.student_id) ?? 0) + 1)
+    }
+    const rates = students
+      .map((s) => {
+        const total = s.class_id ? coursesByClass.get(s.class_id) ?? 0 : 0
+        const attended = attendedByStudent.get(s.id) ?? 0
+        return total > 0 ? Math.round((attended / total) * 100) : 0
+      })
+      .filter((r) => r > 0)
+    if (rates.length === 0) return '—'
+    return `${Math.round(rates.reduce((acc, r) => acc + r, 0) / rates.length)}%`
+  }, [students, courses, attendances])
+
+  const activeStudents = useMemo(() => students.filter((s) => s.active), [students])
+  const studentClassId = useMemo(() => new Map(students.map((s) => [s.id, s.class_id])), [students])
+
+  const resumeCount = allResumes.length
+  const resumeRate = activeStudents.length
+    ? Math.round((new Set(allResumes.map((r) => r.student_id)).size / activeStudents.length) * 100)
+    : 0
+
+  const avgStreak = useMemo(() => {
+    const maxByStudent = new Map<string, number>()
+    for (const st of streaks) {
+      const prev = maxByStudent.get(st.student_id) ?? 0
+      if (st.consecutive_weeks > prev) maxByStudent.set(st.student_id, st.consecutive_weeks)
+    }
+    const values = [...maxByStudent.values()]
+    if (values.length === 0) return '—'
+    return `${(values.reduce((a, b) => a + b, 0) / values.length).toFixed(1)} sem.`
+  }, [streaks])
+
+  const engagementByClass = useMemo(() => {
+    const coursesByClass = new Map<string, number>()
+    for (const c of courses) {
+      if (c.class_id) coursesByClass.set(c.class_id, (coursesByClass.get(c.class_id) ?? 0) + 1)
+    }
+    const attendanceByClass = new Map<string, { attended: number; total: number }>()
+    for (const a of attendances) {
+      const cid = studentClassId.get(a.student_id)
+      if (!cid) continue
+      const rec = attendanceByClass.get(cid) ?? { attended: 0, total: coursesByClass.get(cid) ?? 0 }
+      rec.attended += 1
+      attendanceByClass.set(cid, rec)
+    }
+    const resumeSetByClass = new Map<string, Set<string>>()
+    for (const r of allResumes) {
+      const cid = studentClassId.get(r.student_id)
+      if (!cid) continue
+      const set = resumeSetByClass.get(cid) ?? new Set<string>()
+      set.add(r.student_id)
+      resumeSetByClass.set(cid, set)
+    }
+    const badgeByClass = new Map<string, number>()
+    for (const b of allBadges) {
+      const cid = studentClassId.get(b.student_id)
+      if (!cid) continue
+      badgeByClass.set(cid, (badgeByClass.get(cid) ?? 0) + 1)
+    }
+    const gradedByClass = new Map<string, { count: number; sum: number }>()
+    for (const s of submissions) {
+      const cid = studentClassId.get(s.student_id)
+      if (!cid || s.grade === null || s.grade === undefined) continue
+      const rec = gradedByClass.get(cid) ?? { count: 0, sum: 0 }
+      rec.count += 1
+      rec.sum += Number(s.grade)
+      gradedByClass.set(cid, rec)
+    }
+    return classes.map((c) => {
+      const at = attendanceByClass.get(c.id)
+      const presence = at && at.total > 0 ? Math.round((at.attended / at.total) * 100) : 0
+      const graded = gradedByClass.get(c.id)
+      return {
+        className: c.name,
+        students: students.filter((s) => s.class_id === c.id && s.active).length,
+        presence: at && at.total > 0 ? `${presence}%` : '—',
+        resumes: resumeSetByClass.get(c.id)?.size ?? 0,
+        badges: badgeByClass.get(c.id) ?? 0,
+        graded: graded?.count ?? 0,
+        avgGrade: graded && graded.count > 0 ? (graded.sum / graded.count).toFixed(2) : '—',
+      }
+    })
+  }, [classes, students, courses, attendances, allResumes, allBadges, submissions, studentClassId])
+
+  const classById = useMemo(() => new Map(classes.map((c) => [c.id, c])), [classes])
+
+  const classRows = (): ExportRow[] => byClass.map((r) => [r.className, r.students, r.courses])
+  const studentRows = (): ExportRow[] =>
+    students.map((s) => [
+      `${s.last_name} ${s.first_name}`,
+      s.email,
+      s.class?.name ?? '—',
+      s.tribe ?? '—',
+      s.department ?? '—',
+    ])
+
+  const classHeaders = ['Classe', 'Étudiants', 'Cours publiés']
+  const studentHeaders = ['Étudiant', 'Email', 'Classe', 'Tribu', 'Département']
+
+  const gradeRows = (): ExportRow[] => {
+    const filtered = exportClassId ? students.filter((s) => s.class_id === exportClassId) : students
+    return filtered.map((s) => {
+      const subs = submissionsByStudent.get(s.id) ?? []
+      const grades = subs
+        .map((x) => x.grade)
+        .filter((g): g is number => g !== null && g !== undefined)
+      const avg =
+        grades.length > 0
+          ? (grades.reduce((acc, g) => acc + Number(g), 0) / grades.length).toFixed(2)
+          : '—'
+      const total = s.class_id
+        ? courses.filter((c) => c.class_id === s.class_id).length
+        : 0
+      const attended = attendances.filter((a) => a.student_id === s.id).length
+      const presence = total > 0 ? `${Math.round((attended / total) * 100)}%` : '—'
+      return [
+        `${s.last_name} ${s.first_name}`,
+        s.email,
+        s.class?.name ?? '—',
+        avg,
+        presence,
+        String(s.meditation_grade ?? '—'),
+      ]
+    })
+  }
+  const gradeHeaders = ['Étudiant', 'Email', 'Classe', 'Moyenne devoirs', 'Présence', 'Méditation']
+
+  const loadClassDetail = useCallback(
+    async (classId: string) => {
+      setSelectedClassId(classId)
+      setError(null)
+      try {
+        const [courseData, studentData] = await Promise.all([
+          getClassCourses(classId),
+          getStudents().then((all) => all.filter((s) => s.class_id === classId)),
+        ])
+        setClassCourses(courseData)
+        setClassStudents(studentData)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erreur de chargement de la classe.')
+      }
+    },
+    []
+  )
+
+  async function openBulletin(studentId: string) {
+    setExpandedStudentId(studentId)
+    setBulletin(null)
+    setBulletinMsg(null)
+    setBulletinLoading(true)
+    try {
+      const [progress, coursesData] = await Promise.all([
+        getStudentProgress(studentId),
+        (async () => {
+          const st = students.find((s) => s.id === studentId)
+          return st?.class_id ? getClassCourses(st.class_id) : []
+        })(),
+      ])
+      const meditation = students.find((s) => s.id === studentId)?.meditation_grade ?? null
+      setBulletin({ progress, courses: coursesData })
+      setMeditationDraft(meditation === null ? '' : String(meditation))
+    } catch (err) {
+      setBulletinMsg(err instanceof Error ? err.message : 'Erreur de chargement du bulletin.')
+    } finally {
+      setBulletinLoading(false)
+    }
+  }
+
+  async function saveMeditation(studentId: string) {
+    const value = meditationDraft.trim()
+    const grade = value === '' ? null : Number(value)
+    if (grade !== null && (Number.isNaN(grade) || grade < 0 || grade > 20)) {
+      setBulletinMsg('La note de méditation doit être entre 0 et 20.')
+      return
+    }
+    try {
+      await setMeditationGrade(studentId, grade)
+      setStudents((prev) =>
+        prev.map((s) => (s.id === studentId ? { ...s, meditation_grade: grade } : s))
+      )
+      setBulletinMsg('Note de méditation enregistrée.')
+    } catch (err) {
+      setBulletinMsg(err instanceof Error ? err.message : 'Erreur.')
+    }
+  }
+
+  async function toggleAccess(studentId: string, current: boolean) {
+    try {
+      await setAccessActive(studentId, !current)
+      setStudents((prev) => prev.map((s) => (s.id === studentId ? { ...s, active: !current } : s)))
+      setModerators((prev) => prev.map((m) => (m.id === studentId ? { ...m, active: !current } : m)))
+      setAccessMsg(current ? 'Accès révoqué.' : 'Accès restauré.')
+    } catch (err) {
+      setAccessMsg(err instanceof Error ? err.message : 'Erreur.')
+    }
+  }
+
+  async function promoteStudent() {
+    if (!promoteStudentId) return
+    setModeratorMsg(null)
+    try {
+      await setModeratorRole(promoteStudentId, 'MODERATEUR')
+      setModeratorMsg('Étudiant promu modérateur.')
+      setPromoteStudentId('')
+      await loadModerators()
+    } catch (err) {
+      setModeratorMsg(err instanceof Error ? err.message : 'Erreur de promotion.')
+    }
+  }
+
+  async function demoteModerator(moderatorId: string) {
+    if (!window.confirm('Repasser ce modérateur en étudiant ?')) return
+    setModeratorMsg(null)
+    try {
+      await setModeratorRole(moderatorId, 'ETUDIANT')
+      setModeratorMsg('Modérateur repassé en étudiant.')
+      await loadModerators()
+    } catch (err) {
+      setModeratorMsg(err instanceof Error ? err.message : 'Erreur.')
+    }
+  }
+
+  async function toggleModeratorClass(moderatorId: string, classId: string) {
+    const current = moderatorClasses[moderatorId] ?? []
+    const next = current.includes(classId)
+      ? current.filter((id) => id !== classId)
+      : [...current, classId]
+    setModeratorClassesState((prev) => ({ ...prev, [moderatorId]: next }))
+    setModeratorMsg(null)
+    try {
+      await setModeratorClasses(moderatorId, next)
+      setModeratorMsg('Attribution des classes mise à jour.')
+    } catch (err) {
+      setModeratorMsg(err instanceof Error ? err.message : 'Erreur d\u2019attribution.')
+      setModeratorClassesState((prev) => ({ ...prev, [moderatorId]: current }))
+    }
+  }
+
+  async function addSlot(moderatorId: string) {
+    const draft = slotDrafts[moderatorId] ?? { day: '0', start: '09:00', end: '11:00', notes: '' }
+    if (!draft.start || !draft.end) return
+    setSlotSavingId(moderatorId)
+    setModeratorMsg(null)
+    try {
+      await addModeratorSchedule({
+        moderatorId,
+        dayOfWeek: Number(draft.day) || 0,
+        startTime: draft.start,
+        endTime: draft.end,
+        notes: draft.notes.trim() || undefined,
+      })
+      const sched = await getModeratorSchedules(moderatorId)
+      setModeratorSchedulesState((prev) => ({ ...prev, [moderatorId]: sched }))
+      setSlotDrafts((prev) => ({ ...prev, [moderatorId]: { day: '0', start: '09:00', end: '11:00', notes: '' } }))
+      setModeratorMsg('Créneau de modération ajouté.')
+    } catch (err) {
+      setModeratorMsg(err instanceof Error ? err.message : 'Erreur d\u2019ajout.')
+    } finally {
+      setSlotSavingId(null)
+    }
+  }
+
+  async function removeSlot(moderatorId: string, scheduleId: string) {
+    setModeratorMsg(null)
+    try {
+      await deleteModeratorSchedule(scheduleId)
+      const sched = await getModeratorSchedules(moderatorId)
+      setModeratorSchedulesState((prev) => ({ ...prev, [moderatorId]: sched }))
+      setModeratorMsg('Créneau supprimé.')
+    } catch (err) {
+      setModeratorMsg(err instanceof Error ? err.message : 'Erreur de suppression.')
+    }
+  }
+
+  async function handleCreateAccount(e: FormEvent) {
+    e.preventDefault()
+    setAccountMsg(null)
+    if (!newAccount.email.trim() || !newAccount.password || !newAccount.firstName.trim() || !newAccount.lastName.trim()) {
+      setAccountMsg('Email, mot de passe, prénom et nom sont obligatoires.')
+      return
+    }
+    setAccountSaving(true)
+    try {
+      await adminCreateUser({
+        email: newAccount.email.trim(),
+        password: newAccount.password,
+        firstName: newAccount.firstName.trim(),
+        lastName: newAccount.lastName.trim(),
+        role: newAccount.role as 'MODERATEUR' | 'ADMINISTRATEUR' | 'ETUDIANT',
+        phone: newAccount.phone.trim() || undefined,
+        tribe: newAccount.tribe.trim() || undefined,
+        department: newAccount.department.trim() || undefined,
+      })
+      setAccountMsg('Compte créé avec succès.')
+      setNewAccount({
+        email: '',
+        password: '',
+        firstName: '',
+        lastName: '',
+        role: 'MODERATEUR',
+        phone: '',
+        tribe: '',
+        department: '',
+      })
+      await loadModerators()
+    } catch (err) {
+      setAccountMsg(err instanceof Error ? err.message : 'Erreur de création du compte.')
+    } finally {
+      setAccountSaving(false)
+    }
+  }
+
+  async function saveWebhook() {
+    setWebhookMsg(null)
+    const url = webhookUrl.trim()
+    if (webhookActive && !/^https?:\/\/.+/i.test(url)) {
+      setWebhookMsg('L\u2019URL doit commencer par http:// ou https:// (ou désactive le webhook).')
+      return
+    }
+    try {
+      await saveWebhookConfig(url, webhookActive)
+      setWebhook({ id: true, url: url || null, active: webhookActive })
+      setWebhookMsg('Configuration du webhook enregistrée.')
+    } catch (err) {
+      setWebhookMsg(err instanceof Error ? err.message : 'Erreur d\u2019enregistrement.')
+    }
+  }
+
+  function downloadBulletin(student: StudentProfile) {
+    const subs = submissionsByStudent.get(student.id) ?? []
+    const progress = bulletin?.progress ?? { presenceRate: 0, resumeRate: 0 }
+    exportStudentBulletinPDF({
+      filename: `bulletin-${student.last_name}-${student.first_name}.pdf`,
+      studentName: `${student.first_name} ${student.last_name}`,
+      className: student.class?.name ?? 'Sans classe',
+      courses: bulletin?.courses ?? [],
+      submissions: subs,
+      meditationGrade: student.meditation_grade,
+      presenceRate: progress.presenceRate,
+      resumeRate: progress.resumeRate,
+    })
+  }
+
+  const selectedClass = classById.get(selectedClassId)
+
+  return (
+    <div className="relative mx-auto min-h-screen max-w-4xl px-4 py-8 sm:px-6">
+      <SectionWatermark kind="croix" />
+      <div className="relative z-10">
+      <DayAccentBand />
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Logo showText={false} size={34} />
+          <div>
+            <h1 className="font-display text-2xl text-bordeaux">Administration</h1>
+            {adminProfile && (
+              <p className="flex items-center gap-2 text-sm text-pierre">
+                {adminProfile.first_name} {adminProfile.last_name}
+                <VerseReference />
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <SoundToggle />
+          <Avatar
+            url={adminProfile?.avatar_url}
+            firstName={adminProfile?.first_name}
+            lastName={adminProfile?.last_name}
+            size={40}
+            onClick={() =>
+              document.getElementById('mon-profil')?.scrollIntoView({ behavior: 'smooth' })
+            }
+          />
+          <Button
+            variant="ghost"
+            onClick={async () => {
+              await signOut()
+              navigate('/')
+            }}
+          >
+            Déconnexion
+          </Button>
+        </div>
+      </header>
+
+      <nav className="mb-6 flex flex-wrap gap-2 border-b border-sable/60 pb-2" aria-label="Sections">
+        {(
+          [
+            ['vue', 'Vue d\u2019ensemble'],
+            ['classes', 'Classes'],
+            ['etudiants', 'Étudiants'],
+            ['moderateurs', 'Modérateurs'],
+            ['export', 'Export'],
+          ] as [Section, string][]
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setSection(key)}
+            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+              section === key ? 'bg-bordeaux text-parchemin' : 'text-pierre hover:bg-bordeaux/5'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      {error && <p className="mb-4 text-sm text-red-700">{error}</p>}
+      {accessMsg && <p className="mb-4 text-sm text-olive">{accessMsg}</p>}
+
+      {section === 'vue' && (
+        <>
+          <div className="grid gap-4 sm:grid-cols-4">
+            <Card>
+              <CardDescription>Étudiants inscrits</CardDescription>
+              <p className="font-display text-3xl text-bordeaux">{loading ? '—' : students.length}</p>
+            </Card>
+            <Card>
+              <CardDescription>Présence moyenne</CardDescription>
+              <p className="font-display text-3xl text-bordeaux">{loading ? '—' : averagePresence}</p>
+            </Card>
+            <Card>
+              <CardDescription>Devoirs soumis</CardDescription>
+              <p className="font-display text-3xl text-bordeaux">{loading ? '—' : submissions.length}</p>
+            </Card>
+            <Card>
+              <CardDescription>Classes actives</CardDescription>
+              <p className="font-display text-3xl text-bordeaux">{loading ? '—' : classes.length}</p>
+            </Card>
+          </div>
+
+          <Card className="mt-4">
+            <CardTitle>Engagement des étudiants</CardTitle>
+            <CardDescription className="mt-1 mb-3">
+              Comment la formation prend corps : résumés, séries, badges et mini-tâches à travers toute l'Académie.
+            </CardDescription>
+            <div className="grid gap-4 sm:grid-cols-5">
+              <Card>
+                <CardDescription>Résumés rédigés</CardDescription>
+                <p className="font-display text-3xl text-bordeaux">{loading ? '—' : resumeCount}</p>
+              </Card>
+              <Card>
+                <CardDescription>Taux de résumés</CardDescription>
+                <p className="font-display text-3xl text-bordeaux">{loading ? '—' : `${resumeRate}%`}</p>
+              </Card>
+              <Card>
+                <CardDescription>Streak moyen</CardDescription>
+                <p className="font-display text-3xl text-bordeaux">{loading ? '—' : avgStreak}</p>
+              </Card>
+              <Card>
+                <CardDescription>Badges délivrés</CardDescription>
+                <p className="font-display text-3xl text-bordeaux">{loading ? '—' : allBadges.length}</p>
+              </Card>
+              <Card>
+                <CardDescription>Mini-tâches rendues</CardDescription>
+                <p className="font-display text-3xl text-bordeaux">{loading ? '—' : miniResponses.length}</p>
+              </Card>
+            </div>
+          </Card>
+
+          <Card className="mt-4">
+            <CardTitle>Engagement par classe</CardTitle>
+            <CardDescription className="mt-1 mb-3">
+              Présence, résumés, badges et notes corrigées — la vie de chaque classe en un regard.
+            </CardDescription>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b-2 border-or bg-white/60 text-left">
+                    <th className="px-3 py-2 font-medium text-bordeaux">Classe</th>
+                    <th className="px-3 py-2 font-medium text-bordeaux">Étudiants actifs</th>
+                    <th className="px-3 py-2 font-medium text-bordeaux">Présence</th>
+                    <th className="px-3 py-2 font-medium text-bordeaux">Résumés</th>
+                    <th className="px-3 py-2 font-medium text-bordeaux">Badges</th>
+                    <th className="px-3 py-2 font-medium text-bordeaux">Devoirs notés</th>
+                    <th className="px-3 py-2 font-medium text-bordeaux">Moyenne</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {engagementByClass.map((r) => (
+                    <tr key={r.className} className="border-b border-pierre/15">
+                      <td className="px-3 py-2 text-bordeaux">{r.className}</td>
+                      <td className="px-3 py-2 font-mono text-pierre">{r.students}</td>
+                      <td className="px-3 py-2 font-mono text-pierre">{r.presence}</td>
+                      <td className="px-3 py-2 font-mono text-pierre">{r.resumes}</td>
+                      <td className="px-3 py-2 font-mono text-pierre">{r.badges}</td>
+                      <td className="px-3 py-2 font-mono text-pierre">{r.graded}</td>
+                      <td className="px-3 py-2 font-mono text-pierre">{r.avgGrade}</td>
+                    </tr>
+                  ))}
+                  {engagementByClass.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-3 py-4 text-center text-pierre">
+                        Aucune donnée d'engagement disponible.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          <Card className="mt-4">
+            <CardTitle>Suivi par classe</CardTitle>
+            <CardDescription className="mt-1 mb-3">
+              Effectif et nombre de cours publiés par classe. Moyenne générale des soumissions notées : {averageGrade}.
+            </CardDescription>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b-2 border-or bg-white/60 text-left">
+                    <th className="px-3 py-2 font-medium text-bordeaux">Classe</th>
+                    <th className="px-3 py-2 font-medium text-bordeaux">Étudiants</th>
+                    <th className="px-3 py-2 font-medium text-bordeaux">Cours publiés</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {byClass.map((r) => (
+                    <tr key={r.className} className="border-b border-pierre/15">
+                      <td className="px-3 py-2 text-bordeaux">{r.className}</td>
+                      <td className="px-3 py-2 font-mono text-pierre">{r.students}</td>
+                      <td className="px-3 py-2 font-mono text-pierre">{r.courses}</td>
+                    </tr>
+                  ))}
+                  {byClass.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="px-3 py-4 text-center text-pierre">
+                        Aucune classe disponible.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </>
+      )}
+
+      {section === 'classes' && (
+        <div className="space-y-4">
+          <Card>
+            <CardTitle>Tableau de bord par classe</CardTitle>
+            <CardDescription className="mt-1 mb-3">
+              Sélectionne une classe pour voir ses étudiants et ses cours.
+            </CardDescription>
+            <div className="flex flex-wrap gap-2">
+              {classes.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => loadClassDetail(c.id)}
+                  className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                    selectedClassId === c.id
+                      ? 'bg-bordeaux text-parchemin'
+                      : 'border border-bordeaux/30 text-bordeaux hover:bg-bordeaux/5'
+                  }`}
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+          </Card>
+
+          {selectedClass && (
+            <Card>
+              <CardTitle>{selectedClass.name}</CardTitle>
+              <CardDescription className="mt-1 mb-3">
+                {classStudents.length} étudiant{classStudents.length > 1 ? 's' : ''} ·{' '}
+                {classCourses.length} cours publié{classCourses.length > 1 ? 's' : ''}
+              </CardDescription>
+              <p className="mb-2 text-sm font-medium text-bordeaux">Étudiants</p>
+              {classStudents.length === 0 ? (
+                <p className="text-sm text-pierre">Aucun étudiant dans cette classe.</p>
+              ) : (
+                <ul className="mb-4 space-y-1 text-sm text-pierre">
+                  {classStudents.map((s) => (
+                    <li key={s.id}>
+                      {s.last_name} {s.first_name} — {s.email}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="mb-2 text-sm font-medium text-bordeaux">Cours publiés</p>
+              {classCourses.length === 0 ? (
+                <p className="text-sm text-pierre">Aucun cours publié.</p>
+              ) : (
+                <ul className="space-y-1 text-sm text-pierre">
+                  {classCourses.map((c) => (
+                    <li key={c.id}>
+                      Semaine {c.week} — {c.title}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          )}
+        </div>
+      )}
+
+      {section === 'etudiants' && (
+        <Card>
+          <CardTitle>Étudiants</CardTitle>
+          <CardDescription className="mt-1 mb-3">
+            Suivi des notes étudiant par étudiant, cours après cours. Tu peux aussi révoquer un accès.
+          </CardDescription>
+          {students.length === 0 ? (
+            <p className="text-sm text-pierre">Aucun étudiant inscrit.</p>
+          ) : (
+            <ul className="space-y-3">
+              {students.map((s) => (
+                <li key={s.id} className="rounded-card border border-pierre/15 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="font-medium text-bordeaux">
+                        {s.last_name} {s.first_name}
+                      </p>
+                      <p className="text-xs text-pierre">
+                        {s.email} · {s.class?.name ?? 'Sans classe'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        className="!px-3 !py-1 text-xs"
+                        onClick={() => openBulletin(s.id)}
+                      >
+                        Bulletin
+                      </Button>
+                      <Button
+                        variant={s.active ? 'ghost' : 'primary'}
+                        className="!px-3 !py-1 text-xs"
+                        onClick={() => toggleAccess(s.id, s.active)}
+                      >
+                        {s.active ? 'Révoquer l\u2019accès' : 'Restaurer l\u2019accès'}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {expandedStudentId === s.id && (
+                    <div className="mt-4 border-t border-sable/60 pt-4">
+                      {bulletinLoading ? (
+                        <p className="text-sm text-pierre">Chargement du bulletin…</p>
+                      ) : bulletin ? (
+                        <>
+                          <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+                            <StatCell label="Présence" value={`${bulletin.progress.presenceRate}%`} />
+                            <StatCell label="Résumés" value={`${bulletin.progress.resumeRate}%`} />
+                            <StatCell label="Moyenne" value={bulletin.progress.averageGrade ?? '—'} />
+                            <StatCell label="Méditation" value={String(s.meditation_grade ?? '—')} />
+                          </dl>
+                          <div className="mt-4 overflow-x-auto">
+                            <table className="w-full border-collapse text-sm">
+                              <thead>
+                                <tr className="border-b-2 border-or bg-white/60 text-left">
+                                  <th className="px-3 py-1.5 font-medium text-bordeaux">Cours</th>
+                                  <th className="px-3 py-1.5 font-medium text-bordeaux">Note</th>
+                                  <th className="px-3 py-1.5 font-medium text-bordeaux">Appréciation</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {bulletin.courses.map((c) => {
+                                  const sub = submissionsByStudent.get(s.id)?.find(
+                                    (x) => x.assignment?.course_id === c.id
+                                  )
+                                  return (
+                                    <tr key={c.id} className="border-b border-pierre/15">
+                                      <td className="px-3 py-1.5 text-bordeaux">
+                                        Semaine {c.week} — {c.title}
+                                      </td>
+                                      <td className="px-3 py-1.5 font-mono text-pierre">
+                                        {sub && sub.grade !== null && sub.grade !== undefined
+                                          ? sub.grade
+                                          : '—'}
+                                      </td>
+                                      <td className="px-3 py-1.5 text-pierre">{sub?.feedback ?? '—'}</td>
+                                    </tr>
+                                  )
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                          <div className="mt-4 flex flex-wrap items-end gap-3">
+                            <div className="w-32">
+                              <Label htmlFor="meditation">Méditation /20</Label>
+                              <Input
+                                id="meditation"
+                                type="number"
+                                min={0}
+                                max={20}
+                                value={meditationDraft}
+                                onChange={(e) => setMeditationDraft(e.target.value)}
+                              />
+                            </div>
+                            <Button
+                              variant="outline"
+                              className="!px-3 !py-1.5 text-xs"
+                              onClick={() => saveMeditation(s.id)}
+                            >
+                              Enregistrer
+                            </Button>
+                            <Button
+                              variant="outline"
+                              className="!px-3 !py-1.5 text-xs"
+                              onClick={() => downloadBulletin(s)}
+                            >
+                              Bulletin PDF
+                            </Button>
+                          </div>
+                          {bulletinMsg && <p className="mt-2 text-sm text-olive">{bulletinMsg}</p>}
+                        </>
+                      ) : (
+                        <p className="text-sm text-pierre">{bulletinMsg ?? 'Bulletin indisponible.'}</p>
+                      )}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      )}
+
+      {section === 'moderateurs' && (
+        <div className="space-y-4">
+          <Card>
+            <CardTitle>Promouvoir un étudiant</CardTitle>
+            <CardDescription className="mt-1 mb-3">
+              Transforme un compte étudiant en modérateur, puis attribue-lui ses classes ci-dessous.
+            </CardDescription>
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="min-w-56 flex-1">
+                <Label htmlFor="promote-student">Étudiant</Label>
+                <select
+                  id="promote-student"
+                  value={promoteStudentId}
+                  onChange={(e) => setPromoteStudentId(e.target.value)}
+                  className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
+                >
+                  <option value="">Sélectionner un étudiant…</option>
+                  {students.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.last_name} {s.first_name} — {s.email} ({s.class?.name ?? 'sans classe'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Button variant="primary" onClick={promoteStudent} disabled={!promoteStudentId}>
+                Promouvoir
+              </Button>
+            </div>
+          </Card>
+
+          <Card>
+            <CardTitle>Créer un compte</CardTitle>
+            <CardDescription className="mt-1 mb-4">
+              Crée directement un compte modérateur, administrateur ou étudiant. La personne pourra se
+              connecter aussitôt.
+            </CardDescription>
+            <form onSubmit={handleCreateAccount} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="acc-first">Prénom</Label>
+                  <Input
+                    id="acc-first"
+                    required
+                    value={newAccount.firstName}
+                    onChange={(e) => setNewAccount((prev) => ({ ...prev, firstName: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="acc-last">Nom</Label>
+                  <Input
+                    id="acc-last"
+                    required
+                    value={newAccount.lastName}
+                    onChange={(e) => setNewAccount((prev) => ({ ...prev, lastName: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="acc-email">Email</Label>
+                  <Input
+                    id="acc-email"
+                    type="email"
+                    required
+                    value={newAccount.email}
+                    onChange={(e) => setNewAccount((prev) => ({ ...prev, email: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="acc-password">Mot de passe</Label>
+                  <Input
+                    id="acc-password"
+                    type="password"
+                    required
+                    minLength={6}
+                    value={newAccount.password}
+                    onChange={(e) => setNewAccount((prev) => ({ ...prev, password: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div>
+                  <Label htmlFor="acc-role">Rôle</Label>
+                  <select
+                    id="acc-role"
+                    value={newAccount.role}
+                    onChange={(e) => setNewAccount((prev) => ({ ...prev, role: e.target.value }))}
+                    className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
+                  >
+                    <option value="MODERATEUR">Modérateur</option>
+                    <option value="ADMINISTRATEUR">Administrateur</option>
+                    <option value="ETUDIANT">Étudiant</option>
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="acc-phone">Téléphone</Label>
+                  <Input
+                    id="acc-phone"
+                    value={newAccount.phone}
+                    onChange={(e) => setNewAccount((prev) => ({ ...prev, phone: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="acc-tribe">Tribu</Label>
+                  <Input
+                    id="acc-tribe"
+                    value={newAccount.tribe}
+                    onChange={(e) => setNewAccount((prev) => ({ ...prev, tribe: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="acc-dept">Département</Label>
+                <Input
+                  id="acc-dept"
+                  value={newAccount.department}
+                  onChange={(e) => setNewAccount((prev) => ({ ...prev, department: e.target.value }))}
+                />
+              </div>
+              {accountMsg && (
+                <p
+                  className={`text-sm ${accountMsg.startsWith('Compte') ? 'text-olive' : 'text-red-700'}`}
+                >
+                  {accountMsg}
+                </p>
+              )}
+              <Button type="submit" disabled={accountSaving}>
+                {accountSaving ? 'Création…' : 'Créer le compte'}
+              </Button>
+            </form>
+          </Card>
+
+          <Card>
+            <CardTitle>Modérateurs de l'Académie</CardTitle>
+            <CardDescription className="mt-1 mb-4">
+              Classes rattachées et planning de modération de chaque modérateur.
+            </CardDescription>
+
+            {moderators.length === 0 ? (
+              <p className="text-sm text-pierre">Aucun modérateur enregistré.</p>
+            ) : (
+              <ul className="space-y-5">
+                {moderators.map((m) => {
+                  const selectedClasses = moderatorClasses[m.id] ?? []
+                  const slots = moderatorSchedules[m.id] ?? []
+                  const draft = slotDrafts[m.id] ?? { day: '0', start: '09:00', end: '11:00', notes: '' }
+                  return (
+                    <li key={m.id} className="rounded-card border border-pierre/15 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <p className="font-medium text-bordeaux">
+                            {m.last_name} {m.first_name}
+                          </p>
+                          <p className="text-xs text-pierre">
+                            {m.email} · {m.active ? 'accès actif' : 'accès révoqué'}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            variant={m.active ? 'ghost' : 'primary'}
+                            className="!px-3 !py-1 text-xs"
+                            onClick={() => toggleAccess(m.id, m.active)}
+                          >
+                            {m.active ? 'Révoquer l\u2019accès' : 'Restaurer l\u2019accès'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="!px-3 !py-1 text-xs text-red-700"
+                            onClick={() => demoteModerator(m.id)}
+                          >
+                            Repasser en étudiant
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 border-t border-sable/60 pt-3">
+                        <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-bordeaux">
+                          Classes rattachées
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {classes.map((c) => {
+                            const checked = selectedClasses.includes(c.id)
+                            return (
+                              <button
+                                key={c.id}
+                                onClick={() => toggleModeratorClass(m.id, c.id)}
+                                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                                  checked
+                                    ? 'bg-bordeaux text-parchemin'
+                                    : 'border border-bordeaux/30 text-bordeaux hover:bg-bordeaux/5'
+                                }`}
+                              >
+                                {c.name}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="mt-3 border-t border-sable/60 pt-3">
+                        <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-bordeaux">
+                          Planning de modération
+                        </p>
+                        {slots.length === 0 ? (
+                          <p className="text-sm text-pierre">Aucun créneau défini.</p>
+                        ) : (
+                          <ul className="mb-3 space-y-1 text-sm">
+                            {slots.map((slot) => (
+                              <li
+                                key={slot.id}
+                                className={`flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-1.5 ${
+                                  slot.day_of_week === 0 ? 'border-or/60 bg-or/10' : 'border-pierre/15'
+                                }`}
+                              >
+                                <span className="text-bordeaux">
+                                  {DAY_NAMES[slot.day_of_week] ?? slot.day_of_week}
+                                  {slot.day_of_week === 0 && (
+                                    <span className="ml-2 rounded-full bg-or/25 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide">
+                                      Jour du Seigneur
+                                    </span>
+                                  )}{' '}
+                                  ·{' '}
+                                  <span className="font-mono text-xs">
+                                    {slot.start_time?.slice(0, 5)}–{slot.end_time?.slice(0, 5)}
+                                  </span>
+                                  {slot.notes ? <span className="ml-2 text-pierre">— {slot.notes}</span> : null}
+                                </span>
+                                <button
+                                  onClick={() => removeSlot(m.id, slot.id)}
+                                  className="text-xs text-red-700 underline"
+                                >
+                                  Retirer
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        <div className="grid gap-2 sm:grid-cols-[120px_100px_100px_1fr_auto]">
+                          <select
+                            value={draft.day}
+                            onChange={(e) =>
+                              setSlotDrafts((prev) => ({
+                                ...prev,
+                                [m.id]: { ...draft, day: e.target.value },
+                              }))
+                            }
+                            className="rounded-md border border-pierre/30 bg-white px-2 py-1.5 text-sm text-bordeaux focus-visible:border-or"
+                          >
+                            {DAY_NAMES.map((name, i) => (
+                              <option key={i} value={i}>
+                                {name}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="time"
+                            value={draft.start}
+                            onChange={(e) =>
+                              setSlotDrafts((prev) => ({
+                                ...prev,
+                                [m.id]: { ...draft, start: e.target.value },
+                              }))
+                            }
+                            className="rounded-md border border-pierre/30 bg-white px-2 py-1.5 text-sm text-bordeaux focus-visible:border-or"
+                          />
+                          <input
+                            type="time"
+                            value={draft.end}
+                            onChange={(e) =>
+                              setSlotDrafts((prev) => ({
+                                ...prev,
+                                [m.id]: { ...draft, end: e.target.value },
+                              }))
+                            }
+                            className="rounded-md border border-pierre/30 bg-white px-2 py-1.5 text-sm text-bordeaux focus-visible:border-or"
+                          />
+                          <input
+                            value={draft.notes}
+                            placeholder="Notes (optionnel)"
+                            onChange={(e) =>
+                              setSlotDrafts((prev) => ({
+                                ...prev,
+                                [m.id]: { ...draft, notes: e.target.value },
+                              }))
+                            }
+                            className="rounded-md border border-pierre/30 bg-white px-2 py-1.5 text-sm text-bordeaux focus-visible:border-or"
+                          />
+                          <Button
+                            variant="outline"
+                            className="!px-3 !py-1.5 text-xs"
+                            disabled={slotSavingId === m.id}
+                            onClick={() => addSlot(m.id)}
+                          >
+                            {slotSavingId === m.id ? '…' : 'Ajouter'}
+                          </Button>
+                        </div>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+            {moderatorMsg && <p className="mt-3 text-sm text-olive">{moderatorMsg}</p>}
+          </Card>
+        </div>
+      )}
+
+      {section === 'export' && (
+        <Card>
+          <CardTitle>Export des données</CardTitle>
+          <CardDescription className="mt-1 mb-3">
+            Exports à la demande : CSV de suivi et bulletins PDF individuels par étudiant.
+          </CardDescription>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => exportToCSV('suivi-par-classe.csv', classHeaders, classRows())}>
+              Suivi par classe → CSV
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() =>
+                exportToPDF(
+                  'suivi-par-classe.pdf',
+                  'Suivi par classe — Académie Vases d\'Honneur',
+                  'Effectifs et cours publiés par classe',
+                  classHeaders,
+                  classRows()
+                )
+              }
+            >
+              Suivi par classe → PDF
+            </Button>
+            <Button variant="outline" onClick={() => exportToCSV('liste-etudiants.csv', studentHeaders, studentRows())}>
+              Étudiants → CSV
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() =>
+                exportToPDF(
+                  'liste-etudiants.pdf',
+                  'Liste des étudiants',
+                  'Répertoire des étudiants inscrits',
+                  studentHeaders,
+                  studentRows()
+                )
+              }
+            >
+              Étudiants → PDF
+            </Button>
+          </div>
+
+          <div className="mt-6 rounded-md border border-sable/60 p-4">
+            <p className="mb-3 text-sm font-medium text-bordeaux">
+              Notes, présence et méditation par classe
+            </p>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="w-64">
+                <Label htmlFor="export-class">Classe</Label>
+                <select
+                  id="export-class"
+                  value={exportClassId}
+                  onChange={(e) => setExportClassId(e.target.value)}
+                  className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
+                >
+                  <option value="">Toutes les classes</option>
+                  {classes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => exportToCSV('notes-et-presence.csv', gradeHeaders, gradeRows())}
+              >
+                Notes & présence → CSV
+              </Button>
+            </div>
+          </div>
+          <div className="mt-6 border-t border-sable/60 pt-4">
+            <p className="mb-3 text-sm font-medium text-bordeaux">Bulletins individuels</p>
+            <ul className="space-y-2 text-sm">
+              {students.map((s) => (
+                <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-pierre/15 px-3 py-2">
+                  <span className="text-pierre">
+                    {s.last_name} {s.first_name} — {s.class?.name ?? 'Sans classe'}
+                  </span>
+                  <Button
+                    variant="outline"
+                    className="!px-3 !py-1 text-xs"
+                    onClick={() => downloadBulletin(s)}
+                  >
+                    Bulletin PDF
+                  </Button>
+                </li>
+              ))}
+              {students.length === 0 && <p className="text-pierre">Aucun étudiant.</p>}
+            </ul>
+          </div>
+        </Card>
+      )}
+
+      <Card className="mt-6">
+        <CardTitle>Webhook d'administration</CardTitle>
+        <CardDescription className="mt-1 mb-3">
+          URL générique qui reçoit les événements de l'Académie (inscription, badge obtenu, note
+          corrigée, résumé corrigé). Laisse le champ vide pour ne recevoir que les notifications
+          dans l'application.
+        </CardDescription>
+        <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+          <div>
+            <Label htmlFor="webhook-url">URL du webhook</Label>
+            <Input
+              id="webhook-url"
+              value={webhookUrl}
+              placeholder="https://exemple.fr/hooks/academie"
+              onChange={(e) => setWebhookUrl(e.target.value)}
+            />
+          </div>
+          <div className="flex items-end gap-2">
+            <label className="flex cursor-pointer items-center gap-2 pb-2 text-sm text-bordeaux">
+              <input
+                type="checkbox"
+                checked={webhookActive}
+                onChange={(e) => setWebhookActive(e.target.checked)}
+                className="h-4 w-4 accent-[#5D2A41]"
+              />
+              Actif
+            </label>
+            <Button variant="primary" className="!px-4" onClick={saveWebhook}>
+              Enregistrer
+            </Button>
+          </div>
+        </div>
+        {webhookMsg && <p className="mt-3 text-sm text-olive">{webhookMsg}</p>}
+      </Card>
+
+      {adminProfile && (
+        <Card className="mt-6" id="mon-profil">
+          <CardTitle>Mon profil</CardTitle>
+          <CardDescription className="mt-2 mb-4">
+            Gérez votre photo de profil. Les autres informations sont rattachées à votre compte.
+          </CardDescription>
+          <AvatarUpload
+            url={adminProfile.avatar_url}
+            firstName={adminProfile.first_name}
+            lastName={adminProfile.last_name}
+            userId={adminProfile.id}
+            onSaved={(url) => setAdminProfile((prev) => (prev ? { ...prev, avatar_url: url } : prev))}
+          />
+        </Card>
+      )}
+      </div>
+    </div>
+  )
+}
+
+function StatCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-card border border-sable/60 bg-white/50 px-3 py-2">
+      <dt className="text-xs text-pierre">{label}</dt>
+      <dd className="font-display text-lg text-bordeaux">{value}</dd>
+    </div>
+  )
+}

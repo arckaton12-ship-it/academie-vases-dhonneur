@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  background-color: #F8F4E9;
+  color: #5D2A41;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Playfair Display', serif;
+  letter-spacing: -0.01em;
+}
+
+:focus-visible {
+  outline: 2px solid #CFAF5B;
+  outline-offset: 2px;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.animate-marquee,
+.animate-marquee-reverse {
+  animation: marquee var(--marquee-duration, 42s) linear infinite;
+}
+
+.animate-marquee-reverse {
+  animation-direction: reverse;
+}
+
+@keyframes badge-halo {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(207, 175, 91, 0); transform: scale(1); }
+  50% { box-shadow: 0 0 20px 6px rgba(207, 175, 91, 0.42); transform: scale(1.06); }
+}
+
+.badge-halo {
+  animation: badge-halo 3.2s ease-in-out infinite;
+}
+
+@keyframes streak-fill {
+  from { transform: scaleX(0); opacity: 0; }
+  to { transform: scaleX(1); opacity: 1; }
+}
+
+.streak-segment {
+  transform-origin: left center;
+  animation: streak-fill 0.5s ease-out both;
+}
+
+@keyframes flame-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.14); }
+}
+
+.flame-pulse {
+  transform-origin: center;
+  animation: flame-pulse 2.6s ease-in-out infinite;
+}
+
+@keyframes quote-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.quote-in {
+  animation: quote-in 0.5s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
