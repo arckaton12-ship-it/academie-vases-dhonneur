@@ -155,3 +155,57 @@ export function subscribeToMessages(
     supabase.removeChannel(channel)
   }
 }
+
+export interface Contact {
+  id: string
+  first_name: string
+  last_name: string
+  avatar_url: string | null
+  role: string
+}
+
+export async function getAvailableContacts(): Promise<Contact[]> {
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData.user) return []
+  const userId = userData.user.id
+
+  const { data: me } = await supabase
+    .from('profiles')
+    .select('role, class_id')
+    .eq('id', userId)
+    .single()
+  if (!me) return []
+
+  if (me.role === 'ETUDIANT') {
+    const { data } = await supabase
+      .from('moderator_classes')
+      .select('moderator_id, profiles:moderator_id(id, first_name, last_name, avatar_url, role)')
+      .eq('class_id', me.class_id)
+    return (data ?? [])
+      .map((r: any) => r.profiles)
+      .filter(Boolean) as Contact[]
+  }
+
+  if (me.role === 'MODERATEUR') {
+    const { data: myClasses } = await supabase
+      .from('moderator_classes')
+      .select('class_id')
+      .eq('moderator_id', userId)
+    const classIds = (myClasses ?? []).map((r: any) => r.class_id)
+    if (classIds.length === 0) return []
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, avatar_url, role')
+      .in('class_id', classIds)
+      .eq('role', 'ETUDIANT')
+      .eq('active', true)
+    return (data ?? []) as Contact[]
+  }
+
+  const { data } = await supabase
+    .from('profiles')
+    .select('id, first_name, last_name, avatar_url, role')
+    .neq('id', userId)
+    .eq('active', true)
+  return (data ?? []) as Contact[]
+}

@@ -21,16 +21,20 @@ export function toggleSound(): boolean {
 
 function getCtx(): AudioContext | null {
   if (!soundEnabled) return null
-  if (audioCtx) return audioCtx
+  if (audioCtx) {
+    if (audioCtx.state === 'suspended') audioCtx.resume()
+    return audioCtx
+  }
   const Ctor =
     window.AudioContext ??
     (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
   if (!Ctor) return null
   audioCtx = new Ctor()
+  audioCtx.resume()
   return audioCtx
 }
 
-function tone(frequency: number, delay = 0, duration = 0.12, volume = 0.05): void {
+function tone(frequency: number, delay = 0, duration = 0.25, volume = 0.2): void {
   const ctx = getCtx()
   if (!ctx) return
   const osc = ctx.createOscillator()
@@ -41,18 +45,23 @@ function tone(frequency: number, delay = 0, duration = 0.12, volume = 0.05): voi
   gain.connect(ctx.destination)
   const t = ctx.currentTime + delay
   gain.gain.setValueAtTime(0.0001, t)
-  gain.gain.exponentialRampToValueAtTime(volume, t + 0.015)
+  gain.gain.exponentialRampToValueAtTime(volume, t + 0.02)
   gain.gain.exponentialRampToValueAtTime(0.0001, t + duration)
   osc.start(t)
   osc.stop(t + duration + 0.05)
 }
 
 export function playClick(): void {
-  tone(880, 0, 0.07, 0.03)
+  tone(880, 0, 0.15, 0.18)
 }
 
 export function playSuccess(): void {
-  tone(660, 0, 0.12)
-  tone(880, 0.08, 0.12)
-  tone(1100, 0.16, 0.18)
+  tone(660, 0, 0.25, 0.25)
+  tone(880, 0.12, 0.25, 0.22)
+  tone(1100, 0.24, 0.3, 0.2)
+}
+
+export function playNotification(): void {
+  tone(523, 0, 0.2, 0.18)
+  tone(784, 0.15, 0.25, 0.2)
 }

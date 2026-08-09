@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { DarkModeToggle } from '@/components/DarkModeToggle'
 
 export interface SidebarItem {
@@ -91,41 +92,42 @@ export function Sidebar({ items, activeKey, onSelect, header, footer }: SidebarP
         </svg>
       </button>
 
-      {/* Mobile overlay */}
-      {mobileOpen && (
-        <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm md:hidden" onClick={() => setMobileOpen(false)} />
+      {/* Mobile overlay + sidebar via createPortal to escape stacking context */}
+      {mobileOpen && createPortal(
+        <>
+          <div className="fixed inset-0 z-[9998] bg-black/30 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
+          <div className="sidebar sidebar-expanded fixed inset-y-0 left-0 z-[9999] w-64 translate-x-0 shadow-2xl" style={{ transition: 'transform 0.3s ease' }}>
+            <div className="flex items-center justify-between border-b border-white/10 px-3 py-3">
+              {header}
+              <button onClick={() => setMobileOpen(false)} className="text-pierre hover:text-bordeaux dark:text-slate-400 dark:hover:text-or">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-3">
+              {items.map((item) => (
+                <button
+                  key={item.key}
+                  onClick={() => {
+                    onSelect(item.key)
+                    setMobileOpen(false)
+                  }}
+                  className={`sidebar-item w-full ${activeKey === item.key ? 'active' : ''}`}
+                >
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center">{item.icon}</span>
+                  <span className="truncate whitespace-nowrap">{item.label}</span>
+                </button>
+              ))}
+            </nav>
+            {footer && (
+              <div className="border-t border-white/10 px-3 py-3 dark:border-white/5">{footer}</div>
+            )}
+            <div className="border-t border-white/10 px-3 py-3 dark:border-white/5">
+              <DarkModeToggle />
+            </div>
+          </div>
+        </>,
+        document.body
       )}
-
-      {/* Mobile sidebar */}
-      <div className={`sidebar sidebar-expanded md:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`} style={{ transition: 'transform 0.3s ease' }}>
-        <div className="flex items-center justify-between border-b border-white/10 px-3 py-3">
-          {header}
-          <button onClick={() => setMobileOpen(false)} className="text-pierre hover:text-bordeaux dark:text-slate-400 dark:hover:text-or">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-        <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-3">
-          {items.map((item) => (
-            <button
-              key={item.key}
-              onClick={() => {
-                onSelect(item.key)
-                setMobileOpen(false)
-              }}
-              className={`sidebar-item w-full ${activeKey === item.key ? 'active' : ''}`}
-            >
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center">{item.icon}</span>
-              <span className="truncate whitespace-nowrap">{item.label}</span>
-            </button>
-          ))}
-        </nav>
-        {footer && (
-          <div className="border-t border-white/10 px-3 py-3 dark:border-white/5">{footer}</div>
-        )}
-        <div className="border-t border-white/10 px-3 py-3 dark:border-white/5">
-          <DarkModeToggle />
-        </div>
-      </div>
 
       {/* Desktop sidebar */}
       <div className={`sidebar ${expanded ? 'sidebar-expanded' : 'sidebar-collapsed'} hidden md:flex`}>

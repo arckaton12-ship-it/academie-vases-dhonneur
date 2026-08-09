@@ -10,6 +10,7 @@ import { Logo } from '@/components/Logo'
 import { Avatar } from '@/components/Avatar'
 import { AvatarUpload } from '@/components/AvatarUpload'
 import { SoundToggle } from '@/components/SoundToggle'
+import { playSuccess } from '@/lib/sound'
 import { SectionWatermark } from '@/components/SectionWatermark'
 import { VerseReference } from '@/components/VerseReference'
 import { DayAccentBand } from '@/components/DayAccentBand'
@@ -510,6 +511,7 @@ function AnnoncesTab({
       setTitle('')
       setContent('')
       setMessage('Annonce publiée.')
+      playSuccess()
       await loadAnnonces()
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Erreur lors de la publication.')
@@ -949,6 +951,7 @@ function PassageTab({
     try {
       await advanceStudent(student.id, target)
       setSuccess(`${student.first_name} ${student.last_name} a changé de classe.`)
+      playSuccess()
       onAdvanced()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur lors du passage de classe.')

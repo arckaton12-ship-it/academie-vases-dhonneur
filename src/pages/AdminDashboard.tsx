@@ -8,6 +8,7 @@ import { Logo } from '@/components/Logo'
 import { Avatar } from '@/components/Avatar'
 import { AvatarUpload } from '@/components/AvatarUpload'
 import { SoundToggle } from '@/components/SoundToggle'
+import { playSuccess } from '@/lib/sound'
 import { SectionWatermark } from '@/components/SectionWatermark'
 import { VerseReference } from '@/components/VerseReference'
 import { DayAccentBand } from '@/components/DayAccentBand'
@@ -1894,7 +1895,7 @@ function NotationTab({ onGraded }: { onGraded: () => void }) {
     try {
       await gradeSubmission(sub.id, grade, feedbacks[sub.id]?.trim() ?? '')
       setItems((prev) => prev.map((s) => s.id === sub.id ? { ...s, grade, feedback: feedbacks[sub.id]?.trim() ?? '' } : s))
-      setMessage('Note enregistrée.'); onGraded()
+      setMessage('Note enregistrée.'); playSuccess(); onGraded()
     } catch (err) { setMessage(err instanceof Error ? err.message : 'Erreur.') } finally { setSavingId(null) }
   }
 
@@ -1908,7 +1909,7 @@ function NotationTab({ onGraded }: { onGraded: () => void }) {
     try {
       await gradeResume(r.id, grade, rFeedbacks[r.id]?.trim() ?? '')
       setResumes((prev) => prev.map((x) => x.id === r.id ? { ...x, grade, feedback: rFeedbacks[r.id]?.trim() ?? '' } : x))
-      setMessage('Correction enregistrée.'); onGraded()
+      setMessage('Correction enregistrée.'); playSuccess(); onGraded()
     } catch (err) { setMessage(err instanceof Error ? err.message : 'Erreur.') } finally { setRSavingId(null) }
   }
 

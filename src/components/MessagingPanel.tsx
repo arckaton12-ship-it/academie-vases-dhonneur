@@ -9,8 +9,10 @@ import {
   markAsRead,
   createConversation,
   subscribeToMessages,
+  getAvailableContacts,
   Conversation,
   Message,
+  Contact,
 } from '@/lib/messaging'
 import { supabase } from '@/lib/supabase'
 
@@ -28,6 +30,9 @@ export function MessagingPanel({ currentUserId, userRole }: MessagingPanel) {
   const [sending, setSending] = useState(false)
   const messagesEnd = useRef<HTMLDivElement>(null)
   const [mobileShowChat, setMobileShowChat] = useState(false)
+  const [showNewConvo, setShowNewConvo] = useState(false)
+  const [contacts, setContacts] = useState<Contact[]>([])
+  const [searchContact, setSearchContact] = useState('')
 
   useEffect(() => {
     getConversations()
@@ -64,6 +69,32 @@ export function MessagingPanel({ currentUserId, userRole }: MessagingPanel) {
   useEffect(() => {
     messagesEnd.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  function openNewConvo() {
+    setShowNewConvo(true)
+    if (contacts.length === 0) {
+      getAvailableContacts().then(setContacts).catch(() => {})
+    }
+  }
+
+  async function startConvo(contact: Contact) {
+    try {
+      const existing = conversations.find(
+        (c) => c.participant_1 === contact.id || c.participant_2 === contact.id
+      )
+      if (existing) {
+        setActiveId(existing.id)
+      } else {
+        const type = userRole === 'ETUDIANT' ? 'MODERATEUR_ETUDIANT' : 'MODERATEUR_MODERATEUR'
+        const convo = await createConversation(contact.id, type)
+        const enriched: Conversation = { ...convo, other_user: contact, last_message: null, unread_count: 0 }
+        setConversations((prev) => [enriched, ...prev])
+        setActiveId(convo.id)
+      }
+    } catch { /* ignore */ }
+    setShowNewConvo(false)
+    setMobileShowChat(true)
+  }
 
   async function handleSend(e: FormEvent) {
     e.preventDefault()
@@ -108,15 +139,59 @@ export function MessagingPanel({ currentUserId, userRole }: MessagingPanel) {
   }
 
   return (
-    <div className="flex h-[600px] overflow-hidden rounded-card border border-pierre/15">
+    <div className="relative flex h-[600px] overflow-hidden rounded-card border border-pierre/15">
+      {showNewConvo && (
+        <div className="absolute inset-0 z-10 flex flex-col bg-white rounded-card">
+          <div className="flex items-center justify-between border-b border-pierre/15 px-4 py-3">
+            <p className="text-sm font-medium text-bordeaux">Nouvelle conversation</p>
+            <button onClick={() => setShowNewConvo(false)} className="text-pierre hover:text-bordeaux text-lg">×</button>
+          </div>
+          <input
+            value={searchContact}
+            onChange={(e) => setSearchContact(e.target.value)}
+            placeholder="Rechercher un contact…"
+            className="border-b border-pierre/15 px-4 py-2.5 text-sm outline-none"
+          />
+          <ul className="flex-1 overflow-y-auto">
+            {contacts
+              .filter((c) => {
+                const q = searchContact.toLowerCase()
+                return `${c.first_name} ${c.last_name}`.toLowerCase().includes(q)
+              })
+              .map((c) => (
+                <li key={c.id}>
+                  <button
+                    onClick={() => startConvo(c)}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-sable/30 transition-colors"
+                  >
+                    <Avatar url={c.avatar_url} firstName={c.first_name} lastName={c.last_name} size={32} />
+                    <div>
+                      <p className="text-xs font-medium text-bordeaux">{c.first_name} {c.last_name}</p>
+                      <p className="text-[10px] text-pierre capitalize">{c.role.toLowerCase()}</p>
+                    </div>
+                  </button>
+                </li>
+              ))}
+            {contacts.length > 0 && contacts.filter((c) => `${c.first_name} ${c.last_name}`.toLowerCase().includes(searchContact.toLowerCase())).length === 0 && (
+              <p className="px-4 py-3 text-xs text-pierre">Aucun contact trouvé.</p>
+            )}
+            {contacts.length === 0 && (
+              <p className="px-4 py-3 text-xs text-pierre">Chargement…</p>
+            )}
+          </ul>
+        </div>
+      )}
       {/* Sidebar conversations */}
       <div
         className={`w-72 flex-shrink-0 border-r border-pierre/15 bg-white/40 ${
           mobileShowChat ? 'hidden md:block' : 'block'
         }`}
       >
-        <div className="border-b border-pierre/15 p-3">
+        <div className="border-b border-pierre/15 p-3 flex items-center justify-between">
           <p className="font-display text-sm text-bordeaux">Messagerie</p>
+          <button onClick={openNewConvo} className="rounded-full bg-bordeaux text-white p-1 hover:bg-bordeaux/80 transition-colors" title="Nouvelle conversation">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
         </div>
         {conversations.length === 0 ? (
           <p className="p-4 text-xs text-pierre">Aucune conversation.</p>
