@@ -11,6 +11,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext'
 import { UserRole } from '@/lib/auth'
 import { SplashScreen, shouldShowSplash, markSplashSeen } from '@/components/SplashScreen'
 import { ToastContainer } from '@/components/ui/Toast'
+import { PWAInstall, PWAInstallButton } from '@/components/PWAInstall'
 
 const MODERATOR_ROLES: UserRole[] = ['MODERATEUR', 'ADMINISTRATEUR']
 
@@ -65,6 +66,8 @@ export default function App() {
           <Route path="*" element={<Landing />} />
         </Routes>
         </BrowserRouter>
+        <PWAInstall />
+        <PWAInstallButton />
         <ToastContainer />
       </ThemeProvider>
     </ErrorBoundary>

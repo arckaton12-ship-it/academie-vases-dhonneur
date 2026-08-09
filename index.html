@@ -2,7 +2,7 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
     <title>Académie Vases d'Honneur</title>
 
     <!-- PWA -->
@@ -12,8 +12,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Académie VH" />
     <link rel="apple-touch-icon" href="/logo.png" />
-    <meta name="description" content="École de disciples — Assemblée Eaux Paisibles de Yaoundé. Formation biblique, suivi d'âme, progression spirituelle." />
     <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="description" content="École de disciples — Assemblée Eaux Paisibles de Yaoundé. Formation biblique, suivi d'âme, progression spirituelle." />
+    <meta name="application-name" content="Académie VH" />
+    <meta name="msapplication-TileColor" content="#1B6B63" />
+    <meta name="msapplication-TileImage" content="/logo.png" />
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/logo.png" />
@@ -40,7 +43,10 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js').catch(function() {});
+          navigator.serviceWorker.register('/sw.js').then(function(reg) {
+            // Check for SW updates every hour
+            setInterval(function() { reg.update(); }, 3600000);
+          }).catch(function() {});
         });
       }
     </script>

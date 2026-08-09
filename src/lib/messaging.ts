@@ -104,7 +104,8 @@ export async function getMessages(conversationId: string): Promise<Message[]> {
 export async function sendMessage(
   conversationId: string,
   content: string,
-  replyToId?: string
+  replyToId?: string,
+  optimisticClientId?: string
 ): Promise<Message> {
   const { data: userData } = await supabase.auth.getUser()
   if (!userData.user) throw new Error('Non authentifie')
@@ -113,7 +114,7 @@ export async function sendMessage(
     throw new Error('Envoi trop rapide. Attends un instant.')
   }
 
-  const clientId = generateClientId()
+  const clientId = optimisticClientId || generateClientId()
 
   const insertData: Record<string, unknown> = {
     conversation_id: conversationId,
@@ -205,6 +206,16 @@ export interface Contact {
   last_name: string
   avatar_url: string | null
   role: string
+}
+
+export async function updateMyStatus(): Promise<void> {
+  await supabase.rpc('update_user_status')
+}
+
+export async function getUserOnlineStatus(userId: string): Promise<{ is_online: boolean; last_seen: string } | null> {
+  const { data } = await supabase.rpc('get_user_status', { p_user_id: userId })
+  if (!data || data.length === 0) return null
+  return { is_online: data[0].is_online, last_seen: data[0].last_seen }
 }
 
 export async function getAvailableContacts(): Promise<Contact[]> {

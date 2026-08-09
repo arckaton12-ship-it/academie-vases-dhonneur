@@ -71,7 +71,7 @@ import {
 } from '@/lib/courses'
 import { BADGES, BADGE_ORDER, isBadgeKey } from '@/lib/badges'
 
-type Tab = 'academie' | 'annonces' | 'devoirs' | 'service' | 'revue' | 'profil' | 'messagerie'
+type Tab = 'academie' | 'annonces' | 'devoirs' | 'service' | 'revue' | 'profil' | 'messagerie' | 'badges'
 
 interface ProfileState {
   id: string
@@ -1213,72 +1213,90 @@ export default function StudentDashboard() {
       )}
 
       {tab === 'service' && (
-        <Card>
-          <CardTitle>Service</CardTitle>
-          <CardDescription className="mt-1 mb-4">
-            Ta place dans le corps de l'Académie : ton groupe, tes jours de service et tes missions.
-          </CardDescription>
-          <form onSubmit={handleSaveService} className="space-y-4">
-            <div>
-              <Label htmlFor="group">Groupe de service</Label>
-              <Input
-                id="group"
-                value={serviceDraft.group_name}
-                onChange={(e) => setServiceDraft((prev) => ({ ...prev, group_name: e.target.value }))}
-              />
+        <div className="space-y-5">
+          {/* Service Stats */}
+          <Card>
+            <CardTitle>Mon service</CardTitle>
+            <CardDescription className="mt-1 mb-3">
+              Ta place dans le corps de l'Académie.
+            </CardDescription>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-lg border border-or/20 bg-or/5 p-3 text-center">
+                <p className="text-2xl font-bold text-or">{service?.service_days ?? 0}</p>
+                <p className="text-[10px] text-pierre dark:text-slate-500">Jours de service</p>
+              </div>
+              <div className="rounded-lg border border-olive/20 bg-olive/5 p-3 text-center">
+                <p className="text-2xl font-bold text-olive">{service?.service_note ?? '—'}</p>
+                <p className="text-[10px] text-pierre dark:text-slate-500">Note</p>
+              </div>
+              <div className="rounded-lg border border-bordeaux/20 bg-bordeaux/5 p-3 text-center">
+                <p className="text-lg font-bold text-bordeaux dark:text-or capitalize">{service?.focus ?? '—'}</p>
+                <p className="text-[10px] text-pierre dark:text-slate-500">Domaine</p>
+              </div>
             </div>
-            <div>
-              <Label htmlFor="days">Jours de service effectués</Label>
-              <Input
-                id="days"
-                type="number"
-                min={0}
-                value={serviceDraft.service_days}
-                onChange={(e) => setServiceDraft((prev) => ({ ...prev, service_days: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="mission">Missions & sorties (évangélisation, service…)</Label>
-              <textarea
-                id="mission"
-                rows={3}
-                value={serviceDraft.mission_description}
-                onChange={(e) =>
-                  setServiceDraft((prev) => ({ ...prev, mission_description: e.target.value }))
-                }
-                placeholder="Les missions auxquelles tu as participé cette session…"
-                className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or focus-visible:outline-none"
-              />
-            </div>
-            <div>
-              <Label htmlFor="focus">Domaine de service</Label>
-              <select
-                id="focus"
-                value={serviceDraft.focus}
-                onChange={(e) => setServiceDraft((prev) => ({ ...prev, focus: e.target.value }))}
-                className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
-              >
-                {['enseignement', 'accueil', 'louange', 'intercession', 'logistique', 'autre'].map(
-                  (f) => (
-                    <option key={f} value={f}>
-                      {f}
-                    </option>
-                  )
-                )}
-              </select>
-            </div>
-            <div className="rounded-md border border-sable/60 bg-white/60 px-3 py-2 text-sm">
-              <span className="text-pierre">Note de service : </span>
-              <span className="font-display font-semibold text-bordeaux">
-                {service?.service_note ?? 'En attente'}
-              </span>
-            </div>
-            <Button type="submit" disabled={serviceSaving}>
-              {serviceSaving ? 'Enregistrement…' : 'Enregistrer ma fiche de service'}
-            </Button>
-            {serviceMsg && <p className="text-sm text-olive">{serviceMsg}</p>}
-          </form>
-        </Card>
+          </Card>
+
+          {/* Service Form */}
+          <Card>
+            <CardTitle className="text-base">Modifier ma fiche</CardTitle>
+            <form onSubmit={handleSaveService} className="mt-3 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="group">Groupe</Label>
+                  <Input
+                    id="group"
+                    value={serviceDraft.group_name}
+                    onChange={(e) => setServiceDraft((prev) => ({ ...prev, group_name: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="days">Jours effectués</Label>
+                  <Input
+                    id="days"
+                    type="number"
+                    min={0}
+                    value={serviceDraft.service_days}
+                    onChange={(e) => setServiceDraft((prev) => ({ ...prev, service_days: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="focus">Domaine de service</Label>
+                <select
+                  id="focus"
+                  value={serviceDraft.focus}
+                  onChange={(e) => setServiceDraft((prev) => ({ ...prev, focus: e.target.value }))}
+                  className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
+                >
+                  {['enseignement', 'accueil', 'louange', 'intercession', 'logistique', 'autre'].map(
+                    (f) => (
+                      <option key={f} value={f}>
+                        {f.charAt(0).toUpperCase() + f.slice(1)}
+                      </option>
+                    )
+                  )}
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="mission">Missions & sorties</Label>
+                <textarea
+                  id="mission"
+                  rows={3}
+                  value={serviceDraft.mission_description}
+                  onChange={(e) =>
+                    setServiceDraft((prev) => ({ ...prev, mission_description: e.target.value }))
+                  }
+                  placeholder="Les missions auxquelles tu as participé cette session…"
+                  className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or focus-visible:outline-none"
+                />
+              </div>
+              <Button type="submit" disabled={serviceSaving}>
+                {serviceSaving ? 'Enregistrement…' : 'Enregistrer'}
+              </Button>
+              {serviceMsg && <p className="text-sm text-olive">{serviceMsg}</p>}
+            </form>
+          </Card>
+        </div>
       )}
 
       {tab === 'revue' && (
@@ -1475,6 +1493,84 @@ export default function StudentDashboard() {
 
       {tab === 'profil' && profile && (
         <div className="space-y-5">
+          {/* Stats Overview */}
+          <Card>
+            <CardTitle>Mes statistiques</CardTitle>
+            <CardDescription className="mt-1 mb-3">
+              Un aperçu rapide de ton parcours dans l'Académie.
+            </CardDescription>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div className="rounded-lg border border-or/20 bg-or/5 p-3 text-center">
+                <p className="text-2xl font-bold text-or">{followedCount}</p>
+                <p className="text-[10px] text-pierre dark:text-slate-500">Cours suivis</p>
+              </div>
+              <div className="rounded-lg border border-olive/20 bg-olive/5 p-3 text-center">
+                <p className="text-2xl font-bold text-olive">{progress?.presenceRate ?? 0}%</p>
+                <p className="text-[10px] text-pierre dark:text-slate-500">Présence</p>
+              </div>
+              <div className="rounded-lg border border-bordeaux/20 bg-bordeaux/5 p-3 text-center">
+                <p className="text-2xl font-bold text-bordeaux dark:text-or">{weeks}</p>
+                <p className="text-[10px] text-pierre dark:text-slate-500">Semaines streak</p>
+              </div>
+              <div className="rounded-lg border border-or/20 bg-or/5 p-3 text-center">
+                <p className="text-2xl font-bold text-or">{progress?.averageGrade ?? '—'}</p>
+                <p className="text-[10px] text-pierre dark:text-slate-500">Moyenne</p>
+              </div>
+              <div className="rounded-lg border border-olive/20 bg-olive/5 p-3 text-center">
+                <p className="text-2xl font-bold text-olive">{earnedBadges.length}</p>
+                <p className="text-[10px] text-pierre dark:text-slate-500">Badges</p>
+              </div>
+              <div className="rounded-lg border border-bordeaux/20 bg-bordeaux/5 p-3 text-center">
+                <p className="text-2xl font-bold text-bordeaux dark:text-or">{progress?.resumeRate ?? 0}%</p>
+                <p className="text-[10px] text-pierre dark:text-slate-500">Résumés</p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Timeline */}
+          {followed.length > 0 && (
+            <Card>
+              <CardTitle>Mon parcours</CardTitle>
+              <CardDescription className="mt-1 mb-3">
+                Ta progression chronologique dans l'Académie.
+              </CardDescription>
+              <div className="relative ml-3 border-l-2 border-or/30 pl-6">
+                {followedChronological.map((c, idx) => {
+                  const rev = resumeByCourse.get(c.id)
+                  const hasGrade = rev?.resume.grade != null
+                  const hasBadge = idx < earnedBadges.length
+                  return (
+                    <div key={c.id} className="relative mb-6 last:mb-0">
+                      <div className={`absolute -left-[31px] top-0 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white text-[10px] ${
+                        hasGrade ? 'bg-olive text-white' : 'bg-or text-bordeaux'
+                      }`}>
+                        {hasGrade ? '✓' : idx + 1}
+                      </div>
+                      <p className="text-sm font-semibold text-bordeaux dark:text-slate-100">
+                        Semaine {c.week} — {c.title}
+                      </p>
+                      {c.session_date && (
+                        <p className="text-[11px] text-pierre dark:text-slate-500">{formatDateFR(c.session_date)}</p>
+                      )}
+                      <div className="mt-1 flex flex-wrap gap-2 text-[10px]">
+                        {hasGrade && (
+                          <span className="rounded-full bg-olive/10 px-2 py-0.5 font-medium text-olive">
+                            Note: {rev!.resume.grade}/20
+                          </span>
+                        )}
+                        {rev?.resume.content && (
+                          <span className="rounded-full bg-bordeaux/10 px-2 py-0.5 font-medium text-bordeaux">
+                            Résumé écrit
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </Card>
+          )}
+
           <Card>
             <CardTitle>Paramètres du profil</CardTitle>
             <CardDescription className="mt-2 mb-4">

@@ -75,8 +75,10 @@ import { getCurrentProfile, signOut } from '@/lib/auth'
 import { exportToCSV, exportToPDF, exportStudentBulletinPDF, ExportRow } from '@/lib/export'
 import { FieldError } from '@/components/ui/Input'
 import { MessagingPanel } from '@/components/MessagingPanel'
+import { QuizTab } from '@/components/QuizTab'
+import { getAnnouncements, createAnnouncement, Announcement } from '@/lib/courses'
 
-type Section = 'vue' | 'classes' | 'cours' | 'notation' | 'etudiants' | 'moderateurs' | 'versets' | 'messagerie' | 'export'
+type Section = 'vue' | 'classes' | 'cours' | 'notation' | 'etudiants' | 'moderateurs' | 'versets' | 'messagerie' | 'export' | 'quiz' | 'annonces'
 
 const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
 
@@ -90,6 +92,8 @@ const sectionIcons: Record<Section, React.ReactNode> = {
   versets: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg>,
   messagerie: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
   export: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+  quiz: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+  annonces: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
 }
 
 interface AdminProfile {
@@ -698,6 +702,8 @@ export default function AdminDashboard() {
     ['moderateurs', 'Modérateurs'],
     ['versets', 'Versets'],
     ['messagerie', 'Messagerie'],
+    ['quiz', 'Quiz'],
+    ['annonces', 'Annonces'],
     ['export', 'Export'],
   ]
 
@@ -1507,6 +1513,17 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {section === 'quiz' && (
+        <QuizTab courses={courses} />
+      )}
+
+      {section === 'annonces' && (
+        <AdminAnnoncesTab
+          classes={classes}
+          allCourses={courses}
+        />
+      )}
+
       {section === 'export' && (
         <Card>
           <CardTitle>Export des données</CardTitle>
@@ -1997,6 +2014,121 @@ function StatCell({ label, value }: { label: string; value: string }) {
     <div className="glass-card !p-3 text-center">
       <dt className="text-xs text-pierre dark:text-slate-400">{label}</dt>
       <dd className="font-display text-lg text-bordeaux dark:text-or">{value}</dd>
+    </div>
+  )
+}
+
+function AdminAnnoncesTab({ classes, allCourses }: { classes: ClassRow[]; allCourses: Course[] }) {
+  const [selectedClassId, setSelectedClassId] = useState(classes[0]?.id ?? '')
+  const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
+  const [annonces, setAnnonces] = useState<Announcement[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!selectedClassId) { setLoading(false); return }
+    setLoading(true)
+    getAnnouncements(selectedClassId)
+      .then(setAnnonces)
+      .catch(() => setAnnonces([]))
+      .finally(() => setLoading(false))
+  }, [selectedClassId])
+
+  async function handleCreate(e: FormEvent) {
+    e.preventDefault()
+    if (!selectedClassId || !title.trim() || !content.trim()) return
+    setSaving(true)
+    setMsg(null)
+    try {
+      await createAnnouncement(selectedClassId, title.trim(), content.trim())
+      setTitle('')
+      setContent('')
+      setMsg('Annonce publiée.')
+      toast('Annonce publiée.')
+      playSuccess()
+      const data = await getAnnouncements(selectedClassId)
+      setAnnonces(data)
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'Erreur lors de la publication.')
+      toastError('Erreur.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="space-y-5">
+      <Card>
+        <CardTitle>Publier une annonce</CardTitle>
+        <CardDescription className="mt-1 mb-3">
+          Envoie une annonce à tous les étudiants d'une classe.
+        </CardDescription>
+        <form onSubmit={handleCreate} className="space-y-3">
+          <div>
+            <Label>Classe</Label>
+            <select
+              value={selectedClassId}
+              onChange={(e) => setSelectedClassId(e.target.value)}
+              className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or focus-visible:outline-none"
+            >
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label>Titre</Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Titre de l'annonce..."
+              required
+            />
+          </div>
+          <div>
+            <Label>Contenu</Label>
+            <textarea
+              rows={4}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Ton message pour la classe..."
+              className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or focus-visible:outline-none"
+              required
+            />
+          </div>
+          <Button type="submit" disabled={saving}>
+            {saving ? 'Publication...' : 'Publier l\'annonce'}
+          </Button>
+          {msg && <p className="text-sm text-olive">{msg}</p>}
+        </form>
+      </Card>
+
+      <Card>
+        <CardTitle>Annonces publiées</CardTitle>
+        <CardDescription className="mt-1 mb-3">
+          Historique des annonces pour la classe sélectionnée.
+        </CardDescription>
+        {loading ? (
+          <p className="text-sm text-pierre">Chargement...</p>
+        ) : annonces.length === 0 ? (
+          <p className="text-sm text-pierre">Aucune annonce pour cette classe.</p>
+        ) : (
+          <ul className="space-y-3">
+            {annonces.map((a) => (
+              <li key={a.id} className="rounded-card border border-pierre/15 p-4">
+                <p className="font-medium text-bordeaux">{a.title}</p>
+                <p className="mt-1 text-sm text-pierre whitespace-pre-wrap">{a.content}</p>
+                <p className="mt-2 text-[11px] text-pierre">
+                  {a.moderator?.first_name} {a.moderator?.last_name} —{' '}
+                  {new Date(a.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
     </div>
   )
 }

@@ -12,6 +12,8 @@ import {
   createConversation,
   subscribeToMessages,
   getAvailableContacts,
+  updateMyStatus,
+  getUserOnlineStatus,
   Conversation,
   Message,
   Contact,
@@ -42,6 +44,7 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
   const [isTyping, setIsTyping] = useState(false)
   const [replyTo, setReplyTo] = useState<Message | null>(null)
   const [contextMenu, setContextMenu] = useState<{ msg: Message; x: number; y: number } | null>(null)
+  const [otherOnline, setOtherOnline] = useState<boolean | null>(null)
 
   // Load conversations
   useEffect(() => {
@@ -63,6 +66,32 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
       )
     }).catch(() => {})
   }, [activeId])
+
+  // Reset message input when switching conversations
+  useEffect(() => {
+    setNewMsg('')
+    setReplyTo(null)
+  }, [activeId])
+
+  // Check online status of other user
+  useEffect(() => {
+    if (!activeId) { setOtherOnline(null); return }
+    const convo = conversations.find((c) => c.id === activeId)
+    const otherId = convo?.other_user?.id
+    if (!otherId) { setOtherOnline(null); return }
+    let cancelled = false
+    getUserOnlineStatus(otherId).then((status) => {
+      if (!cancelled) setOtherOnline(status?.is_online ?? null)
+    }).catch(() => { if (!cancelled) setOtherOnline(null) })
+    return () => { cancelled = true }
+  }, [activeId, conversations])
+
+  // Update own status every 30s
+  useEffect(() => {
+    updateMyStatus().catch(() => {})
+    const interval = setInterval(() => { updateMyStatus().catch(() => {}) }, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Load messages + subscribe to realtime
   useEffect(() => {
@@ -195,7 +224,7 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
     setTimeout(() => messagesEnd.current?.scrollIntoView({ behavior: 'smooth' }), 50)
 
     try {
-      const realMsg = await sendMessage(activeId, text, replyTo?.id)
+      const realMsg = await sendMessage(activeId, text, replyTo?.id, clientId)
       // Replace optimistic with real message
       setMessages((prev) =>
         prev.map((m) => m.client_id === clientId ? { ...realMsg, status: 'sent' } : m)
@@ -440,7 +469,7 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
                 <p className="text-sm font-semibold text-bordeaux dark:text-slate-100">
                   {activeConvo?.other_user?.first_name} {activeConvo?.other_user?.last_name}
                 </p>
-                <p className="text-[10px] text-olive">En ligne</p>
+                <p className="text-[10px] text-olive">{otherOnline === true ? 'En ligne' : otherOnline === false ? 'Hors ligne' : ''}</p>
               </div>
             </div>
 

@@ -4,7 +4,6 @@ import { Card, CardTitle, CardDescription } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input, Label, FieldError } from '@/components/ui/Input'
 import { SidebarLayout } from '@/components/ui/SidebarLayout'
-import { QuizTab } from '@/components/QuizTab'
 import { BulletinPDF } from '@/components/BulletinPDF'
 import { Logo } from '@/components/Logo'
 import { Avatar } from '@/components/Avatar'
@@ -56,7 +55,7 @@ import { adminCreateUser } from '@/lib/courses'
 import { playClick } from '@/lib/sound'
 import { toast, toastError } from '@/components/ui/Toast'
 
-type Tab = 'programme' | 'rapport' | 'passage' | 'suivi' | 'annonces' | 'messagerie' | 'moderateurs' | 'quiz' | 'inscription' | 'fiche'
+type Tab = 'programme' | 'rapport' | 'passage' | 'suivi' | 'annonces' | 'messagerie' | 'moderateurs' | 'inscription' | 'fiche'
 
 const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
 
@@ -68,7 +67,6 @@ const tabIcons: Record<Tab, React.ReactNode> = {
   annonces: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
   messagerie: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
   moderateurs: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-  quiz: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
   inscription: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>,
   fiche: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
 }
@@ -162,7 +160,6 @@ export default function ModeratorDashboard() {
     ['annonces', 'Annonces'],
     ['messagerie', 'Messagerie'],
     ['moderateurs', 'Modérateurs'],
-    ['quiz', 'Quiz (QCM)'],
   ]
 
   return (
@@ -253,10 +250,6 @@ export default function ModeratorDashboard() {
       )}
       {tab === 'moderateurs' && (
         <ModeratorsTab classById={classById} />
-      )}
-
-      {tab === 'quiz' && (
-        <QuizTab courses={courses} />
       )}
 
       {tab === 'inscription' && (
@@ -499,7 +492,7 @@ function AnnoncesTab({
 
   const manageableClasses = ownClassIds.length > 0
     ? classes.filter((c) => ownClassIds.includes(c.id))
-    : classes
+    : []
 
   useEffect(() => {
     if (!classId && manageableClasses.length > 0) setClassId(manageableClasses[0].id)

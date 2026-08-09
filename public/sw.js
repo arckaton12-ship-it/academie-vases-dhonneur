@@ -1,6 +1,6 @@
-const CACHE_NAME = 'academie-vh-v2'
-const STATIC_CACHE = 'academie-vh-static-v2'
-const DYNAMIC_CACHE = 'academie-vh-dynamic-v2'
+const CACHE_NAME = 'academie-vh-v3'
+const STATIC_CACHE = 'academie-vh-static-v3'
+const DYNAMIC_CACHE = 'academie-vh-dynamic-v3'
 const COURSE_CACHE = 'academie-vh-courses-v1'
 
 const STATIC_ASSETS = [
@@ -34,7 +34,7 @@ self.addEventListener('activate', (event) => {
 
 // Push notification handler
 self.addEventListener('push', (event) => {
-  let data = { title: 'Academie VH', body: 'Nouvelle notification', icon: '/logo.png', tag: 'default' }
+  let data = { title: 'Académie VH', body: 'Nouvelle notification', icon: '/logo.png', tag: 'default' }
   if (event.data) {
     try { data = { ...data, ...event.data.json() } } catch { data.body = event.data.text() }
   }
@@ -102,14 +102,17 @@ self.addEventListener('fetch', (event) => {
     url.pathname.endsWith('.png') ||
     url.pathname.endsWith('.jpg') ||
     url.pathname.endsWith('.svg') ||
-    url.pathname.endsWith('.woff2')
+    url.pathname.endsWith('.woff2') ||
+    url.pathname.endsWith('.ico')
   ) {
     event.respondWith(
       caches.match(request).then((cached) => {
         if (cached) return cached
         return fetch(request).then((response) => {
-          const clone = response.clone()
-          caches.open(STATIC_CACHE).then((cache) => cache.put(request, clone))
+          if (response.ok) {
+            const clone = response.clone()
+            caches.open(STATIC_CACHE).then((cache) => cache.put(request, clone))
+          }
           return response
         })
       })
@@ -137,7 +140,6 @@ self.addEventListener('fetch', (event) => {
 // Listen for messages from the app
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'CACHE_COURSES') {
-    // Cache course data for offline access
     caches.open(COURSE_CACHE).then((cache) => {
       cache.put('/api/courses', new Response(JSON.stringify(event.data.courses), {
         headers: { 'Content-Type': 'application/json' }
