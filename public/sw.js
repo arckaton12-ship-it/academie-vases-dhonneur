@@ -1,6 +1,7 @@
-const CACHE_NAME = 'academie-vh-v1'
-const STATIC_CACHE = 'academie-vh-static-v1'
-const DYNAMIC_CACHE = 'academie-vh-dynamic-v1'
+const CACHE_NAME = 'academie-vh-v2'
+const STATIC_CACHE = 'academie-vh-static-v2'
+const DYNAMIC_CACHE = 'academie-vh-dynamic-v2'
+const COURSE_CACHE = 'academie-vh-courses-v1'
 
 const STATIC_ASSETS = [
   '/',
@@ -23,12 +24,49 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys
-          .filter((key) => key !== STATIC_CACHE && key !== DYNAMIC_CACHE)
+          .filter((key) => key !== STATIC_CACHE && key !== DYNAMIC_CACHE && key !== COURSE_CACHE)
           .map((key) => caches.delete(key))
       )
     })
   )
   self.clients.claim()
+})
+
+// Push notification handler
+self.addEventListener('push', (event) => {
+  let data = { title: 'Academie VH', body: 'Nouvelle notification', icon: '/logo.png', tag: 'default' }
+  if (event.data) {
+    try { data = { ...data, ...event.data.json() } } catch { data.body = event.data.text() }
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: data.icon || '/logo.png',
+      badge: '/logo.png',
+      tag: data.tag,
+      renotify: true,
+      vibrate: [100, 50, 100],
+      data: data,
+      actions: data.actions || [],
+    })
+  )
+})
+
+// Notification click handler
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = event.notification.data?.url || '/etudiant/tableau-de-bord'
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          client.navigate(url)
+          return client.focus()
+        }
+      }
+      return self.clients.openWindow(url)
+    })
+  )
 })
 
 self.addEventListener('fetch', (event) => {
@@ -56,7 +94,7 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // Cache-first for static assets (JS, CSS, images)
+  // Cache-first for static assets
   if (
     url.pathname.startsWith('/assets/') ||
     url.pathname.endsWith('.js') ||
@@ -94,4 +132,19 @@ self.addEventListener('fetch', (event) => {
       return cached || fetchPromise
     })
   )
+})
+
+// Listen for messages from the app
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'CACHE_COURSES') {
+    // Cache course data for offline access
+    caches.open(COURSE_CACHE).then((cache) => {
+      cache.put('/api/courses', new Response(JSON.stringify(event.data.courses), {
+        headers: { 'Content-Type': 'application/json' }
+      }))
+    })
+  }
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting()
+  }
 })

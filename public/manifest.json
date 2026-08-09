@@ -1,7 +1,7 @@
 {
-  "name": "Académie Vases d'Honneur",
-  "short_name": "Académie VH",
-  "description": "École de disciples — Assemblée Eaux Paisibles de Yaoundé",
+  "name": "Academie Vases d'Honneur",
+  "short_name": "Academie VH",
+  "description": "Ecole de disciples — Assemblee Eaux Paisibles de Yaounde",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FFFFFF",
@@ -9,6 +9,20 @@
   "orientation": "portrait-primary",
   "lang": "fr",
   "categories": ["education", "religious"],
+  "shortcuts": [
+    {
+      "name": "Mes Cours",
+      "short_name": "Cours",
+      "url": "/etudiant/tableau-de-bord",
+      "icons": [{ "src": "/logo.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Messages",
+      "short_name": "Messages",
+      "url": "/etudiant/tableau-de-bord",
+      "icons": [{ "src": "/logo.png", "sizes": "96x96" }]
+    }
+  ],
   "icons": [
     {
       "src": "/logo.png",
@@ -23,6 +37,5 @@
       "purpose": "any"
     }
   ],
-  "screenshots": [],
   "prefer_related_applications": false
 }

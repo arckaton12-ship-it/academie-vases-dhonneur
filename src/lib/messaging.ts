@@ -2,7 +2,7 @@ import { supabase } from './supabase'
 
 export interface Conversation {
   id: string
-  type: 'MODERATEUR_ETUDIANT' | 'MODERATEUR_MODERATEUR'
+  type: 'DIRECT' | 'MODERATEUR_ETUDIANT' | 'MODERATEUR_MODERATEUR'
   participant_1: string
   participant_2: string
   created_at: string
@@ -18,6 +18,22 @@ export interface Message {
   content: string
   sent_at: string
   read_at: string | null
+  client_id?: string
+  status?: 'sending' | 'sent' | 'delivered' | 'read' | 'failed'
+}
+
+// Rate limiter: max 1 message per 500ms per conversation
+const lastSendTimes: Record<string, number> = {}
+function canSend(conversationId: string): boolean {
+  const now = Date.now()
+  const last = lastSendTimes[conversationId] ?? 0
+  if (now - last < 500) return false
+  lastSendTimes[conversationId] = now
+  return true
+}
+
+function generateClientId(): string {
+  return `cid_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
 }
 
 export async function getConversations(): Promise<Conversation[]> {
@@ -80,24 +96,41 @@ export async function getMessages(conversationId: string): Promise<Message[]> {
     .select('*')
     .eq('conversation_id', conversationId)
     .order('sent_at', { ascending: true })
+    .limit(200)
   if (error) throw error
-  return (data ?? []) as Message[]
+  return (data ?? []).map((m) => ({ ...m, status: m.read_at ? 'read' : 'delivered' } as Message))
 }
 
-export async function sendMessage(conversationId: string, content: string): Promise<Message> {
+export async function sendMessage(
+  conversationId: string,
+  content: string,
+  replyToId?: string
+): Promise<Message> {
   const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) throw new Error('Non authentifié')
+  if (!userData.user) throw new Error('Non authentifie')
+
+  if (!canSend(conversationId)) {
+    throw new Error('Envoi trop rapide. Attends un instant.')
+  }
+
+  const clientId = generateClientId()
+
+  const insertData: Record<string, unknown> = {
+    conversation_id: conversationId,
+    sender_id: userData.user.id,
+    content: content.trim(),
+    client_id: clientId,
+  }
+  if (replyToId) insertData.reply_to_id = replyToId
+
   const { data, error } = await supabase
     .from('messages')
-    .insert({
-      conversation_id: conversationId,
-      sender_id: userData.user.id,
-      content: content.trim(),
-    })
+    .insert(insertData)
     .select()
     .single()
   if (error) throw error
-  return data as Message
+
+  return { ...data, status: 'sent' } as Message
 }
 
 export async function markAsRead(conversationId: string): Promise<void> {
@@ -114,14 +147,24 @@ export async function markAsRead(conversationId: string): Promise<void> {
 
 export async function createConversation(
   participantId: string,
-  type: 'MODERATEUR_ETUDIANT' | 'MODERATEUR_MODERATEUR'
+  _type?: string
 ): Promise<Conversation> {
   const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) throw new Error('Non authentifié')
+  if (!userData.user) throw new Error('Non authentifie')
+
+  // Check for existing conversation first
+  const { data: existing } = await supabase
+    .from('conversations')
+    .select('*')
+    .or(`and(participant_1.eq.${userData.user.id},participant_2.eq.${participantId}),and(participant_1.eq.${participantId},participant_2.eq.${userData.user.id})`)
+    .maybeSingle()
+
+  if (existing) return existing as Conversation
+
   const { data, error } = await supabase
     .from('conversations')
     .insert({
-      type,
+      type: 'DIRECT',
       participant_1: userData.user.id,
       participant_2: participantId,
     })
@@ -146,7 +189,7 @@ export function subscribeToMessages(
         filter: `conversation_id=eq.${conversationId}`,
       },
       (payload) => {
-        callback(payload.new as Message)
+        callback({ ...payload.new as Message, status: 'delivered' })
       }
     )
     .subscribe()
@@ -202,6 +245,7 @@ export async function getAvailableContacts(): Promise<Contact[]> {
     return (data ?? []) as Contact[]
   }
 
+  // Admin: all active users except self
   const { data } = await supabase
     .from('profiles')
     .select('id, first_name, last_name, avatar_url, role')
