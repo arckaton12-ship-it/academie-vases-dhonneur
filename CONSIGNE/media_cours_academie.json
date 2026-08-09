@@ -1,0 +1,403 @@
+{
+  "source": "https://sites.google.com/view/academie-eauxpaisibles",
+  "note": "Vidéos = liens YouTube utilisables directement en embed. Audios = liens Google Drive à TÉLÉCHARGER puis RÉUPLOADER dans le bucket Supabase 'cours' (Drive n'est pas fait pour du streaming direct en prod).",
+  "tronc_commun": [
+    {
+      "cours_num": 1,
+      "titre": "La vision des églises Vases d'Honneur",
+      "video_principale": "https://www.youtube.com/watch?v=plSLMiajkTg",
+      "parties": [
+        {
+          "nom": "Introduction",
+          "video_url": "https://www.youtube.com/watch?v=P0gXkvAr08c",
+          "audio_drive_url": "https://drive.google.com/file/d/1x5_tAySk_PIYAEX3DOMvawO6TQFdvCCE/view"
+        },
+        {
+          "nom": "Mission & Vision",
+          "video_url": "https://www.youtube.com/watch?v=e8rBopM00OA",
+          "audio_drive_url": "https://drive.google.com/file/d/1p3fJG-M4QIQtbVKT1YCyp7oXO_3MrDsS/view"
+        },
+        {
+          "nom": "Objectifs & Héritage",
+          "video_url": null,
+          "audio_drive_url": "https://drive.google.com/file/d/1nmnjrm6brgEVrkWvSK1cH7Rs_6zYlqyz/view"
+        }
+      ]
+    },
+    {
+      "cours_num": 2,
+      "titre": "Servir Dieu",
+      "video_principale": "https://www.youtube.com/watch?v=jHQjNi2G_OQ",
+      "parties": [
+        {
+          "nom": "Partie 1",
+          "video_url": "https://www.youtube.com/watch?v=8LMaInr0ozc",
+          "audio_drive_url": "https://drive.google.com/file/d/1cP3FPWsRB5g37lhg1GVZDV8epD0MtTIf/view"
+        },
+        {
+          "nom": "Partie 2",
+          "video_url": "https://www.youtube.com/watch?v=eVwEl532Uqk",
+          "audio_drive_url": "https://drive.google.com/file/d/10yAzXoDE6GlnqzbIIohVc590_I7_MVTf/view"
+        },
+        {
+          "nom": "Partie 3",
+          "video_url": "https://www.youtube.com/watch?v=1Kt-zhkNTnk",
+          "audio_drive_url": "https://drive.google.com/file/d/1_Be1aQ5dfF2XMbmR74PJ5uRW301fEJTQ/view"
+        },
+        {
+          "nom": "Partie 4",
+          "video_url": null,
+          "audio_drive_url": "https://drive.google.com/file/d/1UXdTwPiGg9UKwvJ3pNE4OtLsDCTlbv7_/view"
+        }
+      ]
+    },
+    {
+      "cours_num": 3,
+      "titre": "La méditation de la Bible & la Bible",
+      "video_principale": "https://www.youtube.com/watch?v=0HplIYNz5vg",
+      "parties": [
+        {
+          "nom": "La Méditation de la Bible",
+          "video_url": null,
+          "audio_drive_url": "https://drive.google.com/file/d/1MjpBK0LqnrBvvHhMLV_d3rsVoR2htGdv/view"
+        },
+        {
+          "nom": "La Bible - Partie 1",
+          "video_url": null,
+          "audio_drive_url": "https://drive.google.com/file/d/1SBxIU0xLLpiZX_333T2YEX381GVre-sJ/view"
+        },
+        {
+          "nom": "La Bible - Partie 2",
+          "video_url": null,
+          "audio_drive_url": "https://drive.google.com/file/d/1guEogL-mGWYpVH_O-6BzC6LoL0UHPBAj/view"
+        }
+      ]
+    },
+    {
+      "cours_num": 4,
+      "titre": "L'Évangélisation",
+      "video_principale": "https://www.youtube.com/watch?v=mG8wX-w4Nz4",
+      "parties": [
+        {
+          "nom": "L'évangélisation",
+          "video_url": null,
+          "audio_drive_url": "https://drive.google.com/file/d/1vl2QuUbxWWJgny9thy5ExZdQDsrUBz_I/view"
+        }
+      ]
+    }
+  ],
+  "classe_1_specifique": [
+    {
+      "cours_num": 5,
+      "titre": "La Croix 1 & 2",
+      "video_principale": "https://www.youtube.com/watch?v=FMjghc0lTSY",
+      "parties": [
+        {
+          "nom": "La Croix - Partie 1",
+          "video_url": "https://www.youtube.com/watch?v=-Ve378589ck",
+          "audio_drive_url": "https://drive.google.com/file/d/1IHLIcfzLug19bB_1fM-GsAfg9nzWfIxo/view"
+        },
+        {
+          "nom": "La Croix - Partie 2",
+          "video_url": null,
+          "audio_drive_url": "https://drive.google.com/file/d/1mvBYr1sMMPqp2uGeOlb5yvZAHgYh5b_D/view"
+        }
+      ]
+    },
+    {
+      "cours_num": 6,
+      "titre": "La Nouvelle Création",
+      "video_principale": "https://www.youtube.com/watch?v=6IM_s_n7GU8",
+      "parties": [
+        {
+          "nom": "Partie 1",
+          "video_url": "https://www.youtube.com/watch?v=Y2uHmbLqHuQ",
+          "audio_drive_url": "https://drive.google.com/file/d/1Mo94nGHFogCj-fuaiJUnT2rrgwd3bpAO/view"
+        },
+        {
+          "nom": "Partie 2",
+          "video_url": null,
+          "audio_drive_url": "https://drive.google.com/file/d/1nkJ2lxwkBSDbjeONkACaarWe-kwcCVD3/view"
+        }
+      ]
+    },
+    {
+      "cours_num": 7,
+      "titre": "Le Salut",
+      "video_principale": "https://www.youtube.com/watch?v=5-KjVUFVH18",
+      "parties": [
+        {
+          "nom": "Partie 1",
+          "video_url": "https://www.youtube.com/watch?v=_iHTtnnURIE",
+          "audio_drive_url": "https://drive.google.com/file/d/1tT0L1psPA1fovfJe23itsbAxYgN2MHVZ/view"
+        },
+        {
+          "nom": "Partie 2",
+          "video_url": "https://www.youtube.com/watch?v=rjNjudcbJhc",
+          "audio_drive_url": "https://drive.google.com/file/d/1DZOEYJnsW8vzgD4MlGXgrUHPeO0Nde7R/view"
+        },
+        {
+          "nom": "Partie 3",
+          "video_url": "https://www.youtube.com/watch?v=p2lu3ZAvFIs",
+          "audio_drive_url": "https://drive.google.com/file/d/10ZzuLBOz4oZpzavajuHaSv4tg2phqoaD/view"
+        },
+        {
+          "nom": "Partie 4",
+          "video_url": null,
+          "audio_drive_url": "https://drive.google.com/file/d/1n48jFZ2HO4yE1icm-G_9Wpp9mSKuEFI_/view"
+        }
+      ]
+    },
+    {
+      "cours_num": 8,
+      "titre": "Le péché et ses conséquences",
+      "video_principale": "https://www.youtube.com/watch?v=G2VuVRbvpw4",
+      "parties": [
+        {
+          "nom": "Le péché et ses conséquences",
+          "video_url": null,
+          "audio_drive_url": "https://drive.google.com/file/d/1NactvCjKLg_8OGGqiJyHtQGZmiBQhQlc/view"
+        }
+      ]
+    },
+    {
+      "cours_num": 9,
+      "titre": "La vie de sanctification - Niveau 1",
+      "video_principale": "https://www.youtube.com/watch?v=yU6JipfABMQ",
+      "parties": [
+        {
+          "nom": "Partie 1",
+          "video_url": "https://www.youtube.com/watch?v=r8E6aEw6LIc",
+          "audio_drive_url": "https://drive.google.com/file/d/1nPZxYdLUZwcj8XaLi-Qdj-8bw1tQ1QGI/view"
+        },
+        {
+          "nom": "Partie 2",
+          "video_url": "https://www.youtube.com/watch?v=zE7SK8zwKK8",
+          "audio_drive_url": "https://drive.google.com/file/d/15PPjLQLtjnO2UiEqbuveFbuOPEoL0svQ/view"
+        },
+        {
+          "nom": "Partie 3",
+          "video_url": null,
+          "audio_drive_url": "https://drive.google.com/file/d/1ntaUq-CO0a_jTlyAIY1d0rAqz3EgaiWs/view"
+        }
+      ]
+    },
+    {
+      "cours_num": 10,
+      "titre": "La Trinité & le Saint-Esprit",
+      "video_principale": "https://www.youtube.com/watch?v=LTAnt60Rl2s",
+      "parties": [
+        {
+          "nom": "La Trinité",
+          "video_url": null,
+          "audio_drive_url": "https://drive.google.com/file/d/1kspeoU8c6u14AcSMuCF41AzKJvgefhV5/view"
+        },
+        {
+          "nom": "Marcher par le Saint-Esprit - Partie 1",
+          "video_url": null,
+          "audio_drive_url": "https://drive.google.com/file/d/1yYDq40-EOZoa9lWgRD_hEWlDYBapm1ja/view"
+        },
+        {
+          "nom": "Marcher par le Saint-Esprit - Partie 2",
+          "video_url": null,
+          "audio_drive_url": "https://drive.google.com/file/d/1fknpfq53a8IjZeH3AgtpTHnNQaK8mYzz/view"
+        },
+        {
+          "nom": "Marcher par le Saint-Esprit - Partie 3",
+          "video_url": null,
+          "audio_drive_url": "https://drive.google.com/file/d/1rXYJqhCLEgiiPPDdcn4Zaec1j8XvfryO/view"
+        },
+        {
+          "nom": "Marcher par le Saint-Esprit - Partie 4",
+          "video_url": null,
+          "audio_drive_url": "https://drive.google.com/file/d/1b2NOnzlNSubDOdUrirGpswxHiEjTVhM3/view"
+        }
+      ]
+    }
+  ],
+  "classe_2": [
+    {
+      "cours_num": 5,
+      "titre": "Les fausses prophéties et les fausses doctrines",
+      "video_principale": "https://www.youtube.com/watch?v=2UvhiGy4XQE",
+      "parties": [
+        {
+          "nom": "Partie 1",
+          "video_url": "https://www.youtube.com/watch?v=K5xmmVUHg_c",
+          "audio_drive_url": null
+        },
+        {
+          "nom": "Partie 2",
+          "video_url": "https://www.youtube.com/watch?v=MrNgHAGGX4Q",
+          "audio_drive_url": null
+        },
+        {
+          "nom": "Partie 3",
+          "video_url": "https://www.youtube.com/watch?v=Zje2mbvfyUI",
+          "audio_drive_url": null
+        },
+        {
+          "nom": "Partie 4",
+          "video_url": "https://www.youtube.com/watch?v=BGVIhS6a5y4",
+          "audio_drive_url": null
+        },
+        {
+          "nom": "Partie 5",
+          "video_url": "https://www.youtube.com/watch?v=FqSUp6iuhQE",
+          "audio_drive_url": null
+        },
+        {
+          "nom": "Partie 6",
+          "video_url": "https://www.youtube.com/watch?v=v_9YyXTUhJE",
+          "audio_drive_url": null
+        },
+        {
+          "nom": "Partie 7",
+          "video_url": "https://www.youtube.com/watch?v=XIT-Vc-lKvg",
+          "audio_drive_url": null
+        },
+        {
+          "nom": "Partie 8",
+          "video_url": "https://www.youtube.com/watch?v=XdVYVZNqu6o",
+          "audio_drive_url": null
+        },
+        {
+          "nom": "Partie 9",
+          "video_url": "https://www.youtube.com/watch?v=XzohSPv911k",
+          "audio_drive_url": null
+        }
+      ]
+    },
+    {
+      "cours_num": 6,
+      "titre": "La vie de prière",
+      "video_principale": "https://www.youtube.com/watch?v=IEwu7DExxS4",
+      "parties": []
+    },
+    {
+      "cours_num": 7,
+      "titre": "L'Amour - Niveau 1",
+      "video_principale": "https://www.youtube.com/watch?v=q559A0aFybQ",
+      "parties": []
+    },
+    {
+      "cours_num": 8,
+      "titre": "Les dîmes et les offrandes",
+      "video_principale": "https://www.youtube.com/watch?v=dH7548qIRkI",
+      "parties": []
+    },
+    {
+      "cours_num": 9,
+      "titre": "La loi de l'honneur",
+      "video_principale": "https://www.youtube.com/watch?v=TtoS2fzkHCM",
+      "parties": []
+    },
+    {
+      "cours_num": 10,
+      "titre": "L'Éternité",
+      "video_principale": "https://www.youtube.com/watch?v=ocxaZKbbi_E",
+      "parties": [
+        {
+          "nom": "Partie 1",
+          "video_url": "https://www.youtube.com/watch?v=81bLcpfJ7hQ",
+          "audio_drive_url": null
+        }
+      ]
+    }
+  ],
+  "classe_3": [
+    {
+      "cours_num": 5,
+      "titre": "La Sanctification - Niveau 2",
+      "video_principale": "https://www.youtube.com/watch?v=XsKO_Lsux_s",
+      "parties": [
+        {
+          "nom": "Partie 1",
+          "video_url": "https://www.youtube.com/watch?v=h2rQgikip20",
+          "audio_drive_url": "https://drive.google.com/file/d/1thgs2XNXOxMflgILBQBhm5oToyLviPZQ/view"
+        },
+        {
+          "nom": "Partie 2",
+          "video_url": null,
+          "audio_drive_url": "https://drive.google.com/file/d/1IpLWb1wxVHGir-LsercdVSm1J0ykUMqb/view"
+        }
+      ]
+    },
+    {
+      "cours_num": 6,
+      "titre": "L'Amour - Niveau 2",
+      "video_principale": "https://www.youtube.com/watch?v=fTYfItmGxxU",
+      "parties": [
+        {
+          "nom": "Partie 1",
+          "video_url": "https://www.youtube.com/watch?v=vsRjyG7oHCM",
+          "audio_drive_url": "https://drive.google.com/file/d/1vk3FChtmsVpLmbJLCNnCdhDdjx9Ng823/view"
+        },
+        {
+          "nom": "Partie 2",
+          "video_url": "https://www.youtube.com/watch?v=tcd-Zb4Iyjo",
+          "audio_drive_url": "https://drive.google.com/file/d/1AekJUxowd0Q1J7D4TCzKIn-jqT1s0CqF/view"
+        },
+        {
+          "nom": "Partie 3",
+          "video_url": null,
+          "audio_drive_url": "https://drive.google.com/file/d/1zNK73p_p42v3Dn2EpcQE0niqq86dm_CQ/view"
+        }
+      ]
+    },
+    {
+      "cours_num": 7,
+      "titre": "La communion fraternelle",
+      "video_principale": "https://www.youtube.com/watch?v=7Zoof_AEy1A",
+      "parties": [
+        {
+          "nom": "La communion fraternelle",
+          "video_url": null,
+          "audio_drive_url": "https://drive.google.com/file/d/163_W26xHAKrdinbp2xOUdEYgd_0nO_tV/view"
+        }
+      ]
+    },
+    {
+      "cours_num": 8,
+      "titre": "La Foi",
+      "video_principale": "https://www.youtube.com/watch?v=0XHzdOKbdzw",
+      "parties": [
+        {
+          "nom": "Partie 1",
+          "video_url": "https://www.youtube.com/watch?v=PwDWl6ScOcI",
+          "audio_drive_url": "https://drive.google.com/file/d/1m1Tc-0vObdh_Sc0bTf_x-ULM8wNuzCtD/view"
+        },
+        {
+          "nom": "Partie 2",
+          "video_url": "https://www.youtube.com/watch?v=hBOfjfLXiEk",
+          "audio_drive_url": "https://drive.google.com/file/d/18rCg9EfYHY5WKdQnFSALJiJ_eig47bFJ/view"
+        },
+        {
+          "nom": "Partie 3",
+          "video_url": "https://www.youtube.com/watch?v=lU0bf1rKw8A",
+          "audio_drive_url": "https://drive.google.com/file/d/1Yg0oB1ePvqqe6wlMUpPVx7m7zo5t4KCH/view"
+        },
+        {
+          "nom": "Partie 4",
+          "video_url": "https://www.youtube.com/watch?v=ynNai8korY4",
+          "audio_drive_url": "https://drive.google.com/file/d/1FsvAzQGdue2wrus_ZWf7NWBtWsQQ11iJ/view"
+        },
+        {
+          "nom": "Partie 5",
+          "video_url": "https://www.youtube.com/watch?v=KQCLFlNWR-I",
+          "audio_drive_url": "https://drive.google.com/file/d/1ECfSFMD9N93mwGO1p6QD9UUBI1nwqy_0/view"
+        },
+        {
+          "nom": "Partie 6",
+          "video_url": "https://www.youtube.com/watch?v=acoUUR9P42Y",
+          "audio_drive_url": "https://drive.google.com/file/d/1xVVIShonXfWSAO_AopqO9b35jGpwraga/view"
+        },
+        {
+          "nom": "Partie 7",
+          "video_url": null,
+          "audio_drive_url": "https://drive.google.com/file/d/1efmWaax5Aic1vW7jY3s9DQ36VpHwmjym/view"
+        }
+      ]
+    }
+  ]
+}

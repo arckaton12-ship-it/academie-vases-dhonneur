@@ -1,4 +1,5 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
+import RegistrationStep2 from '@/components/RegistrationStep2'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardTitle, CardDescription } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -18,6 +19,7 @@ import { VerseReference } from '@/components/VerseReference'
 import { DayAccentBand } from '@/components/DayAccentBand'
 import { NotificationsBell, NotificationRow } from '@/components/NotificationsBell'
 import { getCurrentProfile, signOut, updateProfileInfo } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 import { getQuoteOfDay } from '@/lib/quotes'
 import { playSuccess } from '@/lib/sound'
 import {
@@ -91,6 +93,7 @@ export default function StudentDashboard() {
   const [tab, setTab] = useState<Tab>('academie')
 
   const [profile, setProfile] = useState<ProfileState | null>(null)
+  const [showRegistration, setShowRegistration] = useState(false)
   const [course, setCourse] = useState<Course | null>(null)
   const [streak, setStreak] = useState<Streak | null>(null)
   const [summary, setSummary] = useState('')
@@ -215,6 +218,17 @@ export default function StudentDashboard() {
       try {
         const p = await loadProfile()
         if (!p || cancelled) return
+
+        // Check if registration step 2 is completed
+        const { data: reg } = await supabase
+          .from('academy_registrations')
+          .select('id')
+          .eq('student_id', p.id)
+          .maybeSingle()
+        if (!cancelled && !reg) {
+          setShowRegistration(true)
+        }
+
         const classId = p.class_id
         const [streakData, mySubmissions, allBadges, certs, serviceRec, progressData, notifs, resumeReviews, reflectionsData] =
           await Promise.all([
@@ -608,6 +622,15 @@ export default function StudentDashboard() {
           <div className="h-44 rounded-card bg-pierre/10" />
         </div>
       </div>
+    )
+  }
+
+  if (showRegistration && profile) {
+    return (
+      <RegistrationStep2
+        profile={{ first_name: profile.first_name, last_name: profile.last_name, avatar_url: profile.avatar_url ?? undefined, tribe: profile.tribe ?? undefined, department: profile.department ?? undefined }}
+        onComplete={() => setShowRegistration(false)}
+      />
     )
   }
 

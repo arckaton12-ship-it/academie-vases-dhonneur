@@ -33,6 +33,7 @@ export interface StudentProfile {
   active: boolean
   meditation_grade: number | null
   active_badge: string | null
+  binome_id: string | null
   class?: Pick<ClassRow, 'name' | 'level'> | null
 }
 
@@ -1297,4 +1298,99 @@ export async function adminCreateUser(input: {
     p_department: input.department ?? null,
   })
   if (error) throw error
+}
+
+// ---- Soul Tracking (Fiche de suivi d'âme) ----
+
+export interface SoulTracking {
+  id: string
+  student_id: string
+  moderator_id: string
+  attendance_notes: string | null
+  attendance_rating: number | null
+  meditation_observations: string | null
+  social_context: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface SoulEntry {
+  id: string
+  tracking_id: string
+  moderator_id: string
+  category: 'assiduite' | 'meditation' | 'social' | 'general'
+  content: string
+  created_at: string
+}
+
+export async function getSoulTracking(studentId: string): Promise<SoulTracking | null> {
+  const { data, error } = await supabase
+    .from('soul_tracking')
+    .select('*')
+    .eq('student_id', studentId)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+export async function upsertSoulTracking(
+  studentId: string,
+  fields: Partial<Pick<SoulTracking, 'attendance_notes' | 'attendance_rating' | 'meditation_observations' | 'social_context'>>
+): Promise<SoulTracking> {
+  const { data: userData } = await supabase.auth.getUser()
+  const moderatorId = userData.user?.id
+  if (!moderatorId) throw new Error('Non authentifié')
+
+  const { data: existing } = await supabase
+    .from('soul_tracking')
+    .select('id')
+    .eq('student_id', studentId)
+    .maybeSingle()
+
+  if (existing) {
+    const { data, error } = await supabase
+      .from('soul_tracking')
+      .update({ ...fields, updated_at: new Date().toISOString() })
+      .eq('id', existing.id)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  } else {
+    const { data, error } = await supabase
+      .from('soul_tracking')
+      .insert({ student_id: studentId, moderator_id: moderatorId, ...fields })
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  }
+}
+
+export async function getSoulEntries(trackingId: string): Promise<SoulEntry[]> {
+  const { data, error } = await supabase
+    .from('soul_tracking_entries')
+    .select('*')
+    .eq('tracking_id', trackingId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data ?? []
+}
+
+export async function addSoulEntry(
+  trackingId: string,
+  category: SoulEntry['category'],
+  content: string
+): Promise<SoulEntry> {
+  const { data: userData } = await supabase.auth.getUser()
+  const moderatorId = userData.user?.id
+  if (!moderatorId) throw new Error('Non authentifié')
+
+  const { data, error } = await supabase
+    .from('soul_tracking_entries')
+    .insert({ tracking_id: trackingId, moderator_id: moderatorId, category, content })
+    .select()
+    .single()
+  if (error) throw error
+  return data
 }

@@ -10,6 +10,8 @@ import { SoundToggle } from '@/components/SoundToggle'
 import { SectionWatermark } from '@/components/SectionWatermark'
 import { VerseReference } from '@/components/VerseReference'
 import { DayAccentBand } from '@/components/DayAccentBand'
+import { SoulTrackingTab } from '@/components/SoulTrackingTab'
+import { supabase } from '@/lib/supabase'
 import {
   advanceStudent,
   createCourse,
@@ -55,7 +57,7 @@ import {
 import { getCurrentProfile, signOut } from '@/lib/auth'
 import { exportToCSV, exportToPDF, ExportRow } from '@/lib/export'
 
-type Tab = 'programme' | 'upload' | 'rapport' | 'passage' | 'notation' | 'moderateurs'
+type Tab = 'programme' | 'upload' | 'rapport' | 'passage' | 'notation' | 'moderateurs' | 'suivi'
 
 const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
 
@@ -187,6 +189,7 @@ export default function ModeratorDashboard() {
             ['rapport', 'Rapport'],
             ['passage', 'Passage de classe'],
             ['notation', 'Notation'],
+            ['suivi', "Suivi d'âme"],
             ['moderateurs', 'Modérateurs'],
           ] as [Tab, string][]
         ).map(([key, label]) => (
@@ -242,6 +245,9 @@ export default function ModeratorDashboard() {
       )}
       {tab === 'notation' && (
         <NotationTab onGraded={() => loadAll()} />
+      )}
+      {tab === 'suivi' && (
+        <SoulTrackingTabWrapper />
       )}
       {tab === 'moderateurs' && (
         <ModeratorsTab classById={classById} />
@@ -1202,6 +1208,77 @@ function PassageTab({
             )
           })}
         </ul>
+      )}
+
+      <div className="mt-6 border-t border-pierre/15 pt-4">
+        <h4 className="font-display text-base text-bordeaux">Binômage</h4>
+        <p className="mt-1 text-xs text-pierre">Associe deux étudiants pour qu'ils suivent le parcours ensemble.</p>
+        <div className="mt-3 space-y-2">
+          {students.map(s => {
+            const binome = s.binome_id ? students.find(b => b.id === s.binome_id) : null
+            return (
+              <div key={s.id} className="flex items-center gap-2 rounded-md border border-pierre/10 px-3 py-2">
+                <span className="min-w-0 flex-1 text-sm text-bordeaux">{s.first_name} {s.last_name}</span>
+                <span className="text-xs text-pierre">→</span>
+                <select
+                  value={s.binome_id ?? ''}
+                  onChange={async (e) => {
+                    const newBinomeId = e.target.value || null
+                    await supabase.from('profiles').update({ binome_id: newBinomeId }).eq('id', s.id)
+                    if (newBinomeId) {
+                      await supabase.from('profiles').update({ binome_id: s.id }).eq('id', newBinomeId)
+                    }
+                  }}
+                  className="rounded-md border border-pierre/30 bg-white px-2 py-1 text-xs text-bordeaux"
+                >
+                  <option value="">Aucun binôme</option>
+                  {students.filter(b => b.id !== s.id).map(b => (
+                    <option key={b.id} value={b.id}>{b.first_name} {b.last_name}</option>
+                  ))}
+                </select>
+                {binome && <span className="text-[10px] text-olive">✓ {binome.first_name}</span>}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+function SoulTrackingTabWrapper() {
+  const [students, setStudents] = useState<{ id: string; first_name: string; last_name: string }[]>([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getStudents()
+      .then(s => setStudents(s))
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return <div className="animate-pulse h-20 rounded-card bg-pierre/10" />
+
+  const selected = students.find(s => s.id === selectedId)
+
+  return (
+    <Card>
+      <CardTitle>Suivi d'âme</CardTitle>
+      <CardDescription className="mt-2 mb-4">Sélectionne un étudiant pour consulter/modifier sa fiche de suivi pastoral.</CardDescription>
+
+      <div className="flex flex-wrap gap-2">
+        {students.map(s => (
+          <button key={s.id} onClick={() => setSelectedId(s.id)}
+            className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${selectedId === s.id ? 'bg-or text-white' : 'bg-pierre/10 text-pierre hover:bg-or/20'}`}>
+            {s.first_name} {s.last_name}
+          </button>
+        ))}
+      </div>
+
+      {selected && (
+        <div className="mt-6">
+          <SoulTrackingTab studentId={selected.id} studentName={`${selected.first_name} ${selected.last_name}`} />
+        </div>
       )}
     </Card>
   )

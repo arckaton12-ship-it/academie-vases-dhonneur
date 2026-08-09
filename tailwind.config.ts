@@ -5,12 +5,18 @@ export default {
   theme: {
     extend: {
       colors: {
-        bordeaux: '#5D2A41',
+        bordeaux: '#1B6B63',
         sable: '#D9B89E',
-        olive: '#8A9A5B',
-        parchemin: '#F8F4E9',
-        or: '#CFAF5B',
+        olive: '#14524D',
+        parchemin: '#FFFFFF',
+        or: '#D4A017',
         pierre: '#6B6B6B',
+        teal: '#1B6B63',
+        'teal-dark': '#14524D',
+        'or-light': '#E8C547',
+        rouge: '#A82A2E',
+        'rouge-dark': '#8B2124',
+        blanc: '#FFFFFF',
       },
       fontFamily: {
         display: ['"Playfair Display"', 'serif'],
