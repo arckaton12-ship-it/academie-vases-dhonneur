@@ -2,6 +2,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { Card, CardTitle, CardDescription } from '@/components/ui/Card'
 import { AuthForm } from '@/components/AuthForm'
 import { Logo } from '@/components/Logo'
+import { DarkModeToggle } from '@/components/DarkModeToggle'
 import { SectionWatermark } from '@/components/SectionWatermark'
 import { VerseReference } from '@/components/VerseReference'
 import { getCurrentProfile, UserRole } from '@/lib/auth'
@@ -59,6 +60,9 @@ export function AuthPage({ mode, role, title, redirectTo }: AuthPageProps) {
   return (
     <div className="relative flex min-h-screen items-center justify-center px-6 py-12">
       <SectionWatermark kind="croix" />
+      <div className="absolute right-4 top-4 z-20">
+        <DarkModeToggle />
+      </div>
       <Card className="relative z-10 w-full max-w-md">
         <div className="mb-5 flex items-center gap-3">
           <Logo showText={false} size={32} />

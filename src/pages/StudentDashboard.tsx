@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Card, CardTitle, CardDescription } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input, Label, FieldError } from '@/components/ui/Input'
+import { Sidebar, SidebarItem } from '@/components/ui/Sidebar'
 import { StreakBadge } from '@/components/StreakBadge'
 import { CoursePlayer, downloadCourseMedia } from '@/components/CoursePlayer'
 import { Logo } from '@/components/Logo'
@@ -634,12 +635,27 @@ export default function StudentDashboard() {
     )
   }
 
+  const studentSidebarItems: SidebarItem[] = [
+    { key: 'academie', label: 'Académie', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> },
+    { key: 'devoirs', label: 'Devoirs', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> },
+    { key: 'revue', label: 'Revue', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> },
+    { key: 'service', label: 'Service', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 21h8m-4-4v4m-4-8a4 4 0 0 1-4-4V4h16v5a4 4 0 0 1-4 4h-4z"/><circle cx="12" cy="7" r="3"/></svg> },
+    { key: 'profil', label: 'Profil', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
+  ]
+
   return (
-    <div className="relative mx-auto min-h-screen max-w-2xl px-4 pb-28 pt-6 sm:px-6">
+    <div className="relative min-h-screen md:pl-[68px]">
+      <Sidebar
+        items={studentSidebarItems}
+        activeKey={tab}
+        onSelect={(k) => setTab(k as Tab)}
+        header={<Logo showText={false} size={28} />}
+      />
+      <div className="mx-auto max-w-2xl px-4 pb-12 pt-6 sm:px-6">
       <SectionWatermark
         kind={tab === 'devoirs' || tab === 'revue' ? 'livre' : tab === 'service' ? 'mains' : 'flamme'}
       />
-      <div className="relative z-10">
+      <div className="relative z-10 page-enter">
       <DayAccentBand />
       <header className="mb-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1502,19 +1518,6 @@ export default function StudentDashboard() {
         </div>
       )}
 
-      <nav
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-sable/60 bg-parchemin/95 backdrop-blur"
-        aria-label="Navigation principale"
-      >
-        <div className="mx-auto flex max-w-2xl items-stretch justify-around">
-          <NavItem label="Académie" active={tab === 'academie'} icon="vase" onClick={() => setTab('academie')} />
-          <NavItem label="Devoirs" active={tab === 'devoirs'} icon="parchemin" onClick={() => setTab('devoirs')} />
-          <NavItem label="Revue" active={tab === 'revue'} icon="revue" onClick={() => setTab('revue')} />
-          <NavItem label="Service" active={tab === 'service'} icon="coupe" onClick={() => setTab('service')} />
-          <NavItem label="Profil" active={tab === 'profil'} icon="medaille" onClick={() => setTab('profil')} />
-        </div>
-      </nav>
-
       {badgeHallOpen && (
         <BadgeHall
           progress={badgeProgress}
@@ -1525,15 +1528,16 @@ export default function StudentDashboard() {
         />
       )}
       </div>
+      </div>
     </div>
   )
 }
 
 function ProgressStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-card border border-sable/60 bg-white/50 px-3 py-2">
-      <dt className="text-xs text-pierre">{label}</dt>
-      <dd className="font-display text-xl text-bordeaux">{value}</dd>
+    <div className="glass-card !p-3 text-center">
+      <dt className="text-xs text-pierre dark:text-slate-400">{label}</dt>
+      <dd className="font-display text-xl text-bordeaux dark:text-or">{value}</dd>
     </div>
   )
 }

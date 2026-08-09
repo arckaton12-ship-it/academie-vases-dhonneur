@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Card, CardTitle, CardDescription } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input, Label } from '@/components/ui/Input'
+import { SidebarLayout } from '@/components/ui/SidebarLayout'
 import { Logo } from '@/components/Logo'
 import { Avatar } from '@/components/Avatar'
 import { AvatarUpload } from '@/components/AvatarUpload'
@@ -53,6 +54,14 @@ import { exportToCSV, exportToPDF, exportStudentBulletinPDF, ExportRow } from '@
 type Section = 'vue' | 'classes' | 'etudiants' | 'moderateurs' | 'export'
 
 const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
+
+const sectionIcons: Record<Section, React.ReactNode> = {
+  vue: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
+  classes: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+  etudiants: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>,
+  moderateurs: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  export: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+}
 
 interface AdminProfile {
   id: string
@@ -564,10 +573,22 @@ export default function AdminDashboard() {
 
   const selectedClass = classById.get(selectedClassId)
 
+  const adminSections: [Section, string][] = [
+    ['vue', "Vue d'ensemble"],
+    ['classes', 'Classes'],
+    ['etudiants', 'Étudiants'],
+    ['moderateurs', 'Modérateurs'],
+    ['export', 'Export'],
+  ]
+
   return (
-    <div className="relative mx-auto min-h-screen max-w-4xl px-4 py-8 sm:px-6">
+    <SidebarLayout
+      items={adminSections.map(([k, label]) => ({ key: k, label, icon: sectionIcons[k] }))}
+      activeKey={section}
+      onSelect={(k) => setSection(k as Section)}
+    >
       <SectionWatermark kind="croix" />
-      <div className="relative z-10">
+      <div className="relative z-10 page-enter">
       <DayAccentBand />
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -604,28 +625,6 @@ export default function AdminDashboard() {
           </Button>
         </div>
       </header>
-
-      <nav className="mb-6 flex flex-wrap gap-2 border-b border-sable/60 pb-2" aria-label="Sections">
-        {(
-          [
-            ['vue', 'Vue d\u2019ensemble'],
-            ['classes', 'Classes'],
-            ['etudiants', 'Étudiants'],
-            ['moderateurs', 'Modérateurs'],
-            ['export', 'Export'],
-          ] as [Section, string][]
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => setSection(key)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              section === key ? 'bg-bordeaux text-parchemin' : 'text-pierre hover:bg-bordeaux/5'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
 
       {error && <p className="mb-4 text-sm text-red-700">{error}</p>}
       {accessMsg && <p className="mb-4 text-sm text-olive">{accessMsg}</p>}
@@ -1394,15 +1393,15 @@ export default function AdminDashboard() {
         </Card>
       )}
       </div>
-    </div>
+    </SidebarLayout>
   )
 }
 
 function StatCell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-card border border-sable/60 bg-white/50 px-3 py-2">
-      <dt className="text-xs text-pierre">{label}</dt>
-      <dd className="font-display text-lg text-bordeaux">{value}</dd>
+    <div className="glass-card !p-3 text-center">
+      <dt className="text-xs text-pierre dark:text-slate-400">{label}</dt>
+      <dd className="font-display text-lg text-bordeaux dark:text-or">{value}</dd>
     </div>
   )
 }

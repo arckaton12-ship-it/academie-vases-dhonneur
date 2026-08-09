@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Card, CardTitle, CardDescription } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input, Label, FieldError } from '@/components/ui/Input'
+import { SidebarLayout } from '@/components/ui/SidebarLayout'
 import { Logo } from '@/components/Logo'
 import { Avatar } from '@/components/Avatar'
 import { AvatarUpload } from '@/components/AvatarUpload'
@@ -60,6 +61,16 @@ import { exportToCSV, exportToPDF, ExportRow } from '@/lib/export'
 type Tab = 'programme' | 'upload' | 'rapport' | 'passage' | 'notation' | 'moderateurs' | 'suivi'
 
 const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
+
+const tabIcons: Record<Tab, React.ReactNode> = {
+  programme: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+  upload: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
+  rapport: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
+  passage: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>,
+  notation: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+  suivi: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>,
+  moderateurs: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+}
 
 export default function ModeratorDashboard() {
   const navigate = useNavigate()
@@ -140,10 +151,24 @@ export default function ModeratorDashboard() {
     [classes]
   )
 
+  const modTabs: [Tab, string][] = [
+    ['programme', 'Programme'],
+    ['upload', 'Upload'],
+    ['rapport', 'Rapport'],
+    ['passage', 'Passage'],
+    ['notation', 'Notation'],
+    ['suivi', "Suivi d'âme"],
+    ['moderateurs', 'Modérateurs'],
+  ]
+
   return (
-    <div className="relative mx-auto min-h-screen max-w-4xl px-4 py-8 sm:px-6">
+    <SidebarLayout
+      items={modTabs.map(([k, label]) => ({ key: k, label, icon: tabIcons[k] }))}
+      activeKey={tab}
+      onSelect={(k) => setTab(k as Tab)}
+    >
       <SectionWatermark kind="croix" />
-      <div className="relative z-10">
+      <div className="relative z-10 page-enter">
       <DayAccentBand />
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -180,30 +205,6 @@ export default function ModeratorDashboard() {
           </Button>
         </div>
       </header>
-
-      <nav className="mb-6 flex flex-wrap gap-2 border-b border-sable/60 pb-2">
-        {(
-          [
-            ['programme', 'Programme de modération'],
-            ['upload', 'Upload cours'],
-            ['rapport', 'Rapport'],
-            ['passage', 'Passage de classe'],
-            ['notation', 'Notation'],
-            ['suivi', "Suivi d'âme"],
-            ['moderateurs', 'Modérateurs'],
-          ] as [Tab, string][]
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              tab === key ? 'bg-bordeaux text-parchemin' : 'text-pierre hover:bg-bordeaux/5'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
 
       {pageError && (
         <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -271,7 +272,7 @@ export default function ModeratorDashboard() {
         </Card>
       )}
       </div>
-    </div>
+    </SidebarLayout>
   )
 }
 
