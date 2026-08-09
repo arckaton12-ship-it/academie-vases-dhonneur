@@ -83,10 +83,18 @@ export function BadgeHall({ progress, activeBadge, busy, onClose, onSelect }: Ba
                     <BadgeCoin type={key} size={52} locked={!earned} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className={`font-display text-sm leading-tight ${earned ? 'text-bordeaux' : 'text-pierre'}`}>
-                      {meta.label}
-                    </p>
-                    <p className="mt-0.5 text-[11px] leading-tight text-pierre">{meta.description}</p>
+                    {earned ? (
+                      <>
+                        <p className="font-display text-sm leading-tight text-bordeaux">
+                          {meta.label}
+                        </p>
+                        <p className="mt-0.5 text-[11px] leading-tight text-pierre">{meta.description}</p>
+                      </>
+                    ) : (
+                      <p className="font-display text-sm leading-tight text-pierre">
+                        Badge scellé
+                      </p>
+                    )}
                   </div>
                 </div>
 

@@ -1,4 +1,5 @@
 import { useNavigate, Link } from 'react-router-dom'
+import { useState, useCallback } from 'react'
 import { Card, CardTitle, CardDescription } from '@/components/ui/Card'
 import { AuthForm } from '@/components/AuthForm'
 import { Logo } from '@/components/Logo'
@@ -6,6 +7,7 @@ import { DarkModeToggle } from '@/components/DarkModeToggle'
 import { SectionWatermark } from '@/components/SectionWatermark'
 import { VerseReference } from '@/components/VerseReference'
 import { getCurrentProfile, UserRole } from '@/lib/auth'
+import { WelcomeAnimation } from '@/components/WelcomeAnimation'
 
 interface AuthPageProps {
   mode: 'signup' | 'signin'
@@ -35,10 +37,15 @@ export function AuthPage({ mode, role, title, redirectTo }: AuthPageProps) {
 
   const restrictedSignup = mode === 'signup' && role !== 'ETUDIANT'
   const isStudent = role === 'ETUDIANT'
+  const [welcomeName, setWelcomeName] = useState<string | null>(null)
 
   async function handleSuccess() {
     try {
       const profile = await getCurrentProfile()
+      if (mode === 'signup' && profile?.first_name) {
+        setWelcomeName(profile.first_name)
+        return
+      }
       if (profile?.role === 'ADMINISTRATEUR') {
         navigate('/admin/tableau-de-bord')
         return
@@ -57,8 +64,14 @@ export function AuthPage({ mode, role, title, redirectTo }: AuthPageProps) {
     navigate(redirectTo)
   }
 
+  const handleWelcomeComplete = useCallback(() => {
+    navigate(redirectTo)
+  }, [navigate, redirectTo])
+
   return (
-    <div className="relative flex min-h-screen items-center justify-center px-6 py-12">
+    <>
+      {welcomeName && <WelcomeAnimation firstName={welcomeName} onComplete={handleWelcomeComplete} />}
+      <div className="relative flex min-h-screen items-center justify-center px-6 py-12">
       <SectionWatermark kind="croix" />
       <div className="absolute right-4 top-4 z-20">
         <DarkModeToggle />
@@ -96,6 +109,7 @@ export function AuthPage({ mode, role, title, redirectTo }: AuthPageProps) {
         </p>
       </Card>
     </div>
+    </>
   )
 }
 

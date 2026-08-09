@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { useState, useCallback } from 'react'
 import Landing from '@/pages/Landing'
 import { StudentSignup, StudentLogin, AdminSignup, AdminLogin, ModeratorSignup, ModeratorLogin } from '@/pages/Auth'
 import StudentDashboard from '@/pages/StudentDashboard'
@@ -6,12 +7,21 @@ import AdminDashboard from '@/pages/AdminDashboard'
 import ModeratorDashboard from '@/pages/ModeratorDashboard'
 import { RequireRole } from '@/components/RequireRole'
 import { UserRole } from '@/lib/auth'
+import { SplashScreen, shouldShowSplash, markSplashSeen } from '@/components/SplashScreen'
 
 const MODERATOR_ROLES: UserRole[] = ['MODERATEUR', 'ADMINISTRATEUR']
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(shouldShowSplash())
+  const handleSplashComplete = useCallback(() => {
+    markSplashSeen()
+    setShowSplash(false)
+  }, [])
+
   return (
-    <BrowserRouter>
+    <>
+      {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+      <BrowserRouter>
       <Routes>
         <Route path="/" element={<Landing />} />
 
@@ -50,6 +60,7 @@ export default function App() {
 
         <Route path="*" element={<Landing />} />
       </Routes>
-    </BrowserRouter>
+      </BrowserRouter>
+    </>
   )
 }

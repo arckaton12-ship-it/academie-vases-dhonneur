@@ -61,7 +61,7 @@ export function Badge({ type, size = 52, locked = false }: BadgeProps) {
           </span>
         )}
       </div>
-      {meta && (
+      {meta && !locked && (
         <>
           <p className="font-display text-sm leading-tight text-bordeaux">{meta.label}</p>
           <p className="text-[11px] leading-tight text-pierre">{meta.description}</p>

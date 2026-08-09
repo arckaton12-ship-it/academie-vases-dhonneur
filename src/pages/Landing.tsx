@@ -39,10 +39,13 @@ export default function Landing() {
           </div>
         </div>
         <h1 className="font-display text-4xl font-semibold text-bordeaux drop-shadow-sm sm:text-5xl dark:text-slate-100">
-          Académie Vases d'Honneur
+          Académie Vases d'Honneur — Assemblée Eaux Paisibles de Yaoundé
         </h1>
         <p className="mt-3 text-base text-pierre sm:text-lg dark:text-slate-400">
-          Formation biblique & discipulat — Yaoundé
+          École de disciples
+        </p>
+        <p className="mt-2 font-serif text-sm italic text-or/80 dark:text-or/70">
+          « La Création attend avec un ardent désir la Révélation des Fils de Dieu » — Romains 8:19
         </p>
         <VerseReference className="mt-3 inline-block" />
       </div>
