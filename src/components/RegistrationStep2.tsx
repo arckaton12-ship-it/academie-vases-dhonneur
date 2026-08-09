@@ -130,14 +130,41 @@ export default function RegistrationStep2({ profile, onComplete }: Props) {
       // Sync to Google Sheets (non-blocking)
       const sheetsUrl = import.meta.env.VITE_GOOGLE_SHEETS_URL
       if (sheetsUrl) {
+        const sheetPayload = {
+          Horodateur: new Date().toISOString(),
+          email: form.email,
+          last_name: form.last_name,
+          first_name: form.first_name,
+          photo_url: form.photo_url,
+          phone_whatsapp: form.phone_whatsapp,
+          phone_telegram: form.phone_telegram,
+          emergency_contact: form.emergency_contact,
+          sex: form.sex,
+          class_name: form.class_name,
+          tshirt_size: form.tshirt_size,
+          registration_date: new Date().toISOString(),
+          training_channel: form.training_channel,
+          payment_mode: form.payment_mode,
+          profession: form.profession,
+          neighborhood: form.neighborhood,
+          birth_date: form.birth_date,
+          marital_status: form.marital_status,
+          children_count: form.children_count,
+          baptized_immersion: form.baptized_immersion,
+          baptism_date: form.baptism_date,
+          conversion_date: form.conversion_date,
+          service_department: form.service_department,
+          tribe: form.tribe,
+          student_type: form.student_type,
+          french_reading_level: form.french_reading_level,
+          french_listening_level: form.french_listening_level,
+          french_writing_level: form.french_writing_level,
+          commitment: form.commitment,
+        }
         fetch(sheetsUrl, {
           method: 'POST',
-          mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            date_inscription: new Date().toISOString(),
-            ...form,
-          }),
+          body: JSON.stringify(sheetPayload),
         }).catch(() => undefined)
       }
 

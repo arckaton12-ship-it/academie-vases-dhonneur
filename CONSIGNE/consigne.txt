@@ -1,1 +1,14 @@
-Voici une consigne complémentaire à ce qui est déjà fait (CONSIGNE_COMPLEMENTAIRE_ROLES_MESSAGERIE.md). Lis-la intégralement, puis exécute dans l'ordre indiqué à la fin. Ne refais pas ce qui est déjà en place (palette, inscription, YouTube embed, fiche de suivi d'âme, binômage) — complète et corrige uniquement ce qui est décrit ici.
+execute le fichier annexe et aussi celui ci : 
+Voici l'URL du webhook Google Apps Script déployé, à configurer comme destination du webhook d'inscription :
+https://script.google.com/macros/s/AKfycbzgD6VRDwMB1dI_-MorXl-kVwdTeSV0EPdJ3Iegoj9MFXt4PkvNTIezHqG_kClhXtnNkA/exec
+
+1. Configure cette URL dans le mécanisme webhook existant (net.http_post) pour qu'elle se déclenche automatiquement à chaque soumission complète du formulaire d'inscription en 2 étapes (une fois l'étape 2 avec les 29 champs validée).
+
+2. Vérifie que les données envoyées respectent exactement cet ordre de colonnes (pour correspondre au Sheet) :
+Horodateur (généré côté script), email, last_name, first_name, photo_url, phone_whatsapp, phone_telegram, emergency_contact, sex, class_name, tshirt_size, registration_date, training_channel, payment_mode, profession, neighborhood, birth_date, marital_status, children_count, baptized_immersion, baptism_date, conversion_date, service_department, tribe, student_type, french_reading_level, french_listening_level, french_writing_level, commitment
+
+3. Fais un test réel de bout en bout : crée un compte étudiant de test avec un nom facilement identifiable (ex: "TEST WEBHOOK"), complète l'inscription en 2 étapes, puis confirme que la requête au webhook a bien été envoyée (status ok reçu, pas d'erreur réseau/timeout).
+
+4. Rapporte le résultat exact : la requête a-t-elle été envoyée avec succès, quel code de statut a été retourné par le script, y a-t-il eu une erreur (CORS, timeout, format de données invalide) ?
+
+Une fois confirmé de ton côté, je vérifierai moi-même dans le Sheet si la ligne de test apparaît correctement.
