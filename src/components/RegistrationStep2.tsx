@@ -126,6 +126,21 @@ export default function RegistrationStep2({ profile, onComplete }: Props) {
       })
       if (error) throw error
       setMsg('Inscription enregistrée !')
+
+      // Sync to Google Sheets (non-blocking)
+      const sheetsUrl = import.meta.env.VITE_GOOGLE_SHEETS_URL
+      if (sheetsUrl) {
+        fetch(sheetsUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            date_inscription: new Date().toISOString(),
+            ...form,
+          }),
+        }).catch(() => undefined)
+      }
+
       setTimeout(onComplete, 1500)
     } catch (e: unknown) {
       setMsg(e instanceof Error ? e.message : 'Erreur inconnue')

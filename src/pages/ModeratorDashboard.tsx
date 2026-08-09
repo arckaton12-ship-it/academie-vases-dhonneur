@@ -4,6 +4,8 @@ import { Card, CardTitle, CardDescription } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input, Label, FieldError } from '@/components/ui/Input'
 import { SidebarLayout } from '@/components/ui/SidebarLayout'
+import { QuizTab } from '@/components/QuizTab'
+import { BulletinPDF } from '@/components/BulletinPDF'
 import { Logo } from '@/components/Logo'
 import { Avatar } from '@/components/Avatar'
 import { AvatarUpload } from '@/components/AvatarUpload'
@@ -58,7 +60,7 @@ import {
 import { getCurrentProfile, signOut } from '@/lib/auth'
 import { exportToCSV, exportToPDF, ExportRow } from '@/lib/export'
 
-type Tab = 'programme' | 'upload' | 'rapport' | 'passage' | 'notation' | 'moderateurs' | 'suivi'
+type Tab = 'programme' | 'upload' | 'rapport' | 'passage' | 'notation' | 'moderateurs' | 'suivi' | 'quiz'
 
 const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
 
@@ -70,6 +72,7 @@ const tabIcons: Record<Tab, React.ReactNode> = {
   notation: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
   suivi: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>,
   moderateurs: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  quiz: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
 }
 
 export default function ModeratorDashboard() {
@@ -159,6 +162,7 @@ export default function ModeratorDashboard() {
     ['notation', 'Notation'],
     ['suivi', "Suivi d'âme"],
     ['moderateurs', 'Modérateurs'],
+    ['quiz', 'Quiz (QCM)'],
   ]
 
   return (
@@ -252,6 +256,10 @@ export default function ModeratorDashboard() {
       )}
       {tab === 'moderateurs' && (
         <ModeratorsTab classById={classById} />
+      )}
+
+      {tab === 'quiz' && (
+        <QuizTab courses={courses} />
       )}
 
       {moderatorProfile && (
@@ -1204,6 +1212,7 @@ function PassageTab({
                   >
                     {busyId === student.id ? '…' : 'Appliquer'}
                   </Button>
+                  <BulletinPDF studentId={student.id} />
                 </div>
               </li>
             )

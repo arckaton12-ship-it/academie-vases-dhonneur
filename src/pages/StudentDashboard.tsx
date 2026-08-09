@@ -5,6 +5,8 @@ import { Card, CardTitle, CardDescription } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input, Label, FieldError } from '@/components/ui/Input'
 import { Sidebar, SidebarItem } from '@/components/ui/Sidebar'
+import { QuizPlayer } from '@/components/QuizPlayer'
+import { BulletinPDF } from '@/components/BulletinPDF'
 import { StreakBadge } from '@/components/StreakBadge'
 import { CoursePlayer, downloadCourseMedia } from '@/components/CoursePlayer'
 import { Logo } from '@/components/Logo'
@@ -99,6 +101,7 @@ export default function StudentDashboard() {
   const [streak, setStreak] = useState<Streak | null>(null)
   const [summary, setSummary] = useState('')
   const [summarySaved, setSummarySaved] = useState(false)
+  const [activeQuizId, setActiveQuizId] = useState<string | null>(null)
   const [summarySaving, setSummarySaving] = useState(false)
   const [attended, setAttended] = useState(false)
   const [attending, setAttending] = useState(false)
@@ -798,6 +801,11 @@ export default function StudentDashboard() {
                 <div className="mb-4">
                   <CoursePlayer audioUrl={course.audio_url} videoUrl={course.video_url} />
                 </div>
+
+                {/* Quiz button */}
+                {course.id && (
+                  <QuizButtonSection courseId={course.id} onOpenQuiz={setActiveQuizId} />
+                )}
 
                 {course.audio_url && (
                   <>
@@ -1503,17 +1511,20 @@ export default function StudentDashboard() {
           <Card>
             <CardTitle>Compte</CardTitle>
             <CardDescription className="mt-2 mb-3">
-              Tu peux te déconnecter de ton espace.
+              Tu peux télécharger ton bulletin ou te déconnecter.
             </CardDescription>
-            <Button
-              variant="outline"
-              onClick={async () => {
-                await signOut()
-                navigate('/')
+            <div className="flex flex-wrap gap-2">
+              <BulletinPDF studentId={profile.id} />
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  await signOut()
+                  navigate('/')
               }}
             >
               Se déconnecter
             </Button>
+            </div>
           </Card>
         </div>
       )}
@@ -1527,6 +1538,10 @@ export default function StudentDashboard() {
           onSelect={handleSelectActiveBadge}
         />
       )}
+
+      {activeQuizId && (
+        <QuizPlayer quizId={activeQuizId} onClose={() => setActiveQuizId(null)} />
+      )}
       </div>
       </div>
     </div>
@@ -1538,6 +1553,41 @@ function ProgressStat({ label, value }: { label: string; value: string }) {
     <div className="glass-card !p-3 text-center">
       <dt className="text-xs text-pierre dark:text-slate-400">{label}</dt>
       <dd className="font-display text-xl text-bordeaux dark:text-or">{value}</dd>
+    </div>
+  )
+}
+
+function QuizButtonSection({ courseId, onOpenQuiz }: { courseId: string; onOpenQuiz: (id: string) => void }) {
+  const [quizzes, setQuizzes] = useState<{ id: string; title: string; attempted?: boolean }[]>([])
+
+  useEffect(() => {
+    import('@/lib/courses').then(({ getCourseQuizzes }) =>
+      getCourseQuizzes(courseId).then((data) => setQuizzes(data))
+    ).catch(() => undefined)
+  }, [courseId])
+
+  if (quizzes.length === 0) return null
+
+  return (
+    <div className="mb-4 rounded-lg border border-or/20 bg-or/5 p-3">
+      <p className="mb-2 text-xs font-medium text-bordeaux">Quiz disponibles</p>
+      <div className="space-y-1">
+        {quizzes.map((q) => (
+          <button
+            key={q.id}
+            onClick={() => !q.attempted && onOpenQuiz(q.id)}
+            disabled={q.attempted}
+            className={`flex w-full items-center justify-between rounded px-3 py-2 text-sm transition-colors ${
+              q.attempted ? 'cursor-default text-pierre/60' : 'hover:bg-or/10 text-bordeaux'
+            }`}
+          >
+            <span>{q.title}</span>
+            <span className={`text-xs ${q.attempted ? 'text-olive' : 'text-or font-medium'}`}>
+              {q.attempted ? '✓ Passé' : 'Passer →'}
+            </span>
+          </button>
+        ))}
+      </div>
     </div>
   )
 }

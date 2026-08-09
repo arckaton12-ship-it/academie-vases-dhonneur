@@ -1394,3 +1394,90 @@ export async function addSoulEntry(
   if (error) throw error
   return data
 }
+
+// ──────────────────────────────────────────────
+// Quiz
+// ──────────────────────────────────────────────
+
+export interface Quiz {
+  id: string
+  course_id: string
+  title: string
+  description: string
+  time_limit_minutes: number | null
+  passing_score: number
+  question_count?: number
+  attempt_count?: number
+  avg_score?: number | null
+}
+
+export interface QuizQuestion {
+  id: string
+  question_text: string
+  options: string[]
+  points: number
+  order_index: number
+}
+
+export interface QuizAttempt {
+  score: number
+  total_points: number
+  max_points: number
+  is_passed: boolean
+  passing_score: number
+  questions: {
+    question_id: string
+    question_text: string
+    options: string[]
+    correct_index: number
+    your_answer: number | null
+    is_correct: boolean
+    points: number
+  }[]
+}
+
+export async function getCourseQuizzes(courseId: string): Promise<Quiz[]> {
+  const { data, error } = await supabase.rpc('get_course_quizzes', { p_course_id: courseId })
+  if (error) throw error
+  return data ?? []
+}
+
+export async function getQuizWithQuestions(quizId: string): Promise<{ quiz: Quiz; questions: QuizQuestion[]; attempted: boolean }> {
+  const { data, error } = await supabase.rpc('get_quiz_with_questions', { p_quiz_id: quizId })
+  if (error) throw error
+  return data
+}
+
+export async function submitQuiz(quizId: string, answers: Record<string, number>): Promise<QuizAttempt> {
+  const { data, error } = await supabase.rpc('submit_quiz', {
+    p_quiz_id: quizId,
+    p_answers: answers,
+  })
+  if (error) throw error
+  return data
+}
+
+export async function createQuiz(
+  courseId: string,
+  title: string,
+  description: string,
+  timeLimit: number | null,
+  passingScore: number,
+  questions: { question_text: string; options: string[]; correct_option_index: number; points: number }[]
+): Promise<string> {
+  const { data, error } = await supabase.rpc('create_quiz', {
+    p_course_id: courseId,
+    p_title: title,
+    p_description: description,
+    p_time_limit_minutes: timeLimit,
+    p_passing_score: passingScore,
+    p_questions: questions,
+  })
+  if (error) throw error
+  return data
+}
+
+export async function deleteQuiz(quizId: string): Promise<void> {
+  const { error } = await supabase.rpc('delete_quiz', { p_quiz_id: quizId })
+  if (error) throw error
+}
