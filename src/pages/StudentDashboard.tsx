@@ -12,7 +12,7 @@ import { Logo } from '@/components/Logo'
 import { Avatar } from '@/components/Avatar'
 import { AvatarUpload } from '@/components/AvatarUpload'
 import { Badge } from '@/components/Badge'
-import { BadgeHall } from '@/components/BadgeHall'
+import { BadgeDrawer } from '@/components/BadgeDrawer'
 import { CertificateView } from '@/components/Certificate'
 import { Marquee } from '@/components/ui/Marquee'
 import { SoundToggle } from '@/components/SoundToggle'
@@ -169,7 +169,7 @@ export default function StudentDashboard() {
 
   // ---- Salle des badges + badge actif
   const [badgeProgress, setBadgeProgress] = useState<BadgeProgress[]>([])
-  const [badgeHallOpen, setBadgeHallOpen] = useState(false)
+  const [badgeDrawerOpen, setBadgeDrawerOpen] = useState(false)
   const [badgeBusy, setBadgeBusy] = useState(false)
 
   // ---- Notifications in-app
@@ -512,10 +512,10 @@ export default function StudentDashboard() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  function openBadgeHall() {
+  function openBadgeDrawer() {
     if (!profile) return
     void refreshBadgeProgress(profile.id)
-    setBadgeHallOpen(true)
+    setBadgeDrawerOpen(true)
   }
 
   async function handleSelectActiveBadge(type: string) {
@@ -753,7 +753,7 @@ export default function StudentDashboard() {
               size={40}
               badgeType={profile?.active_badge ?? null}
               onClick={() => setTab('profil')}
-              onBadgeClick={openBadgeHall}
+              onBadgeClick={openBadgeDrawer}
             />
             <SoundToggle />
           </div>
@@ -1021,7 +1021,7 @@ export default function StudentDashboard() {
               <p className="text-sm text-pierre">Aucun badge pour le moment.</p>
             )}
             <div className="mt-4">
-              <Button variant="outline" className="!px-3 !py-1.5 text-xs" onClick={openBadgeHall}>
+              <Button variant="outline" className="!px-3 !py-1.5 text-xs" onClick={openBadgeDrawer}>
                 Voir la salle des badges →
               </Button>
             </div>
@@ -1448,7 +1448,7 @@ export default function StudentDashboard() {
             ) : (
               <p className="text-sm text-pierre">Aucun badge pour le moment.</p>
             )}
-            <Button variant="outline" className="!px-3 !py-1.5 text-xs mt-3" onClick={openBadgeHall}>
+            <Button variant="outline" className="!px-3 !py-1.5 text-xs mt-3" onClick={openBadgeDrawer}>
               Voir la salle des badges →
             </Button>
           </Card>
@@ -1590,7 +1590,7 @@ export default function StudentDashboard() {
               </div>
             )}
             <div className="mt-3">
-              <Button variant="ghost" className="!px-3 !py-1.5 text-xs underline" onClick={openBadgeHall}>
+              <Button variant="ghost" className="!px-3 !py-1.5 text-xs underline" onClick={openBadgeDrawer}>
                 Voir toute la salle des badges
               </Button>
             </div>
@@ -1683,13 +1683,15 @@ export default function StudentDashboard() {
         </div>
       )}
 
-      {badgeHallOpen && (
-        <BadgeHall
-          progress={badgeProgress}
+      {badgeDrawerOpen && (
+        <BadgeDrawer
+          open={badgeDrawerOpen}
+          onClose={() => setBadgeDrawerOpen(false)}
+          earnedBadges={earnedBadges}
           activeBadge={profile?.active_badge ?? null}
-          busy={badgeBusy}
-          onClose={() => setBadgeHallOpen(false)}
+          badgeProgress={badgeProgress}
           onSelect={handleSelectActiveBadge}
+          busy={badgeBusy}
         />
       )}
 
