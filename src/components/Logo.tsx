@@ -6,7 +6,7 @@ interface LogoProps {
 
 import logoUrl from '@/assets/logo.png'
 
-export function Logo({ size = 34, showText = true, className = '' }: LogoProps) {
+export function Logo({ size = 34, showText = false, className = '' }: LogoProps) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <img

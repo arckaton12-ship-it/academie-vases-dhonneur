@@ -1,0 +1,1 @@
+Configure SSH plutôt qu'un token. Génère une clé SSH si elle n'existe pas encore, affiche-moi la clé publique, je l'ajouterai moi-même directement sur GitHub → Settings → SSH and GPG keys. Change ensuite le remote du repo pour utiliser l'URL SSH.
