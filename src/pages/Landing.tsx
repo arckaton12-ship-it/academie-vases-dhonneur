@@ -9,7 +9,7 @@ import { DarkModeToggle } from '@/components/DarkModeToggle'
 import { getLandingAvatars } from '@/lib/courses'
 
 export default function Landing() {
-  const [avatars, setAvatars] = useState<string[]>([])
+  const [avatars, setAvatars] = useState<{ url: string | null; name: string }[]>([])
 
   useEffect(() => {
     getLandingAvatars().then(setAvatars).catch(() => undefined)
@@ -54,13 +54,19 @@ export default function Landing() {
       {avatars.length > 2 && (
         <div className="relative z-10 mb-10 w-full max-w-md overflow-hidden animate-fade-in" style={{ animationDelay: '0.3s' }}>
           <Marquee pauseOnHover className="py-2">
-            {avatars.map((url, i) => (
+            {avatars.map((a, i) => (
               <span key={i} className="mx-1 inline-block">
-                <img
-                  src={url}
-                  alt=""
-                  className="h-10 w-10 rounded-full border-2 border-or/40 object-cover transition-transform duration-200 hover:scale-110 hover:border-or"
-                />
+                {a.url ? (
+                  <img
+                    src={a.url}
+                    alt=""
+                    className="h-10 w-10 rounded-full border-2 border-or/40 object-cover transition-transform duration-200 hover:scale-110 hover:border-or"
+                  />
+                ) : (
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-or/40 bg-bordeaux/10 font-display text-sm text-bordeaux transition-transform duration-200 hover:scale-110">
+                    {a.name ? a.name.charAt(0).toUpperCase() : String.fromCharCode(65 + (i % 26))}
+                  </span>
+                )}
               </span>
             ))}
           </Marquee>

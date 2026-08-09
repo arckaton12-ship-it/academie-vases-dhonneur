@@ -1462,6 +1462,7 @@ export default function StudentDashboard() {
               firstName={profile.first_name}
               lastName={profile.last_name}
               userId={profile.id}
+              badgeType={profile.active_badge ?? null}
               onSaved={(url) => setProfile((prev) => (prev ? { ...prev, avatar_url: url } : prev))}
             />
           </Card>

@@ -367,10 +367,13 @@ export async function getBadgeProgress(): Promise<BadgeProgress[]> {
   return (data ?? []) as BadgeProgress[]
 }
 
-export async function getLandingAvatars(): Promise<string[]> {
+export async function getLandingAvatars(): Promise<{ url: string | null; name: string }[]> {
   const { data, error } = await supabase.rpc('get_landing_avatars')
   if (error) throw error
-  return (data ?? []).map((r: { avatar_url: string }) => r.avatar_url).filter(Boolean)
+  return (data ?? []).map((r: { avatar_url: string | null; first_name: string }) => ({
+    url: r.avatar_url,
+    name: r.first_name || '',
+  }))
 }
 
 export async function getResume(studentId: string, courseId: string): Promise<string | null> {

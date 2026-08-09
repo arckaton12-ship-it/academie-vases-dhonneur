@@ -9,10 +9,11 @@ interface AvatarUploadProps {
   lastName?: string
   userId: string
   size?: number
+  badgeType?: string | null
   onSaved?: (url: string | null) => void
 }
 
-export function AvatarUpload({ url, firstName, lastName, userId, size = 72, onSaved }: AvatarUploadProps) {
+export function AvatarUpload({ url, firstName, lastName, userId, size = 72, badgeType, onSaved }: AvatarUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
@@ -52,7 +53,7 @@ export function AvatarUpload({ url, firstName, lastName, userId, size = 72, onSa
   return (
     <div>
       <div className="flex items-center gap-4">
-        <Avatar url={url} firstName={firstName} lastName={lastName} size={size} />
+        <Avatar url={url} firstName={firstName} lastName={lastName} size={size} badgeType={badgeType} />
         <div className="space-y-2">
           <Button
             variant="outline"
