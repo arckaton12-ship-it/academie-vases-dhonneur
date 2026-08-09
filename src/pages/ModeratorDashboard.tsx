@@ -51,8 +51,12 @@ import {
 import { getCurrentProfile, signOut } from '@/lib/auth'
 import { exportToCSV, exportToPDF, ExportRow } from '@/lib/export'
 import { MessagingPanel } from '@/components/MessagingPanel'
+import { StudentProfileCard } from '@/components/StudentProfileCard'
+import { adminCreateUser } from '@/lib/courses'
+import { playClick } from '@/lib/sound'
+import { toast, toastError } from '@/components/ui/Toast'
 
-type Tab = 'programme' | 'rapport' | 'passage' | 'suivi' | 'annonces' | 'messagerie' | 'moderateurs' | 'quiz'
+type Tab = 'programme' | 'rapport' | 'passage' | 'suivi' | 'annonces' | 'messagerie' | 'moderateurs' | 'quiz' | 'inscription' | 'fiche'
 
 const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
 
@@ -65,6 +69,8 @@ const tabIcons: Record<Tab, React.ReactNode> = {
   messagerie: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
   moderateurs: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
   quiz: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+  inscription: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>,
+  fiche: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
 }
 
 export default function ModeratorDashboard() {
@@ -148,8 +154,10 @@ export default function ModeratorDashboard() {
 
   const modTabs: [Tab, string][] = [
     ['programme', 'Programme'],
+    ['inscription', 'Inscription'],
     ['rapport', 'Rapport'],
     ['passage', 'Passage'],
+    ['fiche', 'Fiche étudiant'],
     ['suivi', "Suivi d'âme"],
     ['annonces', 'Annonces'],
     ['messagerie', 'Messagerie'],
@@ -249,6 +257,18 @@ export default function ModeratorDashboard() {
 
       {tab === 'quiz' && (
         <QuizTab courses={courses} />
+      )}
+
+      {tab === 'inscription' && (
+        <InscriptionTab
+          ownClassIds={ownClassIds}
+          classes={classes}
+          onCreated={() => loadAll()}
+        />
+      )}
+
+      {tab === 'fiche' && (
+        <FicheTab students={students} ownClassIds={ownClassIds} classById={classById} />
       )}
 
       {moderatorProfile && (
@@ -511,10 +531,12 @@ function AnnoncesTab({
       setTitle('')
       setContent('')
       setMessage('Annonce publiée.')
+      toast('Annonce publiée.')
       playSuccess()
       await loadAnnonces()
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Erreur lors de la publication.')
+      toastError('Erreur.')
     } finally {
       setSaving(false)
     }
@@ -525,9 +547,11 @@ function AnnoncesTab({
     try {
       await deleteAnnouncement(id)
       setMessage('Annonce supprimée.')
+      toast('Annonce supprimée.')
       await loadAnnonces()
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Erreur de suppression.')
+      toastError('Erreur.')
     }
   }
 
@@ -951,10 +975,12 @@ function PassageTab({
     try {
       await advanceStudent(student.id, target)
       setSuccess(`${student.first_name} ${student.last_name} a changé de classe.`)
+      toast(`${student.first_name} ${student.last_name} a changé de classe.`)
       playSuccess()
       onAdvanced()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur lors du passage de classe.')
+      toastError('Erreur.')
     } finally {
       setBusyId(null)
     }
@@ -1171,6 +1197,169 @@ function Row({ label, value }: { label: string; value: string }) {
     <div className="flex justify-between gap-4 border-b border-sable/60 pb-2">
       <dt className="text-pierre">{label}</dt>
       <dd className="text-right text-bordeaux">{value}</dd>
+    </div>
+  )
+}
+
+function InscriptionTab({
+  ownClassIds,
+  classes,
+  onCreated,
+}: {
+  ownClassIds: string[]
+  classes: ClassRow[]
+  onCreated: () => void
+}) {
+  const myClasses = classes.filter((c) => ownClassIds.includes(c.id))
+  const [classId, setClassId] = useState(myClasses[0]?.id ?? '')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [tribe, setTribe] = useState('')
+  const [password, setPassword] = useState('Etudiant123!')
+  const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (!classId || !firstName.trim() || !lastName.trim() || !email.trim()) {
+      setError('Remplis au moins le prénom, le nom, l\'email et la classe.'); return
+    }
+    setLoading(true); setError(null); setMessage(null)
+    try {
+      await adminCreateUser({
+        email: email.trim(),
+        password,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        role: 'ETUDIANT',
+        phone: phone.trim() || undefined,
+        tribe: tribe.trim() || undefined,
+      })
+      // Assign class
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email.trim())
+        .single()
+      if (profile) {
+        await supabase.from('profiles').update({ class_id: classId }).eq('id', profile.id)
+      }
+      setMessage(`${firstName} ${lastName} inscrit(e) dans la classe ${myClasses.find((c) => c.id === classId)?.name ?? ''}.`)
+      toast(`${firstName} ${lastName} inscrit(e) dans la classe ${myClasses.find((c) => c.id === classId)?.name ?? ''}.`)
+      playSuccess()
+      setFirstName(''); setLastName(''); setEmail(''); setPhone(''); setTribe('')
+      onCreated()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur lors de l\'inscription.')
+      toastError('Erreur.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardTitle>Inscrire un étudiant</CardTitle>
+      <CardDescription className="mt-1 mb-4">
+        Crée un compte étudiant et l'attribue à l'une de tes classes.
+      </CardDescription>
+      <form onSubmit={handleSubmit} className="space-y-3 max-w-md">
+        <div>
+          <Label>Classe *</Label>
+          <select
+            value={classId}
+            onChange={(e) => setClassId(e.target.value)}
+            className="mt-1 w-full rounded-card border border-pierre/20 bg-white px-3 py-2 text-sm"
+          >
+            {myClasses.map((c) => (
+              <option key={c.id} value={c.id}>{c.name} (Niveau {c.level})</option>
+            ))}
+          </select>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label>Prénom *</Label>
+            <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Jean" className="mt-1" />
+          </div>
+          <div>
+            <Label>Nom *</Label>
+            <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Kamga" className="mt-1" />
+          </div>
+        </div>
+        <div>
+          <Label>Email *</Label>
+          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jean@email.com" className="mt-1" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label>Téléphone</Label>
+            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+237…" className="mt-1" />
+          </div>
+          <div>
+            <Label>Tribu</Label>
+            <Input value={tribe} onChange={(e) => setTribe(e.target.value)} className="mt-1" />
+          </div>
+        </div>
+        <div>
+          <Label>Mot de passe</Label>
+          <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1" />
+          <p className="text-[10px] text-pierre mt-1">Par défaut : Etudiant123!</p>
+        </div>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        {message && <p className="text-sm text-olive">{message}</p>}
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Inscription…' : 'Inscrire l\'étudiant'}
+        </Button>
+      </form>
+    </Card>
+  )
+}
+
+function FicheTab({
+  students,
+  ownClassIds,
+  classById,
+}: {
+  students: StudentProfile[]
+  ownClassIds: string[]
+  classById: Map<string, ClassRow>
+}) {
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const myStudents = students.filter((s) => ownClassIds.includes(s.class_id ?? ''))
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardTitle>Fiche étudiant</CardTitle>
+        <CardDescription className="mt-1">
+          Consulte le profil complet d'un étudiant de tes classes.
+        </CardDescription>
+        <ul className="mt-3 max-h-64 overflow-y-auto space-y-1">
+          {myStudents.map((s) => (
+            <li key={s.id}>
+              <button
+                onClick={() => { setSelectedId(s.id); playClick() }}
+                className={`flex w-full items-center gap-3 px-3 py-2 rounded-card text-left text-sm transition-colors ${
+                  selectedId === s.id ? 'bg-bordeaux/10' : 'hover:bg-sable/30'
+                }`}
+              >
+                <Avatar url={(s as any).avatar_url} firstName={s.first_name} lastName={s.last_name} size={28} />
+                <div>
+                  <p className="font-medium text-bordeaux">{s.last_name} {s.first_name}</p>
+                  <p className="text-[11px] text-pierre">{classById.get(s.class_id ?? '')?.name ?? '—'}</p>
+                </div>
+              </button>
+            </li>
+          ))}
+          {myStudents.length === 0 && (
+            <p className="text-xs text-pierre">Aucun étudiant dans tes classes.</p>
+          )}
+        </ul>
+      </Card>
+      {selectedId && <StudentProfileCard studentId={selectedId} onClose={() => setSelectedId(null)} />}
     </div>
   )
 }

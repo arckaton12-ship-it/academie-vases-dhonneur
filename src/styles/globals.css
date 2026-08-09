@@ -294,6 +294,15 @@ h1, h2, h3, h4 {
   box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 3px #94A3B8;
 }
 
+@keyframes slideInRight {
+  from { transform: translateX(120%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;

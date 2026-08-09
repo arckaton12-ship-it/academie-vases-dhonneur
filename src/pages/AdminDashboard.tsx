@@ -8,6 +8,8 @@ import { Logo } from '@/components/Logo'
 import { Avatar } from '@/components/Avatar'
 import { AvatarUpload } from '@/components/AvatarUpload'
 import { SoundToggle } from '@/components/SoundToggle'
+import { StudentProfileCard } from '@/components/StudentProfileCard'
+import { toast, toastError } from '@/components/ui/Toast'
 import { playSuccess } from '@/lib/sound'
 import { SectionWatermark } from '@/components/SectionWatermark'
 import { VerseReference } from '@/components/VerseReference'
@@ -120,6 +122,7 @@ export default function AdminDashboard() {
   const [classStudents, setClassStudents] = useState<StudentProfile[]>([])
 
   const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null)
+  const [profileStudentId, setProfileStudentId] = useState<string | null>(null)
   const [bulletin, setBulletin] = useState<{ progress: StudentProgress; courses: Course[] } | null>(null)
   const [bulletinLoading, setBulletinLoading] = useState(false)
   const [meditationDraft, setMeditationDraft] = useState('')
@@ -445,8 +448,10 @@ export default function AdminDashboard() {
         prev.map((s) => (s.id === studentId ? { ...s, meditation_grade: grade } : s))
       )
       setBulletinMsg('Note de méditation enregistrée.')
+      toast('Note de méditation enregistrée.')
     } catch (err) {
       setBulletinMsg(err instanceof Error ? err.message : 'Erreur.')
+      toastError('Erreur.')
     }
   }
 
@@ -558,6 +563,7 @@ export default function AdminDashboard() {
         department: newAccount.department.trim() || undefined,
       })
       setAccountMsg('Compte créé avec succès.')
+      toast('Compte créé.')
       setNewAccount({
         email: '',
         password: '',
@@ -571,6 +577,7 @@ export default function AdminDashboard() {
       await loadModerators()
     } catch (err) {
       setAccountMsg(err instanceof Error ? err.message : 'Erreur de création du compte.')
+      toastError('Erreur.')
     } finally {
       setAccountSaving(false)
     }
@@ -658,8 +665,10 @@ export default function AdminDashboard() {
         })
       )
       setAccessMsg('Classe attribuée avec succès.')
+      toast('Classe attribuée.')
     } catch (err) {
       setAccessMsg(err instanceof Error ? err.message : 'Erreur d\'attribution de classe.')
+      toastError('Erreur.')
     }
   }
 
@@ -980,6 +989,13 @@ export default function AdminDashboard() {
                         Bulletin
                       </Button>
                       <Button
+                        variant="outline"
+                        className="!px-3 !py-1 text-xs"
+                        onClick={() => setProfileStudentId(profileStudentId === s.id ? null : s.id)}
+                      >
+                        Fiche complète
+                      </Button>
+                      <Button
                         variant={s.active ? 'ghost' : 'primary'}
                         className="!px-3 !py-1 text-xs"
                         onClick={() => toggleAccess(s.id, s.active)}
@@ -1071,6 +1087,13 @@ export default function AdminDashboard() {
             </ul>
           )}
         </Card>
+      )}
+
+      {section === 'etudiants' && profileStudentId && (
+        <StudentProfileCard
+          studentId={profileStudentId}
+          onClose={() => setProfileStudentId(null)}
+        />
       )}
 
       {section === 'moderateurs' && (
@@ -1716,6 +1739,7 @@ function CoursTab({
         })
         await saveMiniTask(editingId, miniTask)
         setSuccess('Cours modifié.')
+        toast('Cours modifié.')
       } else {
         const audioPath = audioFile ? await uploadCourseFile(audioFile) : undefined
         const videoPath = videoFile ? await uploadCourseFile(videoFile) : undefined
@@ -1730,11 +1754,13 @@ function CoursTab({
         })
         await saveMiniTask(created.id, miniTask)
         setSuccess('Cours publié.')
+        toast('Cours publié.')
       }
       onRefresh()
       resetForm()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur.')
+      toastError('Erreur.')
     } finally {
       setLoading(false)
     }
@@ -1747,10 +1773,12 @@ function CoursTab({
     try {
       await deleteCourse(editingId)
       setSuccess('Cours supprimé.')
+      toast('Cours supprimé.')
       onRefresh()
       resetForm()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur.')
+      toastError('Erreur.')
     } finally {
       setLoading(false)
     }
@@ -1895,8 +1923,8 @@ function NotationTab({ onGraded }: { onGraded: () => void }) {
     try {
       await gradeSubmission(sub.id, grade, feedbacks[sub.id]?.trim() ?? '')
       setItems((prev) => prev.map((s) => s.id === sub.id ? { ...s, grade, feedback: feedbacks[sub.id]?.trim() ?? '' } : s))
-      setMessage('Note enregistrée.'); playSuccess(); onGraded()
-    } catch (err) { setMessage(err instanceof Error ? err.message : 'Erreur.') } finally { setSavingId(null) }
+      setMessage('Note enregistrée.'); playSuccess(); toast('Note enregistrée.'); onGraded()
+    } catch (err) { setMessage(err instanceof Error ? err.message : 'Erreur.'); toastError('Erreur.') } finally { setSavingId(null) }
   }
 
   async function handleGradeResume(r: ResumeForGrading) {
@@ -1909,8 +1937,8 @@ function NotationTab({ onGraded }: { onGraded: () => void }) {
     try {
       await gradeResume(r.id, grade, rFeedbacks[r.id]?.trim() ?? '')
       setResumes((prev) => prev.map((x) => x.id === r.id ? { ...x, grade, feedback: rFeedbacks[r.id]?.trim() ?? '' } : x))
-      setMessage('Correction enregistrée.'); playSuccess(); onGraded()
-    } catch (err) { setMessage(err instanceof Error ? err.message : 'Erreur.') } finally { setRSavingId(null) }
+      setMessage('Correction enregistrée.'); playSuccess(); toast('Correction enregistrée.'); onGraded()
+    } catch (err) { setMessage(err instanceof Error ? err.message : 'Erreur.'); toastError('Erreur.') } finally { setRSavingId(null) }
   }
 
   if (loading) return <Card><CardDescription>Chargement…</CardDescription></Card>

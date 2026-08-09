@@ -25,6 +25,7 @@ import { getCurrentProfile, signOut, updateProfileInfo } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { getDailyVerse, getAnnouncements, Announcement } from '@/lib/courses'
 import { playSuccess } from '@/lib/sound'
+import { toast, toastError } from '@/components/ui/Toast'
 import { MessagingPanel } from '@/components/MessagingPanel'
 import {
   getAssignments,
@@ -354,12 +355,14 @@ export default function StudentDashboard() {
       await saveResume(profile.id, course.id, summary)
       setSummarySaved(true)
       setMessage('Résumé enregistré. Merci pour ta fidélité.')
+      toast('Résumé enregistré.')
       playSuccess()
       setProgress(await getStudentProgress(profile.id))
       await refreshBadgeProgress(profile.id)
       setResumesReview(await getResumesForReview(profile.id))
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Erreur à la sauvegarde du résumé.')
+      toastError('Erreur.')
     } finally {
       setSummarySaving(false)
     }
@@ -385,8 +388,10 @@ export default function StudentDashboard() {
           ? 'Présence marquée. Ta série continue.'
           : 'Tu avais déjà marqué ta présence pour ce cours.'
       )
+      if (result.newlyMarked) toast('Présence enregistrée.')
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Erreur lors du marquage de présence.')
+      toastError('Erreur.')
     } finally {
       setAttending(false)
     }
@@ -400,8 +405,10 @@ export default function StudentDashboard() {
       await saveMiniTaskResponse(profile.id, miniTask.id, miniTaskResponse)
       setMiniTaskSaved(true)
       setMessage('Mini-tâche enregistrée. Merci pour ta fidélité.')
+      toast('Mini-tâche enregistrée.')
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Erreur à la sauvegarde de la mini-tâche.')
+      toastError('Erreur.')
     } finally {
       setMiniTaskSaving(false)
     }
@@ -454,6 +461,7 @@ export default function StudentDashboard() {
         department: formDept,
       })
       setProfileDone('Informations enregistrées.')
+      toast('Profil enregistré.')
       const p = await loadProfile()
       if (p) {
         setFormName(p.last_name ?? '')
@@ -464,6 +472,7 @@ export default function StudentDashboard() {
       }
     } catch (err) {
       setProfileError(err instanceof Error ? err.message : 'Erreur à l\u2019enregistrement.')
+      toastError('Erreur.')
     } finally {
       setProfileSaving(false)
     }
@@ -483,8 +492,10 @@ export default function StudentDashboard() {
       })
       setService(await getServiceRecord(profile.id))
       setServiceMsg('Fiche de service enregistrée.')
+      toast('Service enregistré.')
     } catch (err) {
       setServiceMsg(err instanceof Error ? err.message : 'Erreur à l\u2019enregistrement.')
+      toastError('Erreur.')
     } finally {
       setServiceSaving(false)
     }
@@ -517,8 +528,10 @@ export default function StudentDashboard() {
       })
       setProfile((prev) => (prev ? { ...prev, active_badge: next } : prev))
       playSuccess()
+      toast('Badge actif mis à jour.')
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Erreur lors du choix du badge actif.')
+      toastError('Erreur.')
     } finally {
       setBadgeBusy(false)
     }
@@ -580,10 +593,12 @@ export default function StudentDashboard() {
       setReflectionMsg(
         content ? 'Réflexion de clôture enregistrée.' : 'Réflexion de clôture retirée.'
       )
+      toast('Réflexion enregistrée.')
     } catch (err) {
       setReflectionMsg(
         err instanceof Error ? err.message : 'Erreur à l\u2019enregistrement de la réflexion.'
       )
+      toastError('Erreur.')
     } finally {
       setReflectionSaving((prev) => ({ ...prev, [c.id]: false }))
     }
@@ -984,16 +999,24 @@ export default function StudentDashboard() {
           <Card>
             <CardTitle>Badges</CardTitle>
             <CardDescription className="mt-1 mb-3">
-              Chaque étape franchie dessine ta fidélité. Les badges encore scellés attendent la suite de ton parcours.
+              Chaque étape franchie dessine ta fidélité. Seul ton badge actif s'affiche sur ton avatar.
             </CardDescription>
-            <div className="grid grid-cols-3 gap-4 sm:grid-cols-4">
-              {BADGE_ORDER.map((key) => (
-                <Badge key={key} type={key} locked={!earnedBadgeKeys.has(key)} />
-              ))}
-            </div>
-            <div className="mt-4 flex justify-end">
+            {earnedBadges.length > 0 ? (
+              <div className="flex items-center gap-4">
+                <Badge type={earnedBadges[0]} size={56} />
+                <div>
+                  <p className="text-sm font-medium text-bordeaux">
+                    {isBadgeKey(earnedBadges[0]) ? BADGES[earnedBadges[0]].label : earnedBadges[0]}
+                  </p>
+                  <p className="text-xs text-pierre">{earnedBadges.length} badge{earnedBadges.length > 1 ? 's' : ''} obtenu{earnedBadges.length > 1 ? 's' : ''}</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-pierre">Aucun badge pour le moment.</p>
+            )}
+            <div className="mt-4">
               <Button variant="outline" className="!px-3 !py-1.5 text-xs" onClick={openBadgeHall}>
-                Salle des badges — progression
+                Voir la salle des badges →
               </Button>
             </div>
           </Card>

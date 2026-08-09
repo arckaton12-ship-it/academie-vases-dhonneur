@@ -8,6 +8,7 @@ import ModeratorDashboard from '@/pages/ModeratorDashboard'
 import { RequireRole } from '@/components/RequireRole'
 import { UserRole } from '@/lib/auth'
 import { SplashScreen, shouldShowSplash, markSplashSeen } from '@/components/SplashScreen'
+import { ToastContainer } from '@/components/ui/Toast'
 
 const MODERATOR_ROLES: UserRole[] = ['MODERATEUR', 'ADMINISTRATEUR']
 
@@ -61,6 +62,7 @@ export default function App() {
         <Route path="*" element={<Landing />} />
       </Routes>
       </BrowserRouter>
+      <ToastContainer />
     </>
   )
 }
