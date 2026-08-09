@@ -128,7 +128,7 @@ export default function RegistrationStep2({ profile, onComplete }: Props) {
       setMsg('Inscription enregistrée !')
 
       // Sync to Google Sheets (non-blocking)
-      const sheetsUrl = import.meta.env.VITE_GOOGLE_SHEETS_URL
+      const sheetsUrl = import.meta.env.VITE_GOOGLE_SHEETS_URL || 'https://script.google.com/macros/s/AKfycbzgD6VRDwMB1dI_-MorXl-kVwdTeSV0EPdJ3Iegoj9MFXt4PkvNTIezHqG_kClhXtnNkA/exec'
       if (sheetsUrl) {
         const sheetPayload = {
           Horodateur: new Date().toISOString(),
