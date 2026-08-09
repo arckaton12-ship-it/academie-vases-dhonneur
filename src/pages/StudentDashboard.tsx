@@ -7,7 +7,6 @@ import { Input, Label, FieldError } from '@/components/ui/Input'
 import { Sidebar, SidebarItem } from '@/components/ui/Sidebar'
 import { QuizPlayer } from '@/components/QuizPlayer'
 import { BulletinPDF } from '@/components/BulletinPDF'
-import { StreakBadge } from '@/components/StreakBadge'
 import { CoursePlayer, downloadCourseMedia } from '@/components/CoursePlayer'
 import { Logo } from '@/components/Logo'
 import { Avatar } from '@/components/Avatar'
@@ -27,6 +26,9 @@ import { getDailyVerse, getAnnouncements, Announcement } from '@/lib/courses'
 import { playSuccess } from '@/lib/sound'
 import { toast, toastError } from '@/components/ui/Toast'
 import { MessagingPanel } from '@/components/MessagingPanel'
+import { DevoirsTab } from '@/components/DevoirsTab'
+import { RankingsTab } from '@/components/RankingsTab'
+import { AttendanceGauge } from '@/components/AttendanceGauge'
 import {
   getAssignments,
   getClassCourses,
@@ -710,6 +712,7 @@ export default function StudentDashboard() {
     { key: 'revue', label: 'Revue', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> },
     { key: 'service', label: 'Service', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 21h8m-4-4v4m-4-8a4 4 0 0 1-4-4V4h16v5a4 4 0 0 1-4 4h-4z"/><circle cx="12" cy="7" r="3"/></svg> },
     { key: 'messagerie', label: 'Messagerie', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
+    { key: 'badges', label: 'Badges', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="14" r="5.5"/><circle cx="12" cy="14" r="2"/><path d="M9 3l3 4 3-4M9 3v3M15 3v3"/></svg> },
     { key: 'profil', label: 'Profil', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
   ]
 
@@ -765,6 +768,10 @@ export default function StudentDashboard() {
 
       {tab === 'academie' && (
         <div className="space-y-5">
+          {/* Assiduité compacte */}
+          <AttendanceGauge weeks={weeks} presenceRate={progress?.presenceRate ?? undefined} />
+
+          {/* Verset du jour */}
           <Card>
             <div className="quote-in relative pl-10">
               <span
@@ -788,8 +795,7 @@ export default function StudentDashboard() {
             </div>
           </Card>
 
-          <StreakBadge weeks={weeks} />
-
+          {/* Recherche rapprochée du player */}
           <Card>
             <CardTitle>Rechercher un cours</CardTitle>
             <CardDescription className="mt-1 mb-3">
@@ -1049,92 +1055,21 @@ export default function StudentDashboard() {
 
       {tab === 'devoirs' && (
         <div className="space-y-5">
-          <Card>
-            <CardTitle>Devoirs & exercices</CardTitle>
-            <CardDescription className="mt-1 mb-3">
-              Rend tes réponses ici : ta réponse écrite et, si besoin, une pièce jointe (photo, document).
-            </CardDescription>
-            {assignments.length === 0 ? (
-              <p className="text-sm text-pierre">Aucun devoir ni exercice publié pour ce cours.</p>
-            ) : (
-              <ul className="space-y-4">
-                {assignments.map((a) => {
-                  const submitted = submissionByAssignment.get(a.id)
-                  return (
-                    <li key={a.id} className="rounded-card border border-pierre/15 p-4">
-                      <p className="font-medium text-bordeaux">
-                        {a.type === 'DEVOIR' ? 'Devoir' : 'Exercice'} — {a.description}
-                      </p>
-                      {a.due_date && (
-                        <p className="mt-0.5 text-xs text-pierre">À rendre : {formatDate(a.due_date)}</p>
-                      )}
-                      {submitted && (
-                        <div className="mt-3 rounded-md border border-olive/30 bg-olive/5 p-3 text-sm">
-                          <p className="text-olive">
-                            Rendu le {submitted.submitted_at ? formatDate(submitted.submitted_at) : '—'}
-                          </p>
-                          {submitted.grade !== null && submitted.grade !== undefined && (
-                            <p className="mt-1 font-medium text-bordeaux">Note : {submitted.grade}/20</p>
-                          )}
-                          {submitted.feedback && <p className="mt-1 text-pierre">{submitted.feedback}</p>}
-                          <Button
-                            variant="ghost"
-                            className="mt-2 !px-3 !py-1 text-xs underline"
-                            onClick={() => openDraft(a.id)}
-                          >
-                            Renvoyer une nouvelle réponse
-                          </Button>
-                        </div>
-                      )}
-                      {(submitted === undefined || drafts[a.id] !== undefined) && (
-                        <form
-                          className="mt-3 space-y-2"
-                          onSubmit={(e) => handleSubmitAssignment(a.id, e)}
-                          onClick={() => openDraft(a.id)}
-                        >
-                          <textarea
-                            rows={3}
-                            placeholder="Ta réponse…"
-                            className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or focus-visible:outline-none"
-                            value={drafts[a.id]?.content ?? ''}
-                            onChange={(e) =>
-                              setDrafts((prev) => ({
-                                ...prev,
-                                [a.id]: { content: e.target.value, file: prev[a.id]?.file ?? null },
-                              }))
-                            }
-                          />
-                          <input
-                            type="file"
-                            accept="image/*,application/pdf,audio/*"
-                            className="block w-full text-xs text-pierre file:mr-3 file:rounded-md file:border-0 file:bg-bordeaux file:px-3 file:py-1.5 file:text-xs file:text-parchemin"
-                            onChange={(e) =>
-                              setDrafts((prev) => ({
-                                ...prev,
-                                [a.id]: {
-                                  content: prev[a.id]?.content ?? '',
-                                  file: e.target.files?.[0] ?? null,
-                                },
-                              }))
-                            }
-                          />
-                          <Button
-                            type="submit"
-                            variant="outline"
-                            className="!px-3 !py-1.5 text-xs"
-                            disabled={submitting[a.id]}
-                          >
-                            {submitting[a.id] ? 'Envoi…' : submitted ? 'Renvoyer' : 'Répondre'}
-                          </Button>
-                          {submitMsg[a.id] && <p className="text-xs text-olive">{submitMsg[a.id]}</p>}
-                        </form>
-                      )}
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </Card>
+          <DevoirsTab
+            assignments={assignments}
+            submissions={submissions}
+            courseName={course?.title ?? 'Cours actuel'}
+            onSubmit={async (assignmentId, content, file) => {
+              if (!profile) return
+              await submitAssignment({
+                studentId: profile.id,
+                assignmentId,
+                content,
+                ...(file ? { file } : {}),
+              })
+              setSubmissions(await getMySubmissions(profile.id))
+            }}
+          />
 
           <Card>
             <CardTitle>Notes manuscrites</CardTitle>
@@ -1488,6 +1423,35 @@ export default function StudentDashboard() {
       {tab === 'messagerie' && (
         <div className="space-y-4">
           <MessagingPanel currentUserId={profile?.id ?? ''} userRole="ETUDIANT" />
+        </div>
+      )}
+
+      {tab === 'badges' && (
+        <div className="space-y-5">
+          <RankingsTab currentUserId={profile?.id ?? ''} />
+
+          <Card>
+            <CardTitle>Mes badges</CardTitle>
+            <CardDescription className="mt-1 mb-3">
+              Chaque étape franchie dessine ta fidélité. Seul ton badge actif s'affiche sur ton avatar.
+            </CardDescription>
+            {earnedBadges.length > 0 ? (
+              <div className="flex items-center gap-4">
+                <Badge type={earnedBadges[0]} size={56} />
+                <div>
+                  <p className="font-display text-lg text-bordeaux">
+                    {isBadgeKey(earnedBadges[0]) ? BADGES[earnedBadges[0]].label : earnedBadges[0]}
+                  </p>
+                  <p className="text-xs text-pierre">{earnedBadges.length} badge{earnedBadges.length > 1 ? 's' : ''} obtenu{earnedBadges.length > 1 ? 's' : ''}</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-pierre">Aucun badge pour le moment.</p>
+            )}
+            <Button variant="outline" className="!px-3 !py-1.5 text-xs mt-3" onClick={openBadgeHall}>
+              Voir la salle des badges →
+            </Button>
+          </Card>
         </div>
       )}
 
