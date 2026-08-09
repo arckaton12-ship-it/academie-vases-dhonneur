@@ -1396,6 +1396,49 @@ export async function addSoulEntry(
 }
 
 // ──────────────────────────────────────────────
+// Annonces (modérateur → étudiants de sa classe)
+// ──────────────────────────────────────────────
+
+export interface Announcement {
+  id: string
+  moderator_id: string
+  class_id: string
+  title: string
+  content: string
+  created_at: string
+  moderator?: { first_name: string; last_name: string } | null
+  class?: Pick<ClassRow, 'name'> | null
+}
+
+export async function getAnnouncements(classId?: string): Promise<Announcement[]> {
+  let query = supabase
+    .from('announcements')
+    .select('*, moderator:profiles(first_name, last_name), class:classes(name)')
+    .order('created_at', { ascending: false })
+  if (classId) query = query.eq('class_id', classId)
+  const { data, error } = await query
+  if (error) throw error
+  return (data ?? []) as Announcement[]
+}
+
+export async function createAnnouncement(classId: string, title: string, content: string): Promise<void> {
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData.user) throw new Error('Non authentifié')
+  const { error } = await supabase.from('announcements').insert({
+    moderator_id: userData.user.id,
+    class_id: classId,
+    title: title.trim(),
+    content: content.trim(),
+  })
+  if (error) throw error
+}
+
+export async function deleteAnnouncement(announcementId: string): Promise<void> {
+  const { error } = await supabase.from('announcements').delete().eq('id', announcementId)
+  if (error) throw error
+}
+
+// ──────────────────────────────────────────────
 // Quiz
 // ──────────────────────────────────────────────
 

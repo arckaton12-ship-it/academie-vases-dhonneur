@@ -17,60 +17,51 @@ import { SoulTrackingTab } from '@/components/SoulTrackingTab'
 import { supabase } from '@/lib/supabase'
 import {
   advanceStudent,
-  createCourse,
-  updateCourse,
-  deleteCourse,
   getClasses,
   getCourses,
   getStreaks,
   getStudents,
   getSubmissions,
-  getSubmissionsForGrading,
-  gradeSubmission,
-  getResumesForGrading,
-  gradeResume,
   getModerators,
   getModeratorClasses,
   getModeratorSchedules,
-  uploadCourseFile,
-  uploadSupportFile,
-  getMiniTask,
-  saveMiniTask,
   getMiniTasksAll,
   getMiniTaskResponses,
-  getModerationSupport,
-  saveModerationSupport,
   getSupportsAll,
   createModerationReport,
   getModerationReports,
   deleteModerationReport,
+  getAnnouncements,
+  createAnnouncement,
+  deleteAnnouncement,
   ClassRow,
   Course,
   StudentProfile,
   Submission,
   Streak,
-  ResumeForGrading,
   ModeratorProfile,
   ModeratorSchedule,
   MiniTask,
   MiniTaskResponseWithStudent,
   ModerationSupport,
   ModerationReport,
+  Announcement,
 } from '@/lib/courses'
 import { getCurrentProfile, signOut } from '@/lib/auth'
 import { exportToCSV, exportToPDF, ExportRow } from '@/lib/export'
+import { MessagingPanel } from '@/components/MessagingPanel'
 
-type Tab = 'programme' | 'upload' | 'rapport' | 'passage' | 'notation' | 'moderateurs' | 'suivi' | 'quiz'
+type Tab = 'programme' | 'rapport' | 'passage' | 'suivi' | 'annonces' | 'messagerie' | 'moderateurs' | 'quiz'
 
 const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
 
 const tabIcons: Record<Tab, React.ReactNode> = {
   programme: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
-  upload: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
   rapport: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
   passage: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>,
-  notation: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
   suivi: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>,
+  annonces: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+  messagerie: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
   moderateurs: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
   quiz: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
 }
@@ -156,11 +147,11 @@ export default function ModeratorDashboard() {
 
   const modTabs: [Tab, string][] = [
     ['programme', 'Programme'],
-    ['upload', 'Upload'],
     ['rapport', 'Rapport'],
     ['passage', 'Passage'],
-    ['notation', 'Notation'],
     ['suivi', "Suivi d'âme"],
+    ['annonces', 'Annonces'],
+    ['messagerie', 'Messagerie'],
     ['moderateurs', 'Modérateurs'],
     ['quiz', 'Quiz (QCM)'],
   ]
@@ -226,14 +217,6 @@ export default function ModeratorDashboard() {
           supports={supports}
         />
       )}
-      {tab === 'upload' && (
-        <UploadTab
-          classes={classes}
-          courses={courses}
-          ownClassIds={ownClassIds}
-          onChanged={() => loadAll()}
-        />
-      )}
       {tab === 'rapport' && (
         <RapportTab
           students={students}
@@ -248,8 +231,13 @@ export default function ModeratorDashboard() {
       {tab === 'passage' && (
         <PassageTab students={students} classes={classes} classById={classById} onAdvanced={() => loadAll()} />
       )}
-      {tab === 'notation' && (
-        <NotationTab onGraded={() => loadAll()} />
+      {tab === 'annonces' && (
+        <AnnoncesTab classes={classes} ownClassIds={ownClassIds} />
+      )}
+      {tab === 'messagerie' && (
+        <div className="space-y-4">
+          <MessagingPanel currentUserId={moderatorProfile?.id ?? ''} userRole="MODERATEUR" />
+        </div>
       )}
       {tab === 'suivi' && (
         <SoulTrackingTabWrapper />
@@ -473,32 +461,20 @@ function formatDateLong(value: string): string {
   })
 }
 
-function UploadTab({
+function AnnoncesTab({
   classes,
-  courses,
   ownClassIds,
-  onChanged,
 }: {
   classes: ClassRow[]
-  courses: Course[]
   ownClassIds: string[]
-  onChanged: () => void
 }) {
-  const [editingId, setEditingId] = useState('')
+  const [annonces, setAnnonces] = useState<Announcement[]>([])
+  const [loading, setLoading] = useState(true)
   const [classId, setClassId] = useState('')
-  const [week, setWeek] = useState('1')
-  const [sessionDate, setSessionDate] = useState('')
   const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [audioFile, setAudioFile] = useState<File | null>(null)
-  const [videoFile, setVideoFile] = useState<File | null>(null)
-  const [miniTask, setMiniTask] = useState('')
-  const [supportContent, setSupportContent] = useState('')
-  const [supportFile, setSupportFile] = useState<File | null>(null)
-  const [supportFileUrl, setSupportFileUrl] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  const [content, setContent] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
 
   const manageableClasses = ownClassIds.length > 0
     ? classes.filter((c) => ownClassIds.includes(c.id))
@@ -508,312 +484,132 @@ function UploadTab({
     if (!classId && manageableClasses.length > 0) setClassId(manageableClasses[0].id)
   }, [manageableClasses, classId])
 
+  async function loadAnnonces() {
+    if (!classId) return
+    setLoading(true)
+    try {
+      const data = await getAnnouncements(classId)
+      setAnnonces(data)
+    } catch {
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
-    if (!editingId) return
-    const course = courses.find((c) => c.id === editingId)
-    if (!course) return
-    setClassId(course.class_id ?? '')
-    setWeek(String(course.week))
-    setSessionDate(course.session_date ?? '')
-    setTitle(course.title)
-    setDescription(course.description ?? '')
-    setAudioFile(null)
-    setVideoFile(null)
-    getMiniTask(editingId)
-      .then((t) => setMiniTask(t?.instruction ?? ''))
-      .catch(() => setMiniTask(''))
-    getModerationSupport(editingId)
-      .then((s) => {
-        setSupportContent(s?.content ?? '')
-        setSupportFileUrl(s?.file_url ?? '')
-      })
-      .catch(() => {
-        setSupportContent('')
-        setSupportFileUrl('')
-      })
-  }, [editingId, courses])
+    loadAnnonces()
+  }, [classId])
 
-  function startEdit(id: string) {
-    setEditingId(id)
-    setError(null)
-    setSuccess(null)
-  }
-
-  function resetForm() {
-    setEditingId('')
-    setClassId(manageableClasses[0]?.id ?? '')
-    setWeek('1')
-    setSessionDate('')
-    setTitle('')
-    setDescription('')
-    setAudioFile(null)
-    setVideoFile(null)
-    setMiniTask('')
-    setSupportContent('')
-    setSupportFile(null)
-    setSupportFileUrl('')
-  }
-
-  async function saveExtras(courseId: string) {
-    await saveMiniTask(courseId, miniTask)
-    const fileUrl = supportFile ? await uploadSupportFile(supportFile) : supportFileUrl
-    await saveModerationSupport(courseId, {
-      content: supportContent,
-      fileUrl,
-      removeFile: !supportFile && !supportContent && !fileUrl,
-    })
-  }
-
-  async function handleSubmit(e: FormEvent) {
+  async function handleCreate(e: FormEvent) {
     e.preventDefault()
-    if (!classId || !title.trim()) {
-      setError('La classe et le titre du cours sont obligatoires.')
-      return
-    }
-    if (!editingId && !audioFile && !videoFile) {
-      setError('Ajoute au moins un fichier audio ou vidéo pour un nouveau cours.')
-      return
-    }
-    setLoading(true)
-    setError(null)
-    setSuccess(null)
+    if (!classId || !title.trim() || !content.trim()) return
+    setSaving(true)
+    setMessage(null)
     try {
-      if (editingId) {
-        const audioPath = audioFile ? await uploadCourseFile(audioFile) : undefined
-        const videoPath = videoFile ? await uploadCourseFile(videoFile) : undefined
-        await updateCourse(editingId, {
-          classId,
-          title: title.trim(),
-          week: Number(week) || 1,
-          sessionDate: sessionDate || undefined,
-          description: description.trim() || undefined,
-          ...(audioPath !== undefined ? { audioPath } : {}),
-          ...(videoPath !== undefined ? { videoPath } : {}),
-        })
-        await saveExtras(editingId)
-        setSuccess('Cours modifié avec succès.')
-      } else {
-        const audioPath = audioFile ? await uploadCourseFile(audioFile) : undefined
-        const videoPath = videoFile ? await uploadCourseFile(videoFile) : undefined
-        const created = await createCourse({
-          classId,
-          title: title.trim(),
-          week: Number(week) || 1,
-          sessionDate: sessionDate || undefined,
-          description: description.trim() || undefined,
-          audioPath,
-          videoPath,
-        })
-        await saveExtras(created.id)
-        setSuccess('Cours publié avec succès.')
-      }
-      onChanged()
-      resetForm()
+      await createAnnouncement(classId, title.trim(), content.trim())
+      setTitle('')
+      setContent('')
+      setMessage('Annonce publiée.')
+      await loadAnnonces()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors de l\u2019enregistrement du cours.')
+      setMessage(err instanceof Error ? err.message : 'Erreur lors de la publication.')
     } finally {
-      setLoading(false)
+      setSaving(false)
     }
   }
 
-  async function handleDelete() {
-    if (!editingId) return
-    if (!window.confirm('Supprimer définitivement ce cours et ses devoirs ?')) return
-    setLoading(true)
-    setError(null)
-    setSuccess(null)
+  async function handleDelete(id: string) {
+    if (!window.confirm('Supprimer cette annonce ?')) return
     try {
-      await deleteCourse(editingId)
-      setSuccess('Cours supprimé.')
-      onChanged()
-      resetForm()
+      await deleteAnnouncement(id)
+      setMessage('Annonce supprimée.')
+      await loadAnnonces()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur de suppression.')
-    } finally {
-      setLoading(false)
+      setMessage(err instanceof Error ? err.message : 'Erreur de suppression.')
     }
   }
 
   return (
     <div className="space-y-4">
       <Card>
-        <CardTitle>{editingId ? 'Modifier un cours' : 'Publier un cours'}</CardTitle>
-        <CardDescription className="mt-1 mb-4">
-          {editingId
-            ? 'Modifie le titre, la description, la semaine ou remplace les fichiers audio/vidéo.'
-            : 'Les fichiers audio/vidéo sont envoyés dans le bucket « cours » et le cours est créé dans la table courses.'}
+        <CardTitle>Publier une annonce</CardTitle>
+        <CardDescription className="mt-1 mb-3">
+          Envoie un message visible par les étudiants de ta classe (événement, rappel, info importante).
         </CardDescription>
-
-        <div className="mb-4">
-          <Label htmlFor="course-pick">Cours existant (pour modifier)</Label>
+        <div className="mb-3">
+          <Label htmlFor="annonce-class">Classe</Label>
           <select
-            id="course-pick"
-            value={editingId}
-            onChange={(e) => (e.target.value ? startEdit(e.target.value) : resetForm())}
-            className="mt-1 w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
+            id="annonce-class"
+            value={classId}
+            onChange={(e) => setClassId(e.target.value)}
+            className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
           >
-            <option value="">— Nouveau cours —</option>
-            {courses.map((c) => (
-              <option key={c.id} value={c.id}>
-                Semaine {c.week} — {c.title}
-              </option>
+            {manageableClasses.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleCreate} className="space-y-3">
           <div>
-            <Label htmlFor="course-class">Classe</Label>
-            <select
-              id="course-class"
-              value={classId}
-              onChange={(e) => setClassId(e.target.value)}
-              className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
-            >
-              {manageableClasses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="course-week">Semaine</Label>
-              <Input
-                id="course-week"
-                type="number"
-                min={1}
-                value={week}
-                onChange={(e) => setWeek(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="course-date">Date de la session</Label>
-              <Input
-                id="course-date"
-                type="date"
-                value={sessionDate}
-                onChange={(e) => setSessionDate(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="course-title">Titre du cours</Label>
+            <Label htmlFor="annonce-title">Titre</Label>
             <Input
-              id="course-title"
+              id="annonce-title"
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex. La foi qui agit"
+              placeholder="Ex. Réunion spéciale dimanche"
             />
           </div>
-
           <div>
-            <Label htmlFor="course-description">Description</Label>
+            <Label htmlFor="annonce-content">Contenu</Label>
             <textarea
-              id="course-description"
-              rows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Résumé ou thème du cours…"
+              id="annonce-content"
+              required
+              rows={3}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Décris l'annonce…"
               className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
             />
           </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="course-audio">
-                {editingId ? 'Remplacer l\u2019audio (optionnel)' : 'Fichier audio (mp3, m4a, …)'}
-              </Label>
-              <input
-                id="course-audio"
-                type="file"
-                accept="audio/*"
-                onChange={(e) => setAudioFile(e.target.files?.[0] ?? null)}
-                className="block w-full text-sm text-pierre file:mr-3 file:rounded-md file:border-0 file:bg-bordeaux file:px-3 file:py-1.5 file:text-sm file:text-parchemin hover:file:bg-[#4a2234]"
-              />
-              {audioFile && <p className="mt-1 text-xs text-pierre">Sélectionné : {audioFile.name}</p>}
-            </div>
-            <div>
-              <Label htmlFor="course-video">
-                {editingId ? 'Remplacer la vidéo (optionnel)' : 'Fichier vidéo (mp4, webm, …)'}
-              </Label>
-              <input
-                id="course-video"
-                type="file"
-                accept="video/*"
-                onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)}
-                className="block w-full text-sm text-pierre file:mr-3 file:rounded-md file:border-0 file:bg-bordeaux file:px-3 file:py-1.5 file:text-sm file:text-parchemin hover:file:bg-[#4a2234]"
-              />
-              {videoFile && <p className="mt-1 text-xs text-pierre">Sélectionné : {videoFile.name}</p>}
-            </div>
-          </div>
-
-          <div className="rounded-md border border-or/40 bg-parchemin p-3">
-            <Label htmlFor="course-minitask">Mini-tâche pratique de la semaine</Label>
-            <CardDescription className="mt-1 mb-2">
-              La tâche que l'étudiant devra réaliser et raconter après avoir suivi ce cours.
-            </CardDescription>
-            <textarea
-              id="course-minitask"
-              rows={2}
-              value={miniTask}
-              onChange={(e) => setMiniTask(e.target.value)}
-              placeholder="Ex. Raconte une situation de cette semaine où tu as dû agir par la foi…"
-              className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
-            />
-          </div>
-
-          <div className="rounded-md border border-sable/60 bg-white/60 p-3">
-            <Label htmlFor="course-support">Mon plan / support de modération</Label>
-            <CardDescription className="mt-1 mb-2">
-              Ton support personnel pour modérer ce cours : notes de préparation, plan, document joint.
-            </CardDescription>
-            <textarea
-              id="course-support"
-              rows={2}
-              value={supportContent}
-              onChange={(e) => setSupportContent(e.target.value)}
-              placeholder="Notes de préparation, plan de modération…"
-              className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
-            />
-            <input
-              id="course-support-file"
-              type="file"
-              onChange={(e) => setSupportFile(e.target.files?.[0] ?? null)}
-              className="mt-2 block w-full text-sm text-pierre file:mr-3 file:rounded-md file:border-0 file:bg-bordeaux file:px-3 file:py-1.5 file:text-sm file:text-parchemin hover:file:bg-[#4a2234]"
-            />
-            {supportFile && (
-              <p className="mt-1 text-xs text-pierre">Sélectionné : {supportFile.name}</p>
-            )}
-            {supportFileUrl && !supportFile && (
-              <p className="mt-1 text-xs text-pierre">
-                Document actuel :{' '}
-                <a href={supportFileUrl} target="_blank" rel="noreferrer" className="underline">
-                  ouvrir
-                </a>
-              </p>
-            )}
-          </div>
-
-          <FieldError>{error ?? undefined}</FieldError>
-          {success && <p className="text-sm text-olive">{success}</p>}
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Enregistrement…' : editingId ? 'Enregistrer les modifications' : 'Publier le cours'}
-            </Button>
-            {editingId && (
-              <Button type="button" variant="ghost" className="text-red-700" onClick={handleDelete}>
-                Supprimer ce cours
-              </Button>
-            )}
-          </div>
+          <Button type="submit" disabled={saving}>
+            {saving ? 'Publication…' : 'Publier l\u2019annonce'}
+          </Button>
         </form>
       </Card>
+
+      <Card>
+        <CardTitle>Annonces publiées</CardTitle>
+        {loading ? (
+          <p className="text-sm text-pierre">Chargement…</p>
+        ) : annonces.length === 0 ? (
+          <p className="text-sm text-pierre">Aucune annonce pour cette classe.</p>
+        ) : (
+          <ul className="space-y-3">
+            {annonces.map((a) => (
+              <li key={a.id} className="rounded-card border border-pierre/15 p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-medium text-bordeaux">{a.title}</p>
+                    <p className="mt-1 text-sm text-pierre whitespace-pre-wrap">{a.content}</p>
+                    <p className="mt-2 text-[11px] text-pierre">
+                      {new Date(a.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleDelete(a.id)}
+                    className="text-xs text-red-700 underline flex-shrink-0"
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+
+      {message && <p className="text-sm text-olive">{message}</p>}
     </div>
   )
 }
@@ -1291,268 +1087,6 @@ function SoulTrackingTabWrapper() {
         </div>
       )}
     </Card>
-  )
-}
-
-function NotationTab({ onGraded }: { onGraded: () => void }) {
-  const [items, setItems] = useState<Submission[]>([])
-  const [loading, setLoading] = useState(true)
-  const [grades, setGrades] = useState<Record<string, string>>({})
-  const [feedbacks, setFeedbacks] = useState<Record<string, string>>({})
-  const [savingId, setSavingId] = useState<string | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
-
-  const [resumes, setResumes] = useState<ResumeForGrading[]>([])
-  const [rGrades, setRGrades] = useState<Record<string, string>>({})
-  const [rFeedbacks, setRFeedbacks] = useState<Record<string, string>>({})
-  const [rSavingId, setRSavingId] = useState<string | null>(null)
-
-  useEffect(() => {
-    Promise.all([getSubmissionsForGrading(), getResumesForGrading()])
-      .then(([data, rdata]) => {
-        setItems(data)
-        const g: Record<string, string> = {}
-        const f: Record<string, string> = {}
-        for (const s of data) {
-          if (s.grade !== null && s.grade !== undefined) g[s.id] = String(s.grade)
-          f[s.id] = s.feedback ?? ''
-        }
-        setGrades(g)
-        setFeedbacks(f)
-        setResumes(rdata)
-        const rg: Record<string, string> = {}
-        const rf: Record<string, string> = {}
-        for (const r of rdata) {
-          if (r.grade !== null && r.grade !== undefined) rg[r.id] = String(r.grade)
-          rf[r.id] = r.feedback ?? ''
-        }
-        setRGrades(rg)
-        setRFeedbacks(rf)
-      })
-      .catch((err) => setMessage(err instanceof Error ? err.message : 'Erreur de chargement.'))
-      .finally(() => setLoading(false))
-  }, [])
-
-  async function handleGrade(sub: Submission) {
-    const raw = grades[sub.id]?.trim()
-    const grade = raw === '' ? null : Number(raw)
-    if (grade !== null && (Number.isNaN(grade) || grade < 0 || grade > 20)) {
-      setMessage('La note doit être entre 0 et 20.')
-      return
-    }
-    setSavingId(sub.id)
-    setMessage(null)
-    try {
-      await gradeSubmission(sub.id, grade, feedbacks[sub.id]?.trim() ?? '')
-      setItems((prev) =>
-        prev.map((s) =>
-          s.id === sub.id ? { ...s, grade, feedback: feedbacks[sub.id]?.trim() ?? '' } : s
-        )
-      )
-      setMessage('Note et appréciation enregistrées.')
-      onGraded()
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Erreur à l\u2019enregistrement.')
-    } finally {
-      setSavingId(null)
-    }
-  }
-
-  async function handleGradeResume(resume: ResumeForGrading) {
-    const raw = rGrades[resume.id]?.trim()
-    const grade = raw === '' ? null : Number(raw)
-    if (grade !== null && (Number.isNaN(grade) || grade < 0 || grade > 20)) {
-      setMessage('La note doit être entre 0 et 20.')
-      return
-    }
-    setRSavingId(resume.id)
-    setMessage(null)
-    try {
-      await gradeResume(resume.id, grade, rFeedbacks[resume.id]?.trim() ?? '')
-      setResumes((prev) =>
-        prev.map((r) =>
-          r.id === resume.id ? { ...r, grade, feedback: rFeedbacks[resume.id]?.trim() ?? '' } : r
-        )
-      )
-      setMessage('Correction et note enregistrées.')
-      onGraded()
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Erreur à l\u2019enregistrement.')
-    } finally {
-      setRSavingId(null)
-    }
-  }
-
-  if (loading) {
-    return (
-      <Card>
-        <CardDescription>Chargement des rendus…</CardDescription>
-      </Card>
-    )
-  }
-
-  return (
-    <div className="space-y-5">
-      <Card>
-        <CardTitle>Notation des rendus</CardTitle>
-        <CardDescription className="mt-1 mb-3">
-          Note les réponses et les notes manuscrites des étudiants, cours après cours, avec une
-          appréciation.
-        </CardDescription>
-        {items.length === 0 ? (
-          <p className="text-sm text-pierre">Aucun rendu à noter pour le moment.</p>
-        ) : (
-          <ul className="space-y-4">
-            {items.map((sub) => (
-              <li key={sub.id} className="rounded-card border border-pierre/15 p-4">
-                <p className="text-sm font-medium text-bordeaux">
-                  {sub.student?.first_name} {sub.student?.last_name}
-                </p>
-                {sub.type === 'notes' ? (
-                  <p className="mt-0.5 text-xs text-pierre">
-                    Notes manuscrites —{' '}
-                    {sub.course
-                      ? `Semaine ${sub.course.week} — ${sub.course.title}`
-                      : 'Sans cours'}
-                  </p>
-                ) : (
-                  <p className="mt-0.5 text-xs text-pierre">
-                    {sub.assignment?.type === 'DEVOIR' ? 'Devoir' : 'Exercice'} —{' '}
-                    {sub.assignment?.description ?? '—'}
-                  </p>
-                )}
-                {sub.content && (
-                  <p className="mt-2 rounded-md bg-white/60 px-3 py-2 text-sm text-pierre">
-                    {sub.content}
-                  </p>
-                )}
-                {sub.type === 'notes' && sub.attachments && sub.attachments.length > 0 ? (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {sub.attachments.map((url, i) => (
-                      <a
-                        key={i}
-                        href={url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block overflow-hidden rounded-md border border-sable/70"
-                        title="Voir la pièce jointe"
-                      >
-                        <img src={url} alt="Note manuscrite" className="h-24 w-32 object-cover" />
-                      </a>
-                    ))}
-                  </div>
-                ) : (
-                  sub.file_url && (
-                    <a
-                      href={sub.file_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-2 inline-block text-xs text-bordeaux underline"
-                    >
-                      Voir la pièce jointe
-                    </a>
-                  )
-                )}
-                <div className="mt-3 grid gap-3 sm:grid-cols-[110px_1fr]">
-                  <div>
-                    <Label htmlFor={`grade-${sub.id}`}>Note /20</Label>
-                    <Input
-                      id={`grade-${sub.id}`}
-                      type="number"
-                      min={0}
-                      max={20}
-                      value={grades[sub.id] ?? ''}
-                      onChange={(e) => setGrades((prev) => ({ ...prev, [sub.id]: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor={`fb-${sub.id}`}>Appréciation</Label>
-                    <Input
-                      id={`fb-${sub.id}`}
-                      value={feedbacks[sub.id] ?? ''}
-                      placeholder="Un mot d\u2019encouragement pour cet étudiant…"
-                      onChange={(e) =>
-                        setFeedbacks((prev) => ({ ...prev, [sub.id]: e.target.value }))
-                      }
-                    />
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  className="mt-3 !px-3 !py-1.5 text-xs"
-                  disabled={savingId === sub.id}
-                  onClick={() => handleGrade(sub)}
-                >
-                  {savingId === sub.id ? 'Enregistrement…' : 'Enregistrer la note'}
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
-
-      <Card>
-        <CardTitle>Correction des résumés</CardTitle>
-        <CardDescription className="mt-1 mb-3">
-          Évalue les résumés de cours (note /20 et appréciation) pour accompagner les étudiants.
-        </CardDescription>
-        {resumes.length === 0 ? (
-          <p className="text-sm text-pierre">Aucun résumé à corriger pour le moment.</p>
-        ) : (
-          <ul className="space-y-4">
-            {resumes.map((r) => (
-              <li key={r.id} className="rounded-card border border-pierre/15 p-4">
-                <p className="text-sm font-medium text-bordeaux">
-                  {r.student?.first_name} {r.student?.last_name}
-                </p>
-                <p className="mt-0.5 text-xs text-pierre">
-                  {r.course ? `Semaine ${r.course.week} — ${r.course.title}` : 'Cours'}
-                </p>
-                <p className="mt-2 rounded-md bg-white/60 px-3 py-2 text-sm text-pierre">
-                  {r.content}
-                </p>
-                <div className="mt-3 grid gap-3 sm:grid-cols-[110px_1fr]">
-                  <div>
-                    <Label htmlFor={`rgrade-${r.id}`}>Note /20</Label>
-                    <Input
-                      id={`rgrade-${r.id}`}
-                      type="number"
-                      min={0}
-                      max={20}
-                      value={rGrades[r.id] ?? ''}
-                      onChange={(e) =>
-                        setRGrades((prev) => ({ ...prev, [r.id]: e.target.value }))
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor={`rfb-${r.id}`}>Appréciation</Label>
-                    <Input
-                      id={`rfb-${r.id}`}
-                      value={rFeedbacks[r.id] ?? ''}
-                      placeholder="Un mot d\u2019encouragement…"
-                      onChange={(e) =>
-                        setRFeedbacks((prev) => ({ ...prev, [r.id]: e.target.value }))
-                      }
-                    />
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  className="mt-3 !px-3 !py-1.5 text-xs"
-                  disabled={rSavingId === r.id}
-                  onClick={() => handleGradeResume(r)}
-                >
-                  {rSavingId === r.id ? 'Enregistrement…' : 'Enregistrer la correction'}
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
-
-      {message && <p className="text-sm text-olive">{message}</p>}
-    </div>
   )
 }
 

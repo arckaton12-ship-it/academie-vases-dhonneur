@@ -53,20 +53,39 @@ import {
   BadgeRow,
   MiniTaskResponseRow,
   MeditationVerse,
+  createCourse,
+  updateCourse,
+  deleteCourse,
+  uploadCourseFile,
+  uploadSupportFile,
+  getMiniTask,
+  saveMiniTask,
+  getModerationSupport,
+  saveModerationSupport,
+  getSubmissionsForGrading,
+  gradeSubmission,
+  getResumesForGrading,
+  gradeResume,
+  ResumeForGrading,
 } from '@/lib/courses'
 import { getCurrentProfile, signOut } from '@/lib/auth'
 import { exportToCSV, exportToPDF, exportStudentBulletinPDF, ExportRow } from '@/lib/export'
+import { FieldError } from '@/components/ui/Input'
+import { MessagingPanel } from '@/components/MessagingPanel'
 
-type Section = 'vue' | 'classes' | 'etudiants' | 'moderateurs' | 'versets' | 'export'
+type Section = 'vue' | 'classes' | 'cours' | 'notation' | 'etudiants' | 'moderateurs' | 'versets' | 'messagerie' | 'export'
 
 const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
 
 const sectionIcons: Record<Section, React.ReactNode> = {
   vue: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
   classes: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+  cours: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>,
+  notation: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
   etudiants: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>,
   moderateurs: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
   versets: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg>,
+  messagerie: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
   export: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
 }
 
@@ -663,9 +682,12 @@ export default function AdminDashboard() {
   const adminSections: [Section, string][] = [
     ['vue', "Vue d'ensemble"],
     ['classes', 'Classes'],
+    ['cours', 'Cours'],
+    ['notation', 'Notation'],
     ['etudiants', 'Étudiants'],
     ['moderateurs', 'Modérateurs'],
     ['versets', 'Versets'],
+    ['messagerie', 'Messagerie'],
     ['export', 'Export'],
   ]
 
@@ -903,6 +925,16 @@ export default function AdminDashboard() {
             </Card>
           )}
         </div>
+      )}
+
+      {section === 'cours' && (
+        <CoursTab classes={classes} courses={courses} onRefresh={() => {
+          getCourses().then(setCourses).catch(() => {})
+        }} />
+      )}
+
+      {section === 'notation' && (
+        <NotationTab onGraded={() => {}} />
       )}
 
       {section === 'etudiants' && (
@@ -1445,6 +1477,12 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {section === 'messagerie' && (
+        <div className="space-y-4">
+          <MessagingPanel currentUserId={adminProfile?.id ?? ''} userRole="ADMINISTRATEUR" />
+        </div>
+      )}
+
       {section === 'export' && (
         <Card>
           <CardTitle>Export des données</CardTitle>
@@ -1592,6 +1630,336 @@ export default function AdminDashboard() {
       )}
       </div>
     </SidebarLayout>
+  )
+}
+
+function CoursTab({
+  classes,
+  courses,
+  onRefresh,
+}: {
+  classes: ClassRow[]
+  courses: Course[]
+  onRefresh: () => void
+}) {
+  const [editingId, setEditingId] = useState('')
+  const [classId, setClassId] = useState('')
+  const [week, setWeek] = useState('1')
+  const [sessionDate, setSessionDate] = useState('')
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [audioFile, setAudioFile] = useState<File | null>(null)
+  const [videoFile, setVideoFile] = useState<File | null>(null)
+  const [audioUrl, setAudioUrl] = useState('')
+  const [videoUrl, setVideoUrl] = useState('')
+  const [miniTask, setMiniTask] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!classId && classes.length > 0) setClassId(classes[0].id)
+  }, [classes, classId])
+
+  useEffect(() => {
+    if (!editingId) return
+    const course = courses.find((c) => c.id === editingId)
+    if (!course) return
+    setClassId(course.class_id ?? '')
+    setWeek(String(course.week))
+    setSessionDate(course.session_date ?? '')
+    setTitle(course.title)
+    setDescription(course.description ?? '')
+    setAudioFile(null)
+    setVideoFile(null)
+    setAudioUrl(course.audio_url ?? '')
+    setVideoUrl(course.video_url ?? '')
+    getMiniTask(editingId).then((t) => setMiniTask(t?.instruction ?? '')).catch(() => setMiniTask(''))
+  }, [editingId, courses])
+
+  function resetForm() {
+    setEditingId('')
+    setClassId(classes[0]?.id ?? '')
+    setWeek('1')
+    setSessionDate('')
+    setTitle('')
+    setDescription('')
+    setAudioFile(null)
+    setVideoFile(null)
+    setAudioUrl('')
+    setVideoUrl('')
+    setMiniTask('')
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (!classId || !title.trim()) {
+      setError('La classe et le titre sont obligatoires.')
+      return
+    }
+    setLoading(true)
+    setError(null)
+    setSuccess(null)
+    try {
+      if (editingId) {
+        const audioPath = audioFile ? await uploadCourseFile(audioFile) : undefined
+        const videoPath = videoFile ? await uploadCourseFile(videoFile) : undefined
+        await updateCourse(editingId, {
+          classId,
+          title: title.trim(),
+          week: Number(week) || 1,
+          sessionDate: sessionDate || undefined,
+          description: description.trim() || undefined,
+          ...(audioPath !== undefined ? { audioPath } : {}),
+          ...(videoPath !== undefined ? { videoPath } : {}),
+        })
+        await saveMiniTask(editingId, miniTask)
+        setSuccess('Cours modifié.')
+      } else {
+        const audioPath = audioFile ? await uploadCourseFile(audioFile) : undefined
+        const videoPath = videoFile ? await uploadCourseFile(videoFile) : undefined
+        const created = await createCourse({
+          classId,
+          title: title.trim(),
+          week: Number(week) || 1,
+          sessionDate: sessionDate || undefined,
+          description: description.trim() || undefined,
+          audioPath,
+          videoPath,
+        })
+        await saveMiniTask(created.id, miniTask)
+        setSuccess('Cours publié.')
+      }
+      onRefresh()
+      resetForm()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!editingId) return
+    if (!window.confirm('Supprimer ce cours définitivement ?')) return
+    setLoading(true)
+    try {
+      await deleteCourse(editingId)
+      setSuccess('Cours supprimé.')
+      onRefresh()
+      resetForm()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardTitle>{editingId ? 'Modifier un cours' : 'Créer un cours'}</CardTitle>
+        <CardDescription className="mt-1 mb-4">
+          Gère les cours de chaque classe : titre, semaine, média (lien OU upload), mini-tâche.
+        </CardDescription>
+
+        <div className="mb-4">
+          <Label htmlFor="admin-course-pick">Cours existant</Label>
+          <select
+            id="admin-course-pick"
+            value={editingId}
+            onChange={(e) => (e.target.value ? setEditingId(e.target.value) : resetForm())}
+            className="mt-1 w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
+          >
+            <option value="">— Nouveau cours —</option>
+            {courses.map((c) => (
+              <option key={c.id} value={c.id}>Semaine {c.week} — {c.title}</option>
+            ))}
+          </select>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="admin-course-class">Classe</Label>
+            <select
+              id="admin-course-class"
+              value={classId}
+              onChange={(e) => setClassId(e.target.value)}
+              className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
+            >
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="admin-course-week">Semaine</Label>
+              <Input id="admin-course-week" type="number" min={1} value={week} onChange={(e) => setWeek(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="admin-course-date">Date</Label>
+              <Input id="admin-course-date" type="date" value={sessionDate} onChange={(e) => setSessionDate(e.target.value)} />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="admin-course-title">Titre</Label>
+            <Input id="admin-course-title" required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex. La foi qui agit" />
+          </div>
+
+          <div>
+            <Label htmlFor="admin-course-desc">Description</Label>
+            <textarea id="admin-course-desc" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Résumé ou thème…" className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or" />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label>Vidéo</Label>
+              <Input value={videoUrl} onChange={(e) => { setVideoUrl(e.target.value); setVideoFile(null) }} placeholder="Lien YouTube (optionnel)" />
+              <input type="file" accept="video/*" onChange={(e) => { setVideoFile(e.target.files?.[0] ?? null); setVideoUrl('') }} className="mt-2 block w-full text-sm text-pierre file:mr-3 file:rounded-md file:border-0 file:bg-bordeaux file:px-3 file:py-1.5 file:text-sm file:text-parchemin" />
+              <p className="mt-1 text-[11px] text-pierre italic">Les fichiers uploadés consomment la bande passante Supabase. Préfère un lien YouTube.</p>
+            </div>
+            <div>
+              <Label>Audio</Label>
+              <Input value={audioUrl} onChange={(e) => { setAudioUrl(e.target.value); setAudioFile(null) }} placeholder="Lien externe (optionnel)" />
+              <input type="file" accept="audio/*" onChange={(e) => { setAudioFile(e.target.files?.[0] ?? null); setAudioUrl('') }} className="mt-2 block w-full text-sm text-pierre file:mr-3 file:rounded-md file:border-0 file:bg-bordeaux file:px-3 file:py-1.5 file:text-sm file:text-parchemin" />
+            </div>
+          </div>
+
+          <div className="rounded-md border border-or/40 bg-parchemin p-3">
+            <Label htmlFor="admin-course-mt">Mini-tâche pratique</Label>
+            <textarea id="admin-course-mt" rows={2} value={miniTask} onChange={(e) => setMiniTask(e.target.value)} placeholder="La tâche que l'étudiant devra réaliser…" className="mt-1 w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or" />
+          </div>
+
+          <FieldError>{error ?? undefined}</FieldError>
+          {success && <p className="text-sm text-olive">{success}</p>}
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="submit" disabled={loading}>{loading ? 'Enregistrement…' : editingId ? 'Modifier' : 'Publier'}</Button>
+            {editingId && <Button type="button" variant="ghost" className="text-red-700" onClick={handleDelete}>Supprimer</Button>}
+          </div>
+        </form>
+      </Card>
+    </div>
+  )
+}
+
+function NotationTab({ onGraded }: { onGraded: () => void }) {
+  const [items, setItems] = useState<Submission[]>([])
+  const [loading, setLoading] = useState(true)
+  const [grades, setGrades] = useState<Record<string, string>>({})
+  const [feedbacks, setFeedbacks] = useState<Record<string, string>>({})
+  const [savingId, setSavingId] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
+  const [resumes, setResumes] = useState<ResumeForGrading[]>([])
+  const [rGrades, setRGrades] = useState<Record<string, string>>({})
+  const [rFeedbacks, setRFeedbacks] = useState<Record<string, string>>({})
+  const [rSavingId, setRSavingId] = useState<string | null>(null)
+
+  useEffect(() => {
+    Promise.all([getSubmissionsForGrading(), getResumesForGrading()])
+      .then(([data, rdata]) => {
+        setItems(data)
+        const g: Record<string, string> = {}
+        const f: Record<string, string> = {}
+        for (const s of data) {
+          if (s.grade !== null && s.grade !== undefined) g[s.id] = String(s.grade)
+          f[s.id] = s.feedback ?? ''
+        }
+        setGrades(g)
+        setFeedbacks(f)
+        setResumes(rdata)
+        const rg: Record<string, string> = {}
+        const rf: Record<string, string> = {}
+        for (const r of rdata) {
+          if (r.grade !== null && r.grade !== undefined) rg[r.id] = String(r.grade)
+          rf[r.id] = r.feedback ?? ''
+        }
+        setRGrades(rg)
+        setRFeedbacks(rf)
+      })
+      .catch((err) => setMessage(err instanceof Error ? err.message : 'Erreur de chargement.'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function handleGrade(sub: Submission) {
+    const raw = grades[sub.id]?.trim()
+    const grade = raw === '' ? null : Number(raw)
+    if (grade !== null && (Number.isNaN(grade) || grade < 0 || grade > 20)) {
+      setMessage('La note doit être entre 0 et 20.'); return
+    }
+    setSavingId(sub.id); setMessage(null)
+    try {
+      await gradeSubmission(sub.id, grade, feedbacks[sub.id]?.trim() ?? '')
+      setItems((prev) => prev.map((s) => s.id === sub.id ? { ...s, grade, feedback: feedbacks[sub.id]?.trim() ?? '' } : s))
+      setMessage('Note enregistrée.'); onGraded()
+    } catch (err) { setMessage(err instanceof Error ? err.message : 'Erreur.') } finally { setSavingId(null) }
+  }
+
+  async function handleGradeResume(r: ResumeForGrading) {
+    const raw = rGrades[r.id]?.trim()
+    const grade = raw === '' ? null : Number(raw)
+    if (grade !== null && (Number.isNaN(grade) || grade < 0 || grade > 20)) {
+      setMessage('La note doit être entre 0 et 20.'); return
+    }
+    setRSavingId(r.id); setMessage(null)
+    try {
+      await gradeResume(r.id, grade, rFeedbacks[r.id]?.trim() ?? '')
+      setResumes((prev) => prev.map((x) => x.id === r.id ? { ...x, grade, feedback: rFeedbacks[r.id]?.trim() ?? '' } : x))
+      setMessage('Correction enregistrée.'); onGraded()
+    } catch (err) { setMessage(err instanceof Error ? err.message : 'Erreur.') } finally { setRSavingId(null) }
+  }
+
+  if (loading) return <Card><CardDescription>Chargement…</CardDescription></Card>
+
+  return (
+    <div className="space-y-5">
+      <Card>
+        <CardTitle>Notation des rendus</CardTitle>
+        <CardDescription className="mt-1 mb-3">Note les devoirs, exercices et notes manuscrites des étudiants.</CardDescription>
+        {items.length === 0 ? <p className="text-sm text-pierre">Aucun rendu à noter.</p> : (
+          <ul className="space-y-4">
+            {items.map((sub) => (
+              <li key={sub.id} className="rounded-card border border-pierre/15 p-4">
+                <p className="text-sm font-medium text-bordeaux">{sub.student?.first_name} {sub.student?.last_name}</p>
+                <p className="mt-0.5 text-xs text-pierre">{sub.type === 'notes' ? `Notes manuscrites — Semaine ${sub.course?.week ?? '?'} — ${sub.course?.title ?? ''}` : `${sub.assignment?.type === 'DEVOIR' ? 'Devoir' : 'Exercice'} — ${sub.assignment?.description ?? '—'}`}</p>
+                {sub.content && <p className="mt-2 rounded-md bg-white/60 px-3 py-2 text-sm text-pierre">{sub.content}</p>}
+                {sub.type === 'notes' && sub.attachments && sub.attachments.length > 0 ? (
+                  <div className="mt-2 flex flex-wrap gap-2">{sub.attachments.map((url, i) => <a key={i} href={url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-md border border-sable/70"><img src={url} alt="Note" className="h-24 w-32 object-cover" /></a>)}</div>
+                ) : sub.file_url && <a href={sub.file_url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs text-bordeaux underline">Pièce jointe</a>}
+                <div className="mt-3 grid gap-3 sm:grid-cols-[110px_1fr]">
+                  <div><Label>Note /20</Label><Input type="number" min={0} max={20} value={grades[sub.id] ?? ''} onChange={(e) => setGrades((p) => ({ ...p, [sub.id]: e.target.value }))} /></div>
+                  <div><Label>Appréciation</Label><Input value={feedbacks[sub.id] ?? ''} placeholder="Encouragement…" onChange={(e) => setFeedbacks((p) => ({ ...p, [sub.id]: e.target.value }))} /></div>
+                </div>
+                <Button variant="outline" className="mt-3 !px-3 !py-1.5 text-xs" disabled={savingId === sub.id} onClick={() => handleGrade(sub)}>{savingId === sub.id ? '…' : 'Enregistrer'}</Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+      <Card>
+        <CardTitle>Correction des résumés</CardTitle>
+        {resumes.length === 0 ? <p className="text-sm text-pierre">Aucun résumé à corriger.</p> : (
+          <ul className="space-y-4">
+            {resumes.map((r) => (
+              <li key={r.id} className="rounded-card border border-pierre/15 p-4">
+                <p className="text-sm font-medium text-bordeaux">{r.student?.first_name} {r.student?.last_name}</p>
+                <p className="text-xs text-pierre">Semaine {r.course?.week ?? '?'} — {r.course?.title ?? ''}</p>
+                <p className="mt-2 rounded-md bg-white/60 px-3 py-2 text-sm text-pierre">{r.content}</p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-[110px_1fr]">
+                  <div><Label>Note /20</Label><Input type="number" min={0} max={20} value={rGrades[r.id] ?? ''} onChange={(e) => setRGrades((p) => ({ ...p, [r.id]: e.target.value }))} /></div>
+                  <div><Label>Appréciation</Label><Input value={rFeedbacks[r.id] ?? ''} placeholder="Encouragement…" onChange={(e) => setRFeedbacks((p) => ({ ...p, [r.id]: e.target.value }))} /></div>
+                </div>
+                <Button variant="outline" className="mt-3 !px-3 !py-1.5 text-xs" disabled={rSavingId === r.id} onClick={() => handleGradeResume(r)}>{rSavingId === r.id ? '…' : 'Enregistrer'}</Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+      {message && <p className="text-sm text-olive">{message}</p>}
+    </div>
   )
 }
 

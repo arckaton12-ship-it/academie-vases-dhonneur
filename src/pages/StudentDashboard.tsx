@@ -23,8 +23,9 @@ import { DayAccentBand } from '@/components/DayAccentBand'
 import { NotificationsBell, NotificationRow } from '@/components/NotificationsBell'
 import { getCurrentProfile, signOut, updateProfileInfo } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
-import { getDailyVerse } from '@/lib/courses'
+import { getDailyVerse, getAnnouncements, Announcement } from '@/lib/courses'
 import { playSuccess } from '@/lib/sound'
+import { MessagingPanel } from '@/components/MessagingPanel'
 import {
   getAssignments,
   getClassCourses,
@@ -69,7 +70,7 @@ import {
 } from '@/lib/courses'
 import { BADGES, BADGE_ORDER, isBadgeKey } from '@/lib/badges'
 
-type Tab = 'academie' | 'devoirs' | 'service' | 'revue' | 'profil'
+type Tab = 'academie' | 'annonces' | 'devoirs' | 'service' | 'revue' | 'profil' | 'messagerie'
 
 interface ProfileState {
   id: string
@@ -89,6 +90,50 @@ interface ServiceDraft {
   service_days: string
   mission_description: string
   focus: string
+}
+
+function AnnoncesEtudiantTab({ classId }: { classId: string | null }) {
+  const [annonces, setAnnonces] = useState<Announcement[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!classId) { setLoading(false); return }
+    getAnnouncements(classId)
+      .then(setAnnonces)
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [classId])
+
+  if (!classId) return <Card><CardDescription>Tu n'as pas encore de classe assignée.</CardDescription></Card>
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardTitle>Annonces</CardTitle>
+        <CardDescription className="mt-1 mb-3">
+          Messages et informations de ton modérateur.
+        </CardDescription>
+        {loading ? (
+          <p className="text-sm text-pierre">Chargement…</p>
+        ) : annonces.length === 0 ? (
+          <p className="text-sm text-pierre">Aucune annonce pour le moment.</p>
+        ) : (
+          <ul className="space-y-3">
+            {annonces.map((a) => (
+              <li key={a.id} className="rounded-card border border-pierre/15 p-4">
+                <p className="font-medium text-bordeaux">{a.title}</p>
+                <p className="mt-1 text-sm text-pierre whitespace-pre-wrap">{a.content}</p>
+                <p className="mt-2 text-[11px] text-pierre">
+                  {a.moderator?.first_name} {a.moderator?.last_name} —{' '}
+                  {new Date(a.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+    </div>
+  )
 }
 
 export default function StudentDashboard() {
@@ -645,9 +690,11 @@ export default function StudentDashboard() {
 
   const studentSidebarItems: SidebarItem[] = [
     { key: 'academie', label: 'Académie', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> },
+    { key: 'annonces', label: 'Annonces', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> },
     { key: 'devoirs', label: 'Devoirs', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> },
     { key: 'revue', label: 'Revue', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> },
     { key: 'service', label: 'Service', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 21h8m-4-4v4m-4-8a4 4 0 0 1-4-4V4h16v5a4 4 0 0 1-4 4h-4z"/><circle cx="12" cy="7" r="3"/></svg> },
+    { key: 'messagerie', label: 'Messagerie', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
     { key: 'profil', label: 'Profil', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
   ]
 
@@ -971,6 +1018,10 @@ export default function StudentDashboard() {
             </Card>
           )}
         </div>
+      )}
+
+      {tab === 'annonces' && (
+        <AnnoncesEtudiantTab classId={profile?.class_id ?? null} />
       )}
 
       {tab === 'devoirs' && (
@@ -1390,6 +1441,12 @@ export default function StudentDashboard() {
             })
           )}
           {reflectionMsg && <p className="text-sm text-olive">{reflectionMsg}</p>}
+        </div>
+      )}
+
+      {tab === 'messagerie' && (
+        <div className="space-y-4">
+          <MessagingPanel currentUserId={profile?.id ?? ''} userRole="ETUDIANT" />
         </div>
       )}
 
