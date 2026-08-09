@@ -1481,3 +1481,56 @@ export async function deleteQuiz(quizId: string): Promise<void> {
   const { error } = await supabase.rpc('delete_quiz', { p_quiz_id: quizId })
   if (error) throw error
 }
+
+// =====================================================
+// Versets à méditer par classe
+// =====================================================
+export interface MeditationVerse {
+  id: string
+  verse_text: string
+  verse_reference: string
+  active: boolean
+  created_at: string
+}
+
+export async function getDailyVerse(classId: string): Promise<{ verse_text: string; verse_reference: string } | null> {
+  const { data, error } = await supabase.rpc('get_daily_verse', { p_class_id: classId })
+  if (error) throw error
+  return (data ?? null) as { verse_text: string; verse_reference: string } | null
+}
+
+export async function getClassVerses(classId: string): Promise<MeditationVerse[]> {
+  const { data, error } = await supabase.rpc('get_class_verses', { p_class_id: classId })
+  if (error) throw error
+  return (data ?? []) as MeditationVerse[]
+}
+
+export async function addVerse(classId: string, verseText: string, verseReference: string): Promise<void> {
+  const { error } = await supabase.rpc('add_verse', {
+    p_class_id: classId,
+    p_verse_text: verseText.trim(),
+    p_verse_reference: verseReference.trim(),
+  })
+  if (error) throw error
+}
+
+export async function removeVerse(verseId: string): Promise<void> {
+  const { error } = await supabase.rpc('remove_verse', { p_verse_id: verseId })
+  if (error) throw error
+}
+
+export async function toggleVerseActive(verseId: string): Promise<void> {
+  const { error } = await supabase.rpc('toggle_verse_active', { p_verse_id: verseId })
+  if (error) throw error
+}
+
+// =====================================================
+// Admin : attribution de classe à un étudiant
+// =====================================================
+export async function setStudentClass(studentId: string, classId: string): Promise<void> {
+  const { error } = await supabase.rpc('set_student_class', {
+    p_student_id: studentId,
+    p_class_id: classId,
+  })
+  if (error) throw error
+}

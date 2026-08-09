@@ -23,7 +23,7 @@ import { DayAccentBand } from '@/components/DayAccentBand'
 import { NotificationsBell, NotificationRow } from '@/components/NotificationsBell'
 import { getCurrentProfile, signOut, updateProfileInfo } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
-import { getQuoteOfDay } from '@/lib/quotes'
+import { getDailyVerse } from '@/lib/courses'
 import { playSuccess } from '@/lib/sound'
 import {
   getAssignments,
@@ -126,6 +126,9 @@ export default function StudentDashboard() {
 
   // ---- Notifications in-app
   const [notifications, setNotifications] = useState<NotificationRow[]>([])
+
+  // ---- Verset du jour par classe
+  const [dailyVerse, setDailyVerse] = useState<{ verse_text: string; verse_reference: string } | null>(null)
 
   // ---- Recherche de cours (page Académie)
   const [allCourses, setAllCourses] = useState<Course[]>([])
@@ -267,12 +270,14 @@ export default function StudentDashboard() {
         }
 
         if (classId) {
-          const [courseData, classCourses] = await Promise.all([
+          const [courseData, classCourses, verse] = await Promise.all([
             getStudentCourse(classId),
             getClassCourses(classId),
+            getDailyVerse(classId),
           ])
           if (cancelled) return
           setAllCourses(classCourses)
+          setDailyVerse(verse)
           if (courseData) {
             await loadCourse(courseData, p.id)
           }
@@ -540,7 +545,7 @@ export default function StudentDashboard() {
   }
 
   const weeks = streak?.consecutive_weeks ?? 0
-  const quote = useMemo(() => getQuoteOfDay(), [])
+  // dailyVerse is loaded in the useEffect below
   const earnedBadgeKeys = useMemo(() => new Set(badges.map((b) => b.badge_type)), [badges])
   const earnedBadges = useMemo(() => BADGE_ORDER.filter((k) => earnedBadgeKeys.has(k)), [earnedBadgeKeys])
   const followedCount = followed.length
@@ -704,12 +709,20 @@ export default function StudentDashboard() {
                 className="absolute left-0 top-1 font-display text-5xl leading-none text-or"
                 aria-hidden="true"
               >
-                “
+                "
               </span>
-              <p className="font-display text-lg leading-snug text-bordeaux">{quote.text}</p>
-              <p className="mt-2 font-mono text-xs uppercase tracking-wide text-pierre">
-                {quote.reference}
-              </p>
+              {dailyVerse ? (
+                <>
+                  <p className="font-display text-lg leading-snug text-bordeaux">{dailyVerse.verse_text}</p>
+                  <p className="mt-2 font-mono text-xs uppercase tracking-wide text-pierre">
+                    {dailyVerse.verse_reference}
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-pierre italic">
+                  Le verset du jour n'est pas encore disponible pour ta classe.
+                </p>
+              )}
             </div>
           </Card>
 

@@ -35,6 +35,11 @@ import {
   getAllMiniTaskResponses,
   getWebhookConfig,
   saveWebhookConfig,
+  setStudentClass,
+  getClassVerses,
+  addVerse,
+  removeVerse,
+  toggleVerseActive,
   WebhookConfig,
   ClassRow,
   Course,
@@ -47,11 +52,12 @@ import {
   Streak,
   BadgeRow,
   MiniTaskResponseRow,
+  MeditationVerse,
 } from '@/lib/courses'
 import { getCurrentProfile, signOut } from '@/lib/auth'
 import { exportToCSV, exportToPDF, exportStudentBulletinPDF, ExportRow } from '@/lib/export'
 
-type Section = 'vue' | 'classes' | 'etudiants' | 'moderateurs' | 'export'
+type Section = 'vue' | 'classes' | 'etudiants' | 'moderateurs' | 'versets' | 'export'
 
 const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
 
@@ -60,6 +66,7 @@ const sectionIcons: Record<Section, React.ReactNode> = {
   classes: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
   etudiants: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>,
   moderateurs: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  versets: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg>,
   export: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
 }
 
@@ -127,6 +134,15 @@ export default function AdminDashboard() {
   const [webhookUrl, setWebhookUrl] = useState('')
   const [webhookActive, setWebhookActive] = useState(true)
   const [webhookMsg, setWebhookMsg] = useState<string | null>(null)
+
+  // ---- Versets à méditer
+  const [verseClassId, setVerseClassId] = useState('')
+  const [verses, setVerses] = useState<MeditationVerse[]>([])
+  const [verseText, setVerseText] = useState('')
+  const [verseReference, setVerseReference] = useState('')
+  const [verseMsg, setVerseMsg] = useState<string | null>(null)
+  const [verseSaving, setVerseSaving] = useState(false)
+  const [verseLoading, setVerseLoading] = useState(false)
 
   useEffect(() => {
     getCurrentProfile()
@@ -556,6 +572,77 @@ export default function AdminDashboard() {
     }
   }
 
+  // ---- Versets à méditer
+  async function loadVerses(classId: string) {
+    setVerseClassId(classId)
+    setVerseLoading(true)
+    setVerseMsg(null)
+    try {
+      const data = await getClassVerses(classId)
+      setVerses(data)
+    } catch (err) {
+      setVerseMsg(err instanceof Error ? err.message : 'Erreur de chargement des versets.')
+    } finally {
+      setVerseLoading(false)
+    }
+  }
+
+  async function handleAddVerse(e: FormEvent) {
+    e.preventDefault()
+    if (!verseClassId || !verseText.trim() || !verseReference.trim()) return
+    setVerseSaving(true)
+    setVerseMsg(null)
+    try {
+      await addVerse(verseClassId, verseText.trim(), verseReference.trim())
+      setVerseText('')
+      setVerseReference('')
+      setVerseMsg('Verset ajouté avec succès.')
+      await loadVerses(verseClassId)
+    } catch (err) {
+      setVerseMsg(err instanceof Error ? err.message : 'Erreur lors de l\'ajout.')
+    } finally {
+      setVerseSaving(false)
+    }
+  }
+
+  async function handleRemoveVerse(verseId: string) {
+    if (!window.confirm('Supprimer ce verset ?')) return
+    setVerseMsg(null)
+    try {
+      await removeVerse(verseId)
+      setVerseMsg('Verset supprimé.')
+      if (verseClassId) await loadVerses(verseClassId)
+    } catch (err) {
+      setVerseMsg(err instanceof Error ? err.message : 'Erreur de suppression.')
+    }
+  }
+
+  async function handleToggleVerse(verseId: string) {
+    setVerseMsg(null)
+    try {
+      await toggleVerseActive(verseId)
+      if (verseClassId) await loadVerses(verseClassId)
+    } catch (err) {
+      setVerseMsg(err instanceof Error ? err.message : 'Erreur.')
+    }
+  }
+
+  async function handleAssignClass(studentId: string, classId: string) {
+    try {
+      await setStudentClass(studentId, classId || '')
+      setStudents((prev) =>
+        prev.map((s) => {
+          if (s.id !== studentId) return s
+          const cls = classes.find((c) => c.id === classId)
+          return { ...s, class_id: classId || null, class: cls ? { name: cls.name, level: cls.level } : null }
+        })
+      )
+      setAccessMsg('Classe attribuée avec succès.')
+    } catch (err) {
+      setAccessMsg(err instanceof Error ? err.message : 'Erreur d\'attribution de classe.')
+    }
+  }
+
   function downloadBulletin(student: StudentProfile) {
     const subs = submissionsByStudent.get(student.id) ?? []
     const progress = bulletin?.progress ?? { presenceRate: 0, resumeRate: 0 }
@@ -578,6 +665,7 @@ export default function AdminDashboard() {
     ['classes', 'Classes'],
     ['etudiants', 'Étudiants'],
     ['moderateurs', 'Modérateurs'],
+    ['versets', 'Versets'],
     ['export', 'Export'],
   ]
 
@@ -835,10 +923,22 @@ export default function AdminDashboard() {
                         {s.last_name} {s.first_name}
                       </p>
                       <p className="text-xs text-pierre">
-                        {s.email} · {s.class?.name ?? 'Sans classe'}
+                        {s.email}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        value={s.class_id ?? ''}
+                        onChange={(e) => handleAssignClass(s.id, e.target.value)}
+                        className="rounded-md border border-pierre/30 bg-white px-2 py-1 text-xs text-bordeaux focus-visible:border-or"
+                      >
+                        <option value="">Sans classe</option>
+                        {classes.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
                       <Button
                         variant="outline"
                         className="!px-3 !py-1 text-xs"
@@ -1243,6 +1343,104 @@ export default function AdminDashboard() {
               </ul>
             )}
             {moderatorMsg && <p className="mt-3 text-sm text-olive">{moderatorMsg}</p>}
+          </Card>
+        </div>
+      )}
+
+      {section === 'versets' && (
+        <div className="space-y-4">
+          <Card>
+            <CardTitle>Versets à méditer</CardTitle>
+            <CardDescription className="mt-1 mb-3">
+              Ajoute un verset biblique pour chaque classe. L'étudiant verra un verset différent chaque jour.
+            </CardDescription>
+            <div className="mb-4">
+              <Label htmlFor="verse-class">Sélectionner une classe</Label>
+              <select
+                id="verse-class"
+                value={verseClassId}
+                onChange={(e) => loadVerses(e.target.value)}
+                className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
+              >
+                <option value="">Choisir une classe…</option>
+                {classes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {verseClassId && (
+              <>
+                <form onSubmit={handleAddVerse} className="mb-4 space-y-3 rounded-md border border-sable/60 p-4">
+                  <p className="text-sm font-medium text-bordeaux">Ajouter un verset</p>
+                  <div>
+                    <Label htmlFor="verse-text">Texte du verset</Label>
+                    <textarea
+                      id="verse-text"
+                      required
+                      rows={3}
+                      value={verseText}
+                      onChange={(e) => setVerseText(e.target.value)}
+                      placeholder="Ex: Car Dieu a tant aimé le monde qu'il a donné son Fils unique…"
+                      className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
+                    />
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                    <div>
+                      <Label htmlFor="verse-ref">Référence</Label>
+                      <Input
+                        id="verse-ref"
+                        required
+                        value={verseReference}
+                        onChange={(e) => setVerseReference(e.target.value)}
+                        placeholder="Ex: Jean 3:16"
+                      />
+                    </div>
+                    <Button type="submit" variant="primary" disabled={verseSaving} className="self-end">
+                      {verseSaving ? 'Ajout…' : 'Ajouter'}
+                    </Button>
+                  </div>
+                </form>
+
+                {verseLoading ? (
+                  <p className="text-sm text-pierre">Chargement des versets…</p>
+                ) : verses.length === 0 ? (
+                  <p className="text-sm text-pierre">Aucun verset pour cette classe.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {verses.map((v) => (
+                      <li
+                        key={v.id}
+                        className={`rounded-md border p-3 ${v.active ? 'border-pierre/15' : 'border-or/40 bg-or/5 opacity-60'}`}
+                      >
+                        <p className="text-sm text-bordeaux">{v.verse_text}</p>
+                        <p className="mt-1 font-mono text-xs uppercase tracking-wide text-pierre">
+                          {v.verse_reference}
+                        </p>
+                        <div className="mt-2 flex items-center gap-3">
+                          <button
+                            onClick={() => handleToggleVerse(v.id)}
+                            className="text-xs text-or underline"
+                          >
+                            {v.active ? 'Désactiver' : 'Activer'}
+                          </button>
+                          <button
+                            onClick={() => handleRemoveVerse(v.id)}
+                            className="text-xs text-red-700 underline"
+                          >
+                            Supprimer
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
+
+            {verseMsg && <p className="mt-3 text-sm text-olive">{verseMsg}</p>}
           </Card>
         </div>
       )}
