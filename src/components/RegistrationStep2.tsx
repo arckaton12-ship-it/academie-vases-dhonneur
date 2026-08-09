@@ -165,7 +165,22 @@ export default function RegistrationStep2({ profile, onComplete }: Props) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(sheetPayload),
-        }).catch(() => undefined)
+        }).then(async (res) => {
+          const responseText = await res.text().catch(() => '')
+          await supabase.from('webhook_logs').insert({
+            url: sheetsUrl,
+            payload: sheetPayload,
+            status: res.status,
+            response: responseText.slice(0, 2000),
+          })
+        }).catch(async (err) => {
+          console.error('Webhook inscription error:', err)
+          await supabase.from('webhook_logs').insert({
+            url: sheetsUrl,
+            payload: sheetPayload,
+            error: String(err?.message || err),
+          })
+        })
       }
 
       setTimeout(onComplete, 1500)
