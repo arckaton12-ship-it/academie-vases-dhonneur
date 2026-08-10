@@ -92,6 +92,10 @@ export default function RegistrationStep2({ profile, onComplete }: Props) {
       setMsg("Tu dois accepter l'engagement pour continuer.")
       return
     }
+    if (!form.class_name) {
+      setMsg("Tu dois choisir une classe pour continuer.")
+      return
+    }
     setLoading(true)
     setMsg('')
     try {

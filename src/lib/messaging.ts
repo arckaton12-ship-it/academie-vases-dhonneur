@@ -264,3 +264,44 @@ export async function getAvailableContacts(): Promise<Contact[]> {
     .eq('active', true)
   return (data ?? []) as Contact[]
 }
+
+export async function sendBroadcastMessage(content: string): Promise<{ sent: number }> {
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData.user) throw new Error('Non authentifié')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', userData.user.id)
+    .single()
+
+  if (profile?.role !== 'ADMINISTRATEUR') throw new Error('Non autorisé')
+
+  const { data: recipients } = await supabase
+    .from('profiles')
+    .select('id')
+    .neq('id', userData.user.id)
+    .eq('active', true)
+
+  if (!recipients || recipients.length === 0) return { sent: 0 }
+
+  let sent = 0
+  for (const r of recipients) {
+    try {
+      await createConversation(r.id, 'DIRECT')
+      const convs = await getConversations()
+      const conv = convs.find(
+        (c) =>
+          (c.participant_1 === userData.user!.id && c.participant_2 === r.id) ||
+          (c.participant_1 === r.id && c.participant_2 === userData.user!.id)
+      )
+      if (conv) {
+        await sendMessage(conv.id, content)
+        sent++
+      }
+    } catch {
+      // skip failed recipients
+    }
+  }
+  return { sent }
+}

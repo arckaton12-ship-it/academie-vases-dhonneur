@@ -82,7 +82,7 @@ export function Sidebar({ items, activeKey, onSelect, header, footer }: SidebarP
       {/* Mobile hamburger */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="fixed left-3 top-3 z-40 flex h-10 w-10 items-center justify-center rounded-lg border border-pierre/20 bg-white/80 backdrop-blur-sm md:hidden dark:border-white/10 dark:bg-slate-800/80"
+        className="fixed left-3 top-3 z-40 flex h-12 w-12 items-center justify-center rounded-lg border border-pierre/20 bg-white/80 backdrop-blur-sm md:hidden dark:border-white/10 dark:bg-slate-800/80"
         aria-label="Ouvrir le menu"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

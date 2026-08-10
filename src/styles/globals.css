@@ -310,3 +310,23 @@ h1, h2, h3, h4 {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Mobile touch targets: ensure minimum 44×44px on all interactive elements */
+@media (max-width: 767px) {
+  button, a, input, select, textarea {
+    min-height: 44px;
+  }
+
+  /* Small buttons get adequate touch padding */
+  button[class*="text-xs"], button[class*="text-sm"] {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+  }
+
+  /* Cards: tighter padding on mobile */
+  .glass-card {
+    padding: 16px !important;
+  }
+}

@@ -7,7 +7,6 @@ import { SidebarLayout } from '@/components/ui/SidebarLayout'
 import { BulletinPDF } from '@/components/BulletinPDF'
 import { Logo } from '@/components/Logo'
 import { Avatar } from '@/components/Avatar'
-import { AvatarUpload } from '@/components/AvatarUpload'
 import { SoundToggle } from '@/components/SoundToggle'
 import { playSuccess } from '@/lib/sound'
 import { SectionWatermark } from '@/components/SectionWatermark'
@@ -54,6 +53,7 @@ import { StudentProfileCard } from '@/components/StudentProfileCard'
 import { adminCreateUser } from '@/lib/courses'
 import { playClick } from '@/lib/sound'
 import { toast, toastError } from '@/components/ui/Toast'
+import { createConversation } from '@/lib/messaging'
 
 type Tab = 'programme' | 'rapport' | 'passage' | 'suivi' | 'annonces' | 'messagerie' | 'moderateurs' | 'inscription' | 'fiche'
 
@@ -150,6 +150,16 @@ export default function ModeratorDashboard() {
     [classes]
   )
 
+  const handleMessageUser = async (userId: string) => {
+    try {
+      await createConversation(userId, 'DIRECT')
+      setTab('messagerie')
+      toast('Conversation ouverte.')
+    } catch (e) {
+      toastError(e instanceof Error ? e.message : 'Erreur')
+    }
+  }
+
   const modTabs: [Tab, string][] = [
     ['programme', 'Programme'],
     ['inscription', 'Inscription'],
@@ -191,9 +201,6 @@ export default function ModeratorDashboard() {
             firstName={moderatorProfile?.first_name}
             lastName={moderatorProfile?.last_name}
             size={40}
-            onClick={() =>
-              document.getElementById('mon-profil')?.scrollIntoView({ behavior: 'smooth' })
-            }
           />
           <Button
             variant="ghost"
@@ -249,7 +256,7 @@ export default function ModeratorDashboard() {
         <SoulTrackingTabWrapper />
       )}
       {tab === 'moderateurs' && (
-        <ModeratorsTab classById={classById} />
+        <ModeratorsTab classById={classById} onMessageUser={handleMessageUser} />
       )}
 
       {tab === 'inscription' && (
@@ -264,23 +271,6 @@ export default function ModeratorDashboard() {
         <FicheTab students={students} ownClassIds={ownClassIds} classById={classById} />
       )}
 
-      {moderatorProfile && (
-        <Card className="mt-6" id="mon-profil">
-          <CardTitle>Mon profil</CardTitle>
-          <CardDescription className="mt-2 mb-4">
-            Gérez votre photo de profil. Les autres informations sont rattachées à votre compte.
-          </CardDescription>
-          <AvatarUpload
-            url={moderatorProfile.avatar_url}
-            firstName={moderatorProfile.first_name}
-            lastName={moderatorProfile.last_name}
-            userId={moderatorProfile.id}
-            onSaved={(url) =>
-              setModeratorProfile((prev) => (prev ? { ...prev, avatar_url: url } : prev))
-            }
-          />
-        </Card>
-      )}
       </div>
     </SidebarLayout>
   )
@@ -1112,7 +1102,7 @@ function SoulTrackingTabWrapper() {
   )
 }
 
-function ModeratorsTab({ classById }: { classById: Map<string, ClassRow> }) {
+function ModeratorsTab({ classById, onMessageUser }: { classById: Map<string, ClassRow>; onMessageUser: (userId: string) => void }) {
   const [moderators, setModerators] = useState<ModeratorProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -1140,7 +1130,7 @@ function ModeratorsTab({ classById }: { classById: Map<string, ClassRow> }) {
       <Card>
         <CardTitle>Modérateurs de l'Académie</CardTitle>
         <CardDescription className="mt-1 mb-3">
-          Chaque modérateur accède à son propre espace. Clique sur un nom pour voir sa fiche.
+          Clique sur un nom pour voir sa fiche et lui écrire.
         </CardDescription>
         {moderators.length === 0 ? (
           <p className="text-sm text-pierre">Aucun modérateur enregistré.</p>
@@ -1156,10 +1146,21 @@ function ModeratorsTab({ classById }: { classById: Map<string, ClassRow> }) {
                       : 'border-pierre/15 hover:border-bordeaux/40'
                   }`}
                 >
-                  <p className="text-sm font-medium text-bordeaux">
-                    {m.last_name} {m.first_name}
-                  </p>
-                  <p className="text-xs text-pierre">{m.email}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-medium text-bordeaux">
+                        {m.last_name} {m.first_name}
+                      </p>
+                      <p className="text-xs text-pierre">{m.email}</p>
+                    </div>
+                    <span
+                      onClick={(e) => { e.stopPropagation(); onMessageUser(m.id) }}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-or/40 text-or transition-colors hover:bg-or/10"
+                      title={`Envoyer un message à ${m.first_name}`}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </span>
+                  </div>
                 </button>
               </li>
             ))}
@@ -1169,8 +1170,18 @@ function ModeratorsTab({ classById }: { classById: Map<string, ClassRow> }) {
 
       {selected && (
         <Card>
-          <CardTitle>Fiche du modérateur</CardTitle>
-          <dl className="mt-2 space-y-2 text-sm">
+          <div className="flex items-center justify-between">
+            <CardTitle>Fiche du modérateur</CardTitle>
+            <Button
+              variant="outline"
+              className="!px-3 !py-1.5 text-xs"
+              onClick={() => onMessageUser(selected.id)}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Envoyer un message
+            </Button>
+          </div>
+          <dl className="mt-3 space-y-2 text-sm">
             <Row label="Nom" value={`${selected.last_name} ${selected.first_name}`} />
             <Row label="Email" value={selected.email} />
             <Row label="Téléphone" value={selected.phone ?? '—'} />

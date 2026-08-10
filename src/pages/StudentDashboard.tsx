@@ -2,6 +2,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import RegistrationStep2 from '@/components/RegistrationStep2'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardTitle, CardDescription } from '@/components/ui/Card'
+import { CollapsibleCard } from '@/components/ui/CollapsibleCard'
 import { Button } from '@/components/ui/Button'
 import { Input, Label, FieldError } from '@/components/ui/Input'
 import { Sidebar, SidebarItem } from '@/components/ui/Sidebar'
@@ -14,7 +15,6 @@ import { AvatarUpload } from '@/components/AvatarUpload'
 import { Badge } from '@/components/Badge'
 import { BadgeDrawer } from '@/components/BadgeDrawer'
 import { CertificateView } from '@/components/Certificate'
-import { Marquee } from '@/components/ui/Marquee'
 import { SoundToggle } from '@/components/SoundToggle'
 import { SectionWatermark } from '@/components/SectionWatermark'
 import { VerseReference } from '@/components/VerseReference'
@@ -29,6 +29,7 @@ import { MessagingPanel } from '@/components/MessagingPanel'
 import { DevoirsTab } from '@/components/DevoirsTab'
 import { RankingsTab } from '@/components/RankingsTab'
 import { AttendanceGauge } from '@/components/AttendanceGauge'
+import { ClassPicker } from '@/components/ClassPicker'
 import {
   getAssignments,
   getClassCourses,
@@ -705,6 +706,24 @@ export default function StudentDashboard() {
     )
   }
 
+  if (profile && !profile.class_id) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <div className="w-full max-w-md space-y-4">
+          <div className="text-center">
+            <Logo showText={false} size={48} className="mx-auto" />
+            <h1 className="mt-3 font-display text-xl text-bordeaux">Bienvenue dans l'Académie</h1>
+            <p className="mt-1 text-sm text-pierre">Choisis ta classe pour commencer ton parcours.</p>
+          </div>
+          <ClassPicker
+            userId={profile.id}
+            onPicked={(classId) => setProfile((prev) => prev ? { ...prev, class_id: classId } : prev)}
+          />
+        </div>
+      </div>
+    )
+  }
+
   const studentSidebarItems: SidebarItem[] = [
     { key: 'academie', label: 'Académie', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> },
     { key: 'annonces', label: 'Annonces', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> },
@@ -730,22 +749,33 @@ export default function StudentDashboard() {
       />
       <div className="relative z-10 page-enter">
       <DayAccentBand />
-      <header className="mb-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Logo showText={false} size={34} />
+      <header className="sticky top-0 z-20 mb-4 border-b border-sable/40 bg-parchemin/95 pb-3 pt-3 backdrop-blur-sm md:mb-6 md:static md:border-0 md:bg-transparent md:backdrop-blur-none md:pt-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 md:gap-3">
+            <Logo showText={false} size={28} className="md:hidden" />
+            <Logo showText={false} size={34} className="hidden md:block" />
             <div>
-              <h1 className="font-display text-2xl text-bordeaux">Ton espace Académie</h1>
+              <h1 className="font-display text-lg text-bordeaux md:text-2xl">Ton espace Académie</h1>
               {profile && (
-                <p className="flex items-center gap-2 text-sm text-pierre">
+                <p className="hidden items-center gap-2 text-sm text-pierre md:flex">
                   {profile.first_name} {profile.last_name}
                   <VerseReference />
                 </p>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 md:gap-2">
             <NotificationsBell notifications={notifications} onMarkRead={handleMarkNotificationsRead} />
+            <Avatar
+              url={profile?.avatar_url}
+              firstName={profile?.first_name}
+              lastName={profile?.last_name}
+              size={36}
+              badgeType={profile?.active_badge ?? null}
+              onClick={() => setTab('profil')}
+              onBadgeClick={openBadgeDrawer}
+              className="md:hidden"
+            />
             <Avatar
               url={profile?.avatar_url}
               firstName={profile?.first_name}
@@ -754,6 +784,7 @@ export default function StudentDashboard() {
               badgeType={profile?.active_badge ?? null}
               onClick={() => setTab('profil')}
               onBadgeClick={openBadgeDrawer}
+              className="hidden md:block"
             />
             <SoundToggle />
           </div>
@@ -772,7 +803,7 @@ export default function StudentDashboard() {
           <AttendanceGauge weeks={weeks} presenceRate={progress?.presenceRate ?? undefined} />
 
           {/* Verset du jour */}
-          <Card>
+          <CollapsibleCard title="Verset du jour">
             <div className="quote-in relative pl-10">
               <span
                 className="absolute left-0 top-1 font-display text-5xl leading-none text-or"
@@ -793,14 +824,13 @@ export default function StudentDashboard() {
                 </p>
               )}
             </div>
-          </Card>
+          </CollapsibleCard>
 
           {/* Recherche rapprochée du player */}
-          <Card>
-            <CardTitle>Rechercher un cours</CardTitle>
-            <CardDescription className="mt-1 mb-3">
+          <CollapsibleCard title="Rechercher un cours" defaultOpen={false}>
+            <p className="mb-3 text-xs text-pierre">
               Parcours les cours de ta classe par mot-clé et par semaine.
-            </CardDescription>
+            </p>
             <div className="flex flex-wrap items-center gap-2">
               <Input
                 value={searchQuery}
@@ -850,23 +880,7 @@ export default function StudentDashboard() {
                 Astuce : tape « semaine 3 » ou un mot du titre pour retrouver un cours.
               </p>
             )}
-          </Card>
-
-          {earnedBadges.length > 0 && (
-            <Card>
-              <CardTitle>Les médailles de ton parcours</CardTitle>
-              <CardDescription className="mt-1 mb-3">
-                Elles défilent à l'image de ta fidélité — passe la souris dessus pour les contempler.
-              </CardDescription>
-              <Marquee pauseOnHover className="py-2">
-                {earnedBadges.map((key) => (
-                  <span key={key} className="w-24 shrink-0">
-                    <Badge type={key} size={64} />
-                  </span>
-                ))}
-              </Marquee>
-            </Card>
-          )}
+          </CollapsibleCard>
 
           <Card>
             <CardTitle>{course ? course.title : 'Cours de la semaine'}</CardTitle>

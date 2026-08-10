@@ -6,7 +6,6 @@ import { Input, Label } from '@/components/ui/Input'
 import { SidebarLayout } from '@/components/ui/SidebarLayout'
 import { Logo } from '@/components/Logo'
 import { Avatar } from '@/components/Avatar'
-import { AvatarUpload } from '@/components/AvatarUpload'
 import { SoundToggle } from '@/components/SoundToggle'
 import { StudentProfileCard } from '@/components/StudentProfileCard'
 import { toast, toastError } from '@/components/ui/Toast'
@@ -76,7 +75,9 @@ import { exportToCSV, exportToPDF, exportStudentBulletinPDF, ExportRow } from '@
 import { FieldError } from '@/components/ui/Input'
 import { MessagingPanel } from '@/components/MessagingPanel'
 import { QuizTab } from '@/components/QuizTab'
-import { getAnnouncements, createAnnouncement, Announcement } from '@/lib/courses'
+import { getAnnouncements, createAnnouncement, Announcement, deleteStudent } from '@/lib/courses'
+import { sendBroadcastMessage } from '@/lib/messaging'
+import { createConversation } from '@/lib/messaging'
 
 type Section = 'vue' | 'classes' | 'cours' | 'notation' | 'etudiants' | 'moderateurs' | 'versets' | 'messagerie' | 'export' | 'quiz' | 'annonces'
 
@@ -170,6 +171,17 @@ export default function AdminDashboard() {
   const [verseMsg, setVerseMsg] = useState<string | null>(null)
   const [verseSaving, setVerseSaving] = useState(false)
   const [verseLoading, setVerseLoading] = useState(false)
+
+  // ---- Students filter + sort
+  const [studentFilterClass, setStudentFilterClass] = useState('')
+  const [studentSort, setStudentSort] = useState<'name' | 'class' | 'date'>('name')
+  const [studentSearch, setStudentSearch] = useState('')
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+
+  // ---- Broadcast message
+  const [broadcastText, setBroadcastText] = useState('')
+  const [broadcastSending, setBroadcastSending] = useState(false)
+  const [broadcastResult, setBroadcastResult] = useState<string | null>(null)
 
   useEffect(() => {
     getCurrentProfile()
@@ -356,6 +368,25 @@ export default function AdminDashboard() {
   }, [classes, students, courses, attendances, allResumes, allBadges, submissions, studentClassId])
 
   const classById = useMemo(() => new Map(classes.map((c) => [c.id, c])), [classes])
+
+  // Filtered + sorted students
+  const filteredStudents = useMemo(() => {
+    let list = [...students]
+    if (studentFilterClass) {
+      list = list.filter((s) => s.class_id === studentFilterClass)
+    }
+    if (studentSearch.trim()) {
+      const q = studentSearch.toLowerCase()
+      list = list.filter((s) =>
+        `${s.last_name} ${s.first_name}`.toLowerCase().includes(q) ||
+        s.email.toLowerCase().includes(q)
+      )
+    }
+    if (studentSort === 'name') list.sort((a, b) => a.last_name.localeCompare(b.last_name))
+    else if (studentSort === 'class') list.sort((a, b) => (a.class?.name ?? 'ZZZ').localeCompare(b.class?.name ?? 'ZZZ'))
+    else list.sort((a, b) => a.email.localeCompare(b.email))
+    return list
+  }, [students, studentFilterClass, studentSearch, studentSort])
 
   const classRows = (): ExportRow[] => byClass.map((r) => [r.className, r.students, r.courses])
   const studentRows = (): ExportRow[] =>
@@ -736,9 +767,6 @@ export default function AdminDashboard() {
             firstName={adminProfile?.first_name}
             lastName={adminProfile?.last_name}
             size={40}
-            onClick={() =>
-              document.getElementById('mon-profil')?.scrollIntoView({ behavior: 'smooth' })
-            }
           />
           <Button
             variant="ghost"
@@ -957,13 +985,44 @@ export default function AdminDashboard() {
         <Card>
           <CardTitle>Étudiants</CardTitle>
           <CardDescription className="mt-1 mb-3">
-            Suivi des notes étudiant par étudiant, cours après cours. Tu peux aussi révoquer un accès.
+            Gestion complète des étudiants : filtres, notes, messages, suppression.
           </CardDescription>
-          {students.length === 0 ? (
-            <p className="text-sm text-pierre">Aucun étudiant inscrit.</p>
+
+          {/* Filters */}
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <Input
+              value={studentSearch}
+              onChange={(e) => setStudentSearch(e.target.value)}
+              placeholder="Rechercher un étudiant…"
+              className="max-w-xs"
+            />
+            <select
+              value={studentFilterClass}
+              onChange={(e) => setStudentFilterClass(e.target.value)}
+              className="rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or focus-visible:outline-none"
+            >
+              <option value="">Toutes les classes</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <select
+              value={studentSort}
+              onChange={(e) => setStudentSort(e.target.value as 'name' | 'class' | 'date')}
+              className="rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or focus-visible:outline-none"
+            >
+              <option value="name">Trier par nom</option>
+              <option value="class">Trier par classe</option>
+              <option value="date">Trier par date</option>
+            </select>
+            <span className="text-xs text-pierre">{filteredStudents.length} étudiant{filteredStudents.length > 1 ? 's' : ''}</span>
+          </div>
+
+          {filteredStudents.length === 0 ? (
+            <p className="text-sm text-pierre">Aucun étudiant ne correspond aux filtres.</p>
           ) : (
             <ul className="space-y-3">
-              {students.map((s) => (
+              {filteredStudents.map((s) => (
                 <li key={s.id} className="rounded-card border border-pierre/15 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
@@ -971,7 +1030,7 @@ export default function AdminDashboard() {
                         {s.last_name} {s.first_name}
                       </p>
                       <p className="text-xs text-pierre">
-                        {s.email}
+                        {s.email} · {s.class?.name ?? 'Sans classe'}
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -982,112 +1041,71 @@ export default function AdminDashboard() {
                       >
                         <option value="">Sans classe</option>
                         {classes.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
+                          <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
                       </select>
                       <Button
                         variant="outline"
                         className="!px-3 !py-1 text-xs"
-                        onClick={() => openBulletin(s.id)}
+                        onClick={() => setProfileStudentId(profileStudentId === s.id ? null : s.id)}
                       >
-                        Bulletin
+                        Fiche
                       </Button>
                       <Button
                         variant="outline"
                         className="!px-3 !py-1 text-xs"
-                        onClick={() => setProfileStudentId(profileStudentId === s.id ? null : s.id)}
+                        onClick={async () => {
+                          try {
+                            await createConversation(s.id, 'DIRECT')
+                            setSection('messagerie')
+                            toast('Conversation ouverte.')
+                          } catch (e) {
+                            toastError(e instanceof Error ? e.message : 'Erreur')
+                          }
+                        }}
                       >
-                        Fiche complète
+                        Message
                       </Button>
                       <Button
                         variant={s.active ? 'ghost' : 'primary'}
                         className="!px-3 !py-1 text-xs"
                         onClick={() => toggleAccess(s.id, s.active)}
                       >
-                        {s.active ? 'Révoquer l\u2019accès' : 'Restaurer l\u2019accès'}
+                        {s.active ? 'Révoquer' : 'Restaurer'}
                       </Button>
-                    </div>
-                  </div>
-
-                  {expandedStudentId === s.id && (
-                    <div className="mt-4 border-t border-sable/60 pt-4">
-                      {bulletinLoading ? (
-                        <p className="text-sm text-pierre">Chargement du bulletin…</p>
-                      ) : bulletin ? (
-                        <>
-                          <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-                            <StatCell label="Présence" value={`${bulletin.progress.presenceRate}%`} />
-                            <StatCell label="Résumés" value={`${bulletin.progress.resumeRate}%`} />
-                            <StatCell label="Moyenne" value={bulletin.progress.averageGrade ?? '—'} />
-                            <StatCell label="Méditation" value={String(s.meditation_grade ?? '—')} />
-                          </dl>
-                          <div className="mt-4 overflow-x-auto">
-                            <table className="w-full border-collapse text-sm">
-                              <thead>
-                                <tr className="border-b-2 border-or bg-white/60 text-left">
-                                  <th className="px-3 py-1.5 font-medium text-bordeaux">Cours</th>
-                                  <th className="px-3 py-1.5 font-medium text-bordeaux">Note</th>
-                                  <th className="px-3 py-1.5 font-medium text-bordeaux">Appréciation</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {bulletin.courses.map((c) => {
-                                  const sub = submissionsByStudent.get(s.id)?.find(
-                                    (x) => x.assignment?.course_id === c.id
-                                  )
-                                  return (
-                                    <tr key={c.id} className="border-b border-pierre/15">
-                                      <td className="px-3 py-1.5 text-bordeaux">
-                                        Semaine {c.week} — {c.title}
-                                      </td>
-                                      <td className="px-3 py-1.5 font-mono text-pierre">
-                                        {sub && sub.grade !== null && sub.grade !== undefined
-                                          ? sub.grade
-                                          : '—'}
-                                      </td>
-                                      <td className="px-3 py-1.5 text-pierre">{sub?.feedback ?? '—'}</td>
-                                    </tr>
-                                  )
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
-                          <div className="mt-4 flex flex-wrap items-end gap-3">
-                            <div className="w-32">
-                              <Label htmlFor="meditation">Méditation /20</Label>
-                              <Input
-                                id="meditation"
-                                type="number"
-                                min={0}
-                                max={20}
-                                value={meditationDraft}
-                                onChange={(e) => setMeditationDraft(e.target.value)}
-                              />
-                            </div>
-                            <Button
-                              variant="outline"
-                              className="!px-3 !py-1.5 text-xs"
-                              onClick={() => saveMeditation(s.id)}
-                            >
-                              Enregistrer
-                            </Button>
-                            <Button
-                              variant="outline"
-                              className="!px-3 !py-1.5 text-xs"
-                              onClick={() => downloadBulletin(s)}
-                            >
-                              Bulletin PDF
-                            </Button>
-                          </div>
-                          {bulletinMsg && <p className="mt-2 text-sm text-olive">{bulletinMsg}</p>}
-                        </>
+                      {deleteConfirmId === s.id ? (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            className="!px-2 !py-1 text-xs text-red-700"
+                            onClick={async () => {
+                              try {
+                                await deleteStudent(s.id)
+                                setStudents((prev) => prev.filter((x) => x.id !== s.id))
+                                toast('Étudiant supprimé.')
+                              } catch (e) {
+                                toastError(e instanceof Error ? e.message : 'Erreur')
+                              }
+                              setDeleteConfirmId(null)
+                            }}
+                          >
+                            Confirmer
+                          </Button>
+                          <Button variant="ghost" className="!px-2 !py-1 text-xs" onClick={() => setDeleteConfirmId(null)}>
+                            Annuler
+                          </Button>
+                        </div>
                       ) : (
-                        <p className="text-sm text-pierre">{bulletinMsg ?? 'Bulletin indisponible.'}</p>
+                        <Button
+                          variant="ghost"
+                          className="!px-2 !py-1 text-xs text-red-700"
+                          onClick={() => setDeleteConfirmId(s.id)}
+                        >
+                          Supprimer
+                        </Button>
                       )}
                     </div>
-                  )}
+                  </div>
                 </li>
               ))}
             </ul>
@@ -1509,6 +1527,41 @@ export default function AdminDashboard() {
 
       {section === 'messagerie' && (
         <div className="space-y-4">
+          <Card>
+            <CardTitle>Envoyer un message à tous les membres</CardTitle>
+            <CardDescription className="mt-1 mb-3">
+              Ton message sera envoyé en privé à chaque membre actif de l'Académie.
+            </CardDescription>
+            <textarea
+              rows={3}
+              value={broadcastText}
+              onChange={(e) => setBroadcastText(e.target.value)}
+              placeholder="Écris ton message ici…"
+              className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or focus-visible:outline-none"
+            />
+            <div className="mt-2 flex items-center gap-3">
+              <Button
+                variant="primary"
+                disabled={!broadcastText.trim() || broadcastSending}
+                onClick={async () => {
+                  setBroadcastSending(true)
+                  setBroadcastResult(null)
+                  try {
+                    const { sent } = await sendBroadcastMessage(broadcastText.trim())
+                    setBroadcastResult(`Message envoyé à ${sent} membre${sent > 1 ? 's' : ''}.`)
+                    setBroadcastText('')
+                  } catch (e) {
+                    setBroadcastResult(e instanceof Error ? e.message : 'Erreur lors de l\'envoi.')
+                  } finally {
+                    setBroadcastSending(false)
+                  }
+                }}
+              >
+                {broadcastSending ? 'Envoi…' : 'Envoyer à tous'}
+              </Button>
+              {broadcastResult && <p className="text-sm text-olive">{broadcastResult}</p>}
+            </div>
+          </Card>
           <MessagingPanel currentUserId={adminProfile?.id ?? ''} userRole="ADMINISTRATEUR" />
         </div>
       )}
@@ -1653,22 +1706,6 @@ export default function AdminDashboard() {
         </div>
         {webhookMsg && <p className="mt-3 text-sm text-olive">{webhookMsg}</p>}
       </Card>
-
-      {adminProfile && (
-        <Card className="mt-6" id="mon-profil">
-          <CardTitle>Mon profil</CardTitle>
-          <CardDescription className="mt-2 mb-4">
-            Gérez votre photo de profil. Les autres informations sont rattachées à votre compte.
-          </CardDescription>
-          <AvatarUpload
-            url={adminProfile.avatar_url}
-            firstName={adminProfile.first_name}
-            lastName={adminProfile.last_name}
-            userId={adminProfile.id}
-            onSaved={(url) => setAdminProfile((prev) => (prev ? { ...prev, avatar_url: url } : prev))}
-          />
-        </Card>
-      )}
       </div>
     </SidebarLayout>
   )

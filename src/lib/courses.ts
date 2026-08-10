@@ -141,6 +141,11 @@ export async function getStudents(): Promise<StudentProfile[]> {
   return (data ?? []) as StudentProfile[]
 }
 
+export async function deleteStudent(studentId: string): Promise<void> {
+  const { error } = await supabase.auth.admin.deleteUser(studentId)
+  if (error) throw error
+}
+
 export async function getSubmissions(): Promise<Submission[]> {
   const { data, error } = await supabase
     .from('submissions')
