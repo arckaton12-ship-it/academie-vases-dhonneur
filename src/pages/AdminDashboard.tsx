@@ -1978,15 +1978,6 @@ function NotationTab({ onGraded }: { onGraded: () => void }) {
   )
 }
 
-function StatCell({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="glass-card !p-3 text-center">
-      <dt className="text-xs text-pierre dark:text-slate-400">{label}</dt>
-      <dd className="font-display text-lg text-bordeaux dark:text-or">{value}</dd>
-    </div>
-  )
-}
-
 function AdminAnnoncesTab({ classes, allCourses }: { classes: ClassRow[]; allCourses: Course[] }) {
   const [selectedClassId, setSelectedClassId] = useState('')
   const [title, setTitle] = useState('')
