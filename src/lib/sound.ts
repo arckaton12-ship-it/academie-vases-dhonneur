@@ -65,3 +65,10 @@ export function playNotification(): void {
   tone(523, 0, 0.2, 0.18)
   tone(784, 0.15, 0.25, 0.2)
 }
+
+export function vibrateAndPlay(pattern: number[] = [200, 100, 200]): void {
+  if ('vibrate' in navigator) {
+    navigator.vibrate(pattern)
+  }
+  playNotification()
+}

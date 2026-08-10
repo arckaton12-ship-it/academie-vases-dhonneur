@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { vibrateAndPlay } from '@/lib/sound'
 
 export interface NotificationRow {
   id: string
@@ -38,6 +39,14 @@ interface NotificationsBellProps {
 export function NotificationsBell({ notifications, onMarkRead }: NotificationsBellProps) {
   const [open, setOpen] = useState(false)
   const unread = notifications.filter((n) => !n.read).length
+  const prevUnread = useRef(unread)
+
+  useEffect(() => {
+    if (unread > prevUnread.current) {
+      vibrateAndPlay()
+    }
+    prevUnread.current = unread
+  }, [unread])
 
   function toggle() {
     const next = !open

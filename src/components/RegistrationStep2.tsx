@@ -131,62 +131,6 @@ export default function RegistrationStep2({ profile, onComplete }: Props) {
       if (error) throw error
       setMsg('Inscription enregistrée !')
 
-      // Sync to Google Sheets (non-blocking)
-      const sheetsUrl = import.meta.env.VITE_GOOGLE_SHEETS_URL || 'https://script.google.com/macros/s/AKfycbzgD6VRDwMB1dI_-MorXl-kVwdTeSV0EPdJ3Iegoj9MFXt4PkvNTIezHqG_kClhXtnNkA/exec'
-      if (sheetsUrl) {
-        const sheetPayload = {
-          Horodateur: new Date().toISOString(),
-          email: form.email,
-          last_name: form.last_name,
-          first_name: form.first_name,
-          photo_url: form.photo_url,
-          phone_whatsapp: form.phone_whatsapp,
-          phone_telegram: form.phone_telegram,
-          emergency_contact: form.emergency_contact,
-          sex: form.sex,
-          class_name: form.class_name,
-          tshirt_size: form.tshirt_size,
-          registration_date: new Date().toISOString(),
-          training_channel: form.training_channel,
-          payment_mode: form.payment_mode,
-          profession: form.profession,
-          neighborhood: form.neighborhood,
-          birth_date: form.birth_date,
-          marital_status: form.marital_status,
-          children_count: form.children_count,
-          baptized_immersion: form.baptized_immersion,
-          baptism_date: form.baptism_date,
-          conversion_date: form.conversion_date,
-          service_department: form.service_department,
-          tribe: form.tribe,
-          student_type: form.student_type,
-          french_reading_level: form.french_reading_level,
-          french_listening_level: form.french_listening_level,
-          french_writing_level: form.french_writing_level,
-          commitment: form.commitment,
-        }
-        fetch(sheetsUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(sheetPayload),
-        }).then(async (res) => {
-          const responseText = await res.text().catch(() => '')
-          await supabase.from('webhook_logs').insert({
-            url: sheetsUrl,
-            payload: sheetPayload,
-            status: res.status,
-            response: responseText.slice(0, 2000),
-          })
-        }).catch(async (err) => {
-          console.error('Webhook inscription error:', err)
-          await supabase.from('webhook_logs').insert({
-            url: sheetsUrl,
-            payload: sheetPayload,
-            error: String(err?.message || err),
-          })
-        })
-      }
-
       setTimeout(onComplete, 1500)
     } catch (e: unknown) {
       setMsg(e instanceof Error ? e.message : 'Erreur inconnue')

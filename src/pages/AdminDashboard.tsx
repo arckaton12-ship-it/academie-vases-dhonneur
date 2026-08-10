@@ -35,14 +35,11 @@ import {
   getAllBadges,
   getAllResumes,
   getAllMiniTaskResponses,
-  getWebhookConfig,
-  saveWebhookConfig,
   setStudentClass,
   getClassVerses,
   addVerse,
   removeVerse,
   toggleVerseActive,
-  WebhookConfig,
   ClassRow,
   Course,
   StudentProfile,
@@ -75,7 +72,7 @@ import { exportToCSV, exportToPDF, exportStudentBulletinPDF, ExportRow } from '@
 import { FieldError } from '@/components/ui/Input'
 import { MessagingPanel } from '@/components/MessagingPanel'
 import { QuizTab } from '@/components/QuizTab'
-import { getAnnouncements, createAnnouncement, Announcement, deleteStudent } from '@/lib/courses'
+import { getAnnouncements, createAnnouncement, createBroadcastAnnouncement, Announcement, deleteStudent } from '@/lib/courses'
 import { sendBroadcastMessage } from '@/lib/messaging'
 import { createConversation } from '@/lib/messaging'
 
@@ -158,10 +155,9 @@ export default function AdminDashboard() {
   const [accountMsg, setAccountMsg] = useState<string | null>(null)
   const [accountSaving, setAccountSaving] = useState(false)
 
-  const [webhook, setWebhook] = useState<WebhookConfig | null>(null)
-  const [webhookUrl, setWebhookUrl] = useState('')
-  const [webhookActive, setWebhookActive] = useState(true)
-  const [webhookMsg, setWebhookMsg] = useState<string | null>(null)
+  const [broadcastText, setBroadcastText] = useState('')
+  const [broadcastSending, setBroadcastSending] = useState(false)
+  const [broadcastResult, setBroadcastResult] = useState<string | null>(null)
 
   // ---- Versets à méditer
   const [verseClassId, setVerseClassId] = useState('')
@@ -177,11 +173,6 @@ export default function AdminDashboard() {
   const [studentSort, setStudentSort] = useState<'name' | 'class' | 'date'>('name')
   const [studentSearch, setStudentSearch] = useState('')
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
-
-  // ---- Broadcast message
-  const [broadcastText, setBroadcastText] = useState('')
-  const [broadcastSending, setBroadcastSending] = useState(false)
-  const [broadcastResult, setBroadcastResult] = useState<string | null>(null)
 
   useEffect(() => {
     getCurrentProfile()
@@ -215,15 +206,6 @@ export default function AdminDashboard() {
       .catch((err) => setError(err instanceof Error ? err.message : 'Erreur de chargement.'))
       .finally(() => setLoading(false))
     loadModerators().catch(() => undefined)
-    getWebhookConfig()
-      .then((cfg) => {
-        if (cfg) {
-          setWebhook(cfg)
-          setWebhookUrl(cfg.url ?? '')
-          setWebhookActive(cfg.active)
-        }
-      })
-      .catch(() => undefined)
   }, [])
 
   const loadModerators = useCallback(async () => {
@@ -615,22 +597,6 @@ export default function AdminDashboard() {
       toastError('Erreur.')
     } finally {
       setAccountSaving(false)
-    }
-  }
-
-  async function saveWebhook() {
-    setWebhookMsg(null)
-    const url = webhookUrl.trim()
-    if (webhookActive && !/^https?:\/\/.+/i.test(url)) {
-      setWebhookMsg('L\u2019URL doit commencer par http:// ou https:// (ou désactive le webhook).')
-      return
-    }
-    try {
-      await saveWebhookConfig(url, webhookActive)
-      setWebhook({ id: true, url: url || null, active: webhookActive })
-      setWebhookMsg('Configuration du webhook enregistrée.')
-    } catch (err) {
-      setWebhookMsg(err instanceof Error ? err.message : 'Erreur d\u2019enregistrement.')
     }
   }
 
@@ -1672,40 +1638,6 @@ export default function AdminDashboard() {
         </Card>
       )}
 
-      <Card className="mt-6">
-        <CardTitle>Webhook d'administration</CardTitle>
-        <CardDescription className="mt-1 mb-3">
-          URL générique qui reçoit les événements de l'Académie (inscription, badge obtenu, note
-          corrigée, résumé corrigé). Laisse le champ vide pour ne recevoir que les notifications
-          dans l'application.
-        </CardDescription>
-        <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
-          <div>
-            <Label htmlFor="webhook-url">URL du webhook</Label>
-            <Input
-              id="webhook-url"
-              value={webhookUrl}
-              placeholder="https://exemple.fr/hooks/academie"
-              onChange={(e) => setWebhookUrl(e.target.value)}
-            />
-          </div>
-          <div className="flex items-end gap-2">
-            <label className="flex cursor-pointer items-center gap-2 pb-2 text-sm text-bordeaux">
-              <input
-                type="checkbox"
-                checked={webhookActive}
-                onChange={(e) => setWebhookActive(e.target.checked)}
-                className="h-4 w-4 accent-[#5D2A41]"
-              />
-              Actif
-            </label>
-            <Button variant="primary" className="!px-4" onClick={saveWebhook}>
-              Enregistrer
-            </Button>
-          </div>
-        </div>
-        {webhookMsg && <p className="mt-3 text-sm text-olive">{webhookMsg}</p>}
-      </Card>
       </div>
     </SidebarLayout>
   )
@@ -2056,37 +1988,47 @@ function StatCell({ label, value }: { label: string; value: string }) {
 }
 
 function AdminAnnoncesTab({ classes, allCourses }: { classes: ClassRow[]; allCourses: Course[] }) {
-  const [selectedClassId, setSelectedClassId] = useState(classes[0]?.id ?? '')
+  const [selectedClassId, setSelectedClassId] = useState('')
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [annonces, setAnnonces] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(true)
+  const [viewClass, setViewClass] = useState(classes[0]?.id ?? '')
 
   useEffect(() => {
-    if (!selectedClassId) { setLoading(false); return }
+    if (!viewClass) { setLoading(false); return }
     setLoading(true)
-    getAnnouncements(selectedClassId)
+    getAnnouncements(viewClass)
       .then(setAnnonces)
       .catch(() => setAnnonces([]))
       .finally(() => setLoading(false))
-  }, [selectedClassId])
+  }, [viewClass])
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault()
-    if (!selectedClassId || !title.trim() || !content.trim()) return
+    if (!title.trim() || !content.trim()) return
     setSaving(true)
     setMsg(null)
     try {
-      await createAnnouncement(selectedClassId, title.trim(), content.trim())
+      if (selectedClassId === 'ALL') {
+        const count = await createBroadcastAnnouncement(title.trim(), content.trim())
+        setMsg(`Annonce publiée pour ${count} classe${count > 1 ? 's' : ''}.`)
+        toast(`Annonce publiée pour ${count} classe${count > 1 ? 's' : ''}.`)
+      } else {
+        if (!selectedClassId) { setMsg('Choisis une classe.'); setSaving(false); return }
+        await createAnnouncement(selectedClassId, title.trim(), content.trim())
+        setMsg('Annonce publiée.')
+        toast('Annonce publiée.')
+      }
+      playSuccess()
       setTitle('')
       setContent('')
-      setMsg('Annonce publiée.')
-      toast('Annonce publiée.')
-      playSuccess()
-      const data = await getAnnouncements(selectedClassId)
-      setAnnonces(data)
+      if (viewClass) {
+        const data = await getAnnouncements(viewClass)
+        setAnnonces(data)
+      }
     } catch (err) {
       setMsg(err instanceof Error ? err.message : 'Erreur lors de la publication.')
       toastError('Erreur.')
@@ -2104,12 +2046,14 @@ function AdminAnnoncesTab({ classes, allCourses }: { classes: ClassRow[]; allCou
         </CardDescription>
         <form onSubmit={handleCreate} className="space-y-3">
           <div>
-            <Label>Classe</Label>
+            <Label>Classe destination</Label>
             <select
               value={selectedClassId}
               onChange={(e) => setSelectedClassId(e.target.value)}
               className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or focus-visible:outline-none"
             >
+              <option value="">— Choisir une classe —</option>
+              <option value="ALL">📢 Toutes les classes (commun)</option>
               {classes.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -2145,8 +2089,19 @@ function AdminAnnoncesTab({ classes, allCourses }: { classes: ClassRow[]; allCou
       <Card>
         <CardTitle>Annonces publiées</CardTitle>
         <CardDescription className="mt-1 mb-3">
-          Historique des annonces pour la classe sélectionnée.
+          Historique des annonces par classe.
         </CardDescription>
+        <div className="mb-3">
+          <select
+            value={viewClass}
+            onChange={(e) => setViewClass(e.target.value)}
+            className="rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or focus-visible:outline-none"
+          >
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
         {loading ? (
           <p className="text-sm text-pierre">Chargement...</p>
         ) : annonces.length === 0 ? (

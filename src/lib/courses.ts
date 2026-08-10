@@ -1441,6 +1441,25 @@ export async function createAnnouncement(classId: string, title: string, content
   if (error) throw error
 }
 
+export async function createBroadcastAnnouncement(title: string, content: string): Promise<number> {
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData.user) throw new Error('Non authentifié')
+
+  const { data: allClasses } = await supabase.from('classes').select('id')
+  if (!allClasses || allClasses.length === 0) return 0
+
+  const rows = allClasses.map((c) => ({
+    moderator_id: userData.user.id,
+    class_id: c.id,
+    title: title.trim(),
+    content: content.trim(),
+  }))
+
+  const { error } = await supabase.from('announcements').insert(rows)
+  if (error) throw error
+  return allClasses.length
+}
+
 export async function deleteAnnouncement(announcementId: string): Promise<void> {
   const { error } = await supabase.from('announcements').delete().eq('id', announcementId)
   if (error) throw error
