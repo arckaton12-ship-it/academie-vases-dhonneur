@@ -8,6 +8,8 @@ import { Input, Label, FieldError } from '@/components/ui/Input'
 import { Sidebar, SidebarItem } from '@/components/ui/Sidebar'
 import { QuizPlayer } from '@/components/QuizPlayer'
 import { BulletinPDF } from '@/components/BulletinPDF'
+import { useSwipeGesture } from '@/hooks/useSwipeGesture'
+import { AnimatedCounter } from '@/components/ui/AnimatedCounter'
 import { CoursePlayer, downloadCourseMedia } from '@/components/CoursePlayer'
 import { Logo } from '@/components/Logo'
 import { Avatar } from '@/components/Avatar'
@@ -143,6 +145,18 @@ function AnnoncesEtudiantTab({ classId }: { classId: string | null }) {
 export default function StudentDashboard() {
   const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('academie')
+
+  const TAB_ORDER: Tab[] = ['academie', 'annonces', 'devoirs', 'revue', 'service', 'messagerie', 'badges', 'profil']
+  const swipeHandlers = useSwipeGesture({
+    onSwipeLeft: () => {
+      const idx = TAB_ORDER.indexOf(tab)
+      if (idx < TAB_ORDER.length - 1) setTab(TAB_ORDER[idx + 1])
+    },
+    onSwipeRight: () => {
+      const idx = TAB_ORDER.indexOf(tab)
+      if (idx > 0) setTab(TAB_ORDER[idx - 1])
+    },
+  })
 
   const [profile, setProfile] = useState<ProfileState | null>(null)
   const [showRegistration, setShowRegistration] = useState(false)
@@ -688,10 +702,12 @@ export default function StudentDashboard() {
   if (loading) {
     return (
       <div className="mx-auto min-h-screen max-w-2xl px-4 py-8 sm:px-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-9 w-48 rounded-card bg-pierre/10" />
-          <div className="h-20 rounded-card bg-pierre/10" />
-          <div className="h-44 rounded-card bg-pierre/10" />
+        <div className="space-y-4">
+          <div className="skeleton h-9 w-48" />
+          <div className="skeleton h-20 rounded-xl" />
+          <div className="skeleton h-44 rounded-xl" />
+          <div className="skeleton h-12 rounded-xl" />
+          <div className="skeleton h-12 rounded-xl" />
         </div>
       </div>
     )
@@ -743,7 +759,7 @@ export default function StudentDashboard() {
         onSelect={(k) => setTab(k as Tab)}
         header={<Logo showText={false} size={28} />}
       />
-      <div className="mx-auto max-w-2xl px-4 pb-12 pt-6 sm:px-6">
+      <div className="mx-auto max-w-2xl px-4 pb-12 pt-6 sm:px-6" {...swipeHandlers}>
       <SectionWatermark
         kind={tab === 'devoirs' || tab === 'revue' ? 'livre' : tab === 'service' ? 'mains' : 'flamme'}
       />
@@ -1002,8 +1018,8 @@ export default function StudentDashboard() {
               Cours déjà suivis : {followedCount}. Voici ta progression sur la session.
             </CardDescription>
             <dl className="mt-3 grid grid-cols-2 gap-4 text-sm">
-              <ProgressStat label="Présence" value={`${progress?.presenceRate ?? 0}%`} />
-              <ProgressStat label="Résumés faits" value={`${progress?.resumeRate ?? 0}%`} />
+              <ProgressStat label="Présence" value={`${progress?.presenceRate ?? 0}%`} animated={progress?.presenceRate ?? 0} />
+              <ProgressStat label="Résumés faits" value={`${progress?.resumeRate ?? 0}%`} animated={progress?.resumeRate ?? 0} />
               <ProgressStat label="Moyenne exercices & devoirs" value={progress?.averageGrade ?? '—'} />
               <ProgressStat label="Méditation de la Parole" value={String(progress?.meditationGrade ?? '—')} />
             </dl>
@@ -1718,11 +1734,17 @@ export default function StudentDashboard() {
   )
 }
 
-function ProgressStat({ label, value }: { label: string; value: string }) {
+function ProgressStat({ label, value, animated }: { label: string; value: string; animated?: number }) {
   return (
     <div className="glass-card !p-3 text-center">
       <dt className="text-xs text-pierre dark:text-slate-400">{label}</dt>
-      <dd className="font-display text-xl text-bordeaux dark:text-or">{value}</dd>
+      <dd className="font-display text-xl text-bordeaux dark:text-or">
+        {animated !== undefined ? (
+          <AnimatedCounter value={animated} suffix="%" className="font-display text-xl text-bordeaux dark:text-or" />
+        ) : (
+          value
+        )}
+      </dd>
     </div>
   )
 }
