@@ -19,6 +19,7 @@ import { BadgeDrawer } from '@/components/BadgeDrawer'
 import { CertificateView } from '@/components/Certificate'
 import { SoundToggle } from '@/components/SoundToggle'
 import { MascotCompanion, MascotMood } from '@/components/MascotCompanion'
+import { FloatingMascot } from '@/components/FloatingMascot'
 import { NotificationBanner } from '@/components/NotificationBanner'
 import { CoursePath } from '@/components/CoursePath'
 import { useInAppNotifications } from '@/hooks/useInAppNotifications'
@@ -837,10 +838,8 @@ export default function StudentDashboard() {
           {/* Assiduité compacte */}
           <AttendanceGauge weeks={weeks} presenceRate={progress?.presenceRate ?? undefined} />
 
-          {/* Mascot companion */}
-          <div className="flex justify-center">
-            <MascotCompanion mood={mascotMood} size={56} />
-          </div>
+          {/* Mascot companion — floating interactive */}
+          <FloatingMascot mood={mascotMood} />
 
           {/* Course Path */}
           {allCourses.length > 0 && (

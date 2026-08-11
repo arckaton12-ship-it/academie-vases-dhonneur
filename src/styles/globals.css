@@ -495,3 +495,28 @@ h1, h2, h3, h4 {
 }
 .notif-banner-in { animation: slideInFromTop 0.3s ease-out both; }
 .notif-banner-out { animation: slideOutToTop 0.3s ease-in both; }
+
+/* Floating mascot animations */
+@keyframes flameBurst {
+  0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+  30% { transform: scale(1.3) rotate(5deg); opacity: 1; }
+  60% { transform: scale(1.5) rotate(-3deg); opacity: 0.9; }
+  100% { transform: scale(0) rotate(0deg); opacity: 0; }
+}
+@keyframes floatDrift {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-3px) rotate(2deg); }
+  75% { transform: translateY(2px) rotate(-1deg); }
+}
+@keyframes cornerEnter {
+  from { transform: scale(0.3); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes cornerExit {
+  from { transform: scale(1); opacity: 1; }
+  to { transform: scale(0.3); opacity: 0; }
+}
+.flame-burst { animation: flameBurst 0.8s ease-out both; }
+.float-drift { animation: floatDrift 4s ease-in-out infinite; }
+.corner-enter { animation: cornerEnter 0.3s ease-out both; }
+.corner-exit { animation: cornerExit 0.3s ease-in both; }

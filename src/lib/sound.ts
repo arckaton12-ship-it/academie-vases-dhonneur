@@ -66,6 +66,12 @@ export function playNotification(): void {
   tone(784, 0.15, 0.25, 0.2)
 }
 
+export function playFlameSpeak(): void {
+  tone(523, 0, 0.15, 0.12)
+  tone(659, 0.1, 0.15, 0.14)
+  tone(784, 0.2, 0.2, 0.12)
+}
+
 export function vibrateAndPlay(pattern: number[] = [200, 100, 200]): void {
   if ('vibrate' in navigator) {
     navigator.vibrate(pattern)
