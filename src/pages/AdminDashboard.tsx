@@ -9,7 +9,9 @@ import { Avatar } from '@/components/Avatar'
 import { SoundToggle } from '@/components/SoundToggle'
 import { StudentProfileCard } from '@/components/StudentProfileCard'
 import { toast, toastError } from '@/components/ui/Toast'
+import { supabase } from '@/lib/supabase'
 import { playSuccess } from '@/lib/sound'
+import { generateSecurePassword } from '@/lib/rateLimit'
 import { SectionWatermark } from '@/components/SectionWatermark'
 import { VerseReference } from '@/components/VerseReference'
 import { DayAccentBand } from '@/components/DayAccentBand'
@@ -76,7 +78,7 @@ import { getAnnouncements, createAnnouncement, createBroadcastAnnouncement, Anno
 import { sendBroadcastMessage } from '@/lib/messaging'
 import { createConversation } from '@/lib/messaging'
 
-type Section = 'vue' | 'classes' | 'cours' | 'notation' | 'etudiants' | 'moderateurs' | 'versets' | 'messagerie' | 'export' | 'quiz' | 'annonces'
+type Section = 'vue' | 'classes' | 'cours' | 'notation' | 'etudiants' | 'moderateurs' | 'versets' | 'messagerie' | 'export' | 'quiz' | 'annonces' | 'demandes'
 
 const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
 
@@ -92,6 +94,7 @@ const sectionIcons: Record<Section, React.ReactNode> = {
   export: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
   quiz: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
   annonces: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+  demandes: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>,
 }
 
 interface AdminProfile {
@@ -154,6 +157,7 @@ export default function AdminDashboard() {
   })
   const [accountMsg, setAccountMsg] = useState<string | null>(null)
   const [accountSaving, setAccountSaving] = useState(false)
+  const [createdPassword, setCreatedPassword] = useState<string | null>(null)
 
   const [broadcastText, setBroadcastText] = useState('')
   const [broadcastSending, setBroadcastSending] = useState(false)
@@ -563,15 +567,24 @@ export default function AdminDashboard() {
   async function handleCreateAccount(e: FormEvent) {
     e.preventDefault()
     setAccountMsg(null)
-    if (!newAccount.email.trim() || !newAccount.password || !newAccount.firstName.trim() || !newAccount.lastName.trim()) {
-      setAccountMsg('Email, mot de passe, prénom et nom sont obligatoires.')
+    setCreatedPassword(null)
+    if (!newAccount.email.trim() || !newAccount.firstName.trim() || !newAccount.lastName.trim()) {
+      setAccountMsg('Email, prénom et nom sont obligatoires.')
+      return
+    }
+    // Auto-generate password for moderators
+    const pwd = newAccount.role === 'MODERATEUR' && !newAccount.password
+      ? generateSecurePassword(14)
+      : newAccount.password
+    if (!pwd) {
+      setAccountMsg('Le mot de passe est obligatoire.')
       return
     }
     setAccountSaving(true)
     try {
       await adminCreateUser({
         email: newAccount.email.trim(),
-        password: newAccount.password,
+        password: pwd,
         firstName: newAccount.firstName.trim(),
         lastName: newAccount.lastName.trim(),
         role: newAccount.role as 'MODERATEUR' | 'ADMINISTRATEUR' | 'ETUDIANT',
@@ -579,7 +592,12 @@ export default function AdminDashboard() {
         tribe: newAccount.tribe.trim() || undefined,
         department: newAccount.department.trim() || undefined,
       })
-      setAccountMsg('Compte créé avec succès.')
+      if (newAccount.role === 'MODERATEUR') {
+        setCreatedPassword(pwd)
+        setAccountMsg(`Compte modérateur créé. Mot de passe temporaire à transmettre :`)
+      } else {
+        setAccountMsg('Compte créé avec succès.')
+      }
       toast('Compte créé.')
       setNewAccount({
         email: '',
@@ -701,6 +719,7 @@ export default function AdminDashboard() {
     ['messagerie', 'Messagerie'],
     ['quiz', 'Quiz'],
     ['annonces', 'Annonces'],
+    ['demandes', 'Demandes de classe'],
     ['export', 'Export'],
   ]
 
@@ -1207,10 +1226,24 @@ export default function AdminDashboard() {
               </div>
               {accountMsg && (
                 <p
-                  className={`text-sm ${accountMsg.startsWith('Compte') ? 'text-olive' : 'text-red-700'}`}
+                  className={`text-sm ${accountMsg.startsWith('Compte') || accountMsg.startsWith('Demande') ? 'text-olive' : 'text-red-700'}`}
                 >
                   {accountMsg}
                 </p>
+              )}
+              {createdPassword && (
+                <div className="rounded-lg border border-or/40 bg-or/5 p-3">
+                  <p className="text-xs text-pierre">Mot de passe temporaire à transmettre au modérateur :</p>
+                  <p className="mt-1 font-mono text-sm font-bold text-bordeaux break-all">{createdPassword}</p>
+                  <p className="mt-1 text-[11px] text-pierre/60">Ce mot de passe ne sera plus affiché. Le modérateur devra le changer à sa première connexion.</p>
+                  <button
+                    type="button"
+                    onClick={() => { navigator.clipboard.writeText(createdPassword); toast('Copié !') }}
+                    className="mt-2 rounded-md bg-bordeaux px-3 py-1 text-xs text-parchemin hover:bg-[#4a2234]"
+                  >
+                    Copier le mot de passe
+                  </button>
+                </div>
               )}
               <Button type="submit" disabled={accountSaving}>
                 {accountSaving ? 'Création…' : 'Créer le compte'}
@@ -1541,6 +1574,10 @@ export default function AdminDashboard() {
           classes={classes}
           allCourses={courses}
         />
+      )}
+
+      {section === 'demandes' && (
+        <AdminClassRequestsTab classes={classes} />
       )}
 
       {section === 'export' && (
@@ -1974,6 +2011,136 @@ function NotationTab({ onGraded }: { onGraded: () => void }) {
         )}
       </Card>
       {message && <p className="text-sm text-olive">{message}</p>}
+    </div>
+  )
+}
+
+function AdminClassRequestsTab({ classes }: { classes: ClassRow[] }) {
+  const [requests, setRequests] = useState<Array<{
+    id: string
+    student_id: string
+    requested_class_name: string
+    status: string
+    created_at: string
+    profiles: { first_name: string; last_name: string; email: string }[] | null
+  }>>([])
+  const [loading, setLoading] = useState(true)
+  const [resolvingId, setResolvingId] = useState<string | null>(null)
+
+  useEffect(() => {
+    loadRequests()
+  }, [])
+
+  async function loadRequests() {
+    setLoading(true)
+    const { data } = await supabase
+      .from('class_requests')
+      .select('id, student_id, requested_class_name, status, created_at, profiles!class_requests_student_id_fkey(first_name, last_name, email)')
+      .order('created_at', { ascending: false })
+    setRequests(data ?? [])
+    setLoading(false)
+  }
+
+  async function handleResolve(requestId: string, approve: boolean, className?: string) {
+    setResolvingId(requestId)
+    try {
+      const { data, error } = await supabase.rpc('resolve_class_request', {
+        p_request_id: requestId,
+        p_approve: approve,
+        p_class_name: className || null,
+      })
+      if (error) throw error
+      const result = data as { ok: boolean; msg: string }
+      if (!result.ok) throw new Error(result.msg)
+      toast(result.msg)
+      loadRequests()
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Erreur')
+    } finally {
+      setResolvingId(null)
+    }
+  }
+
+  const pending = requests.filter(r => r.status === 'pending')
+  const resolved = requests.filter(r => r.status !== 'pending')
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardTitle>Demandes de classe en attente</CardTitle>
+        <CardDescription className="mt-1 mb-3">
+          Étudiants sans classe assignée qui ont demandé l'accès.
+        </CardDescription>
+        {loading ? (
+          <div className="flex items-center gap-2 text-sm text-pierre"><div className="h-4 w-4 animate-spin rounded-full border-2 border-or border-t-transparent" /> Chargement…</div>
+        ) : pending.length === 0 ? (
+          <p className="text-sm text-pierre/60">Aucune demande en attente.</p>
+        ) : (
+          <ul className="space-y-3">
+            {pending.map(r => {
+              const p = r.profiles?.[0]
+              return (
+                <li key={r.id} className="flex flex-col gap-2 rounded-lg border border-or/30 bg-or/5 p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-bordeaux">
+                      {p?.first_name} {p?.last_name}
+                    </p>
+                    <p className="text-xs text-pierre">{p?.email} — Demande : <span className="font-medium text-bordeaux">{r.requested_class_name}</span></p>
+                    <p className="text-[11px] text-pierre/60">{new Date(r.created_at).toLocaleString('fr-FR')}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select
+                      className="rounded-md border border-pierre/30 bg-white px-2 py-1 text-xs text-bordeaux"
+                      defaultValue={r.requested_class_name}
+                      id={`class-${r.id}`}
+                    >
+                      {classes.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                    </select>
+                    <Button
+                      variant="primary"
+                      className="!px-3 !py-1.5 !text-xs"
+                      disabled={resolvingId === r.id}
+                      onClick={() => {
+                        const sel = document.getElementById(`class-${r.id}`) as HTMLSelectElement
+                        handleResolve(r.id, true, sel?.value)
+                      }}
+                    >
+                      {resolvingId === r.id ? '…' : 'Approuver'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="!px-3 !py-1.5 !text-xs !text-rouge !border-rouge/30 hover:!bg-rouge/10"
+                      disabled={resolvingId === r.id}
+                      onClick={() => handleResolve(r.id, false)}
+                    >
+                      Refuser
+                    </Button>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </Card>
+
+      {resolved.length > 0 && (
+        <Card>
+          <CardTitle className="text-sm">Historique des demandes traitées</CardTitle>
+          <ul className="mt-2 space-y-1">
+            {resolved.map(r => {
+              const p = r.profiles?.[0]
+              return (
+                <li key={r.id} className="flex items-center justify-between border-b border-pierre/10 py-2 text-xs last:border-0">
+                  <span className="text-bordeaux">{p?.first_name} {p?.last_name}</span>
+                  <span className={`font-medium ${r.status === 'approved' ? 'text-olive' : 'text-rouge'}`}>
+                    {r.status === 'approved' ? '✓ Approuvée' : '✗ Refusée'}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        </Card>
+      )}
     </div>
   )
 }

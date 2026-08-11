@@ -39,7 +39,7 @@ export function WelcomeAnimation({ firstName, onComplete }: Props) {
       {/* Logo pulse */}
       <div className={`transition-all duration-700 ${phase !== 'enter' ? 'scale-100 opacity-100' : 'scale-75 opacity-0'}`}>
         <div className="animate-pulse">
-          <Logo showText={false} size={72} />
+           <Logo showText={false} size={100} />
         </div>
       </div>
 

@@ -15,18 +15,48 @@ export interface SignUpInput {
   avatarFile?: File
 }
 
+async function withRetry<T>(fn: () => Promise<T>, attempts = 3, delayMs = 1000): Promise<T> {
+  let lastError: unknown
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn()
+    } catch (err) {
+      lastError = err
+      if (i < attempts - 1) await new Promise(r => setTimeout(r, delayMs * (i + 1)))
+    }
+  }
+  throw lastError
+}
+
 export async function signUp(input: SignUpInput) {
   if (input.role !== 'ETUDIANT') {
     throw new Error(
       "La création d'un compte administrateur ou modérateur est réservée à l'administration."
     )
   }
-  const { data, error } = await supabase.auth.signUp({
-    email: input.email,
-    password: input.password,
-  })
-  if (error) throw error
-  if (!data.user) throw new Error("Inscription incomplète, réessaie.")
+
+  let data: Awaited<ReturnType<typeof supabase.auth.signUp>>['data']
+  try {
+    const result = await withRetry(() =>
+      supabase.auth.signUp({
+        email: input.email,
+        password: input.password,
+      })
+    )
+    data = result.data
+    if (result.error) throw result.error
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : ''
+    if (msg.includes('rate') || msg.includes('too many') || msg.includes('429')) {
+      throw new Error("Trop d'inscriptions simultanées. Réessaie dans quelques secondes.")
+    }
+    if (msg.includes('already registered') || msg.includes('already exists')) {
+      throw new Error("Un compte existe déjà avec cet email. Connecte-toi plutôt.")
+    }
+    throw err
+  }
+
+  if (!data?.user) throw new Error("Inscription incomplète, réessaie.")
 
   const avatarUrl = input.avatarFile ? await uploadAvatar(input.avatarFile, data.user.id) : null
 
@@ -41,7 +71,12 @@ export async function signUp(input: SignUpInput) {
     avatar_url: avatarUrl,
     role: input.role,
   })
-  if (profileError) throw profileError
+  if (profileError) {
+    if (profileError.message?.includes('duplicate') || profileError.code === '23505') {
+      throw new Error("Un profil existe déjà pour cet utilisateur.")
+    }
+    throw profileError
+  }
 
   return data
 }

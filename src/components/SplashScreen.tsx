@@ -51,7 +51,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
       aria-label="Écran de bienvenue"
     >
       <div className={reduced ? '' : 'animate-splash-in'}>
-        <Logo showText={false} size={80} />
+        <Logo showText={false} size={120} />
       </div>
       <p
         className={`mt-4 font-display text-lg text-bordeaux dark:text-slate-200 ${

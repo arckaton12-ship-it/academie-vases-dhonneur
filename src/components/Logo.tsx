@@ -12,9 +12,9 @@ export function Logo({ size = 34, showText = false, className = '' }: LogoProps)
       <img
         src={logoUrl}
         alt="Logo Académie Vases d'Honneur"
-        width={size}
         height={size}
-        className="h-auto shrink-0 object-contain"
+        className="h-auto w-auto shrink-0 object-contain"
+        style={{ height: size, width: 'auto' }}
       />
       {showText && (
         <span className="font-display text-lg font-semibold leading-none text-bordeaux">

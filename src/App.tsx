@@ -12,6 +12,7 @@ import { UserRole } from '@/lib/auth'
 import { SplashScreen, shouldShowSplash, markSplashSeen } from '@/components/SplashScreen'
 import { ToastContainer } from '@/components/ui/Toast'
 import { PWAInstall, PWAInstallButton } from '@/components/PWAInstall'
+import { ChangePasswordPage } from '@/pages/ChangePasswordPage'
 
 const MODERATOR_ROLES: UserRole[] = ['MODERATEUR', 'ADMINISTRATEUR']
 
@@ -54,6 +55,7 @@ export default function App() {
 
           <Route path="/moderateur/inscription" element={<ModeratorSignup />} />
           <Route path="/moderateur/connexion" element={<ModeratorLogin />} />
+          <Route path="/moderateur/changer-mot-de-passe" element={<ChangePasswordPage />} />
           <Route
             path="/moderateur/tableau-de-bord"
             element={

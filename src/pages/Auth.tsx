@@ -51,6 +51,10 @@ export function AuthPage({ mode, role, title, redirectTo }: AuthPageProps) {
         return
       }
       if (profile?.role === 'MODERATEUR') {
+        if (profile?.must_change_password) {
+          navigate('/moderateur/changer-mot-de-passe')
+          return
+        }
         navigate('/moderateur/tableau-de-bord')
         return
       }

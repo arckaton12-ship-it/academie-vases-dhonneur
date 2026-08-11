@@ -92,7 +92,7 @@ export default function Landing() {
       {/* ─── HERO ─── */}
       <section className="relative z-10 flex min-h-[90vh] flex-col items-center justify-center px-6 text-center">
         <div className="mb-6 animate-scale-in">
-          <Logo showText={false} size={56} />
+                <Logo showText={false} size={80} />
         </div>
 
         <h1 className="font-display text-3xl font-bold text-bordeaux drop-shadow-sm sm:text-5xl lg:text-6xl dark:text-slate-100">
@@ -102,8 +102,7 @@ export default function Landing() {
         </h1>
 
         <p className="mt-5 max-w-lg text-base text-pierre sm:text-lg dark:text-slate-400">
-          L'académie biblique en ligne de l'Assemblée Eaux Paisibles de Yaoundé.
-          Un parcours structuré pour devenir un disciple solide.
+          L'académie biblique en ligne de l'Église Vases d'Honneur Assemblée Eaux Paisibles de Yaoundé. Un parcours structuré pour acquérir de solide fondements en Christ et devenir un disciple authentique de Jésus.
         </p>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">

@@ -5,6 +5,9 @@ import { signUp, signIn, UserRole } from '@/lib/auth'
 import { isAvatarFile } from '@/lib/avatars'
 import { canSignUp, recordSignUp } from '@/lib/rateLimit'
 
+const TRIBUS = ['Lévi', 'Juda', 'Siméon', 'Ruben', 'Zabulon', 'Issacar', 'Dan', 'Nephtali', 'Gad', 'Aser', 'Manassé', 'Éphraïm', 'Benjamin', 'Aucune']
+const DEPARTEMENTS = ['Intercession', 'Chantre', 'Communication', 'Accueil', 'Gestion des Cultes', "Médecine d'Honneur", 'Portier', 'Évangélisation', 'Amis des Nouveaux (ADN)', 'Social', 'Aucun']
+
 interface AuthFormProps {
   mode: 'signup' | 'signin'
   role: UserRole
@@ -86,11 +89,17 @@ export function AuthForm({ mode, role, onSuccess }: AuthFormProps) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="tribe">Tribu</Label>
-              <Input id="tribe" value={tribe} onChange={(e) => setTribe(e.target.value)} />
+              <select id="tribe" value={tribe} onChange={(e) => setTribe(e.target.value)} className="block w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or focus-visible:outline-none">
+                <option value="">—</option>
+                {TRIBUS.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
             </div>
             <div>
               <Label htmlFor="department">Département</Label>
-              <Input id="department" value={department} onChange={(e) => setDepartment(e.target.value)} />
+              <select id="department" value={department} onChange={(e) => setDepartment(e.target.value)} className="block w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or focus-visible:outline-none">
+                <option value="">—</option>
+                {DEPARTEMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
             </div>
           </div>
           <div>

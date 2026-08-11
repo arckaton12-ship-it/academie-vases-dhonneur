@@ -7,7 +7,7 @@
   "display": "standalone",
   "background_color": "#1B6B63",
   "theme_color": "#1B6B63",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "lang": "fr",
   "categories": ["education", "religious"],
   "id": "/",
