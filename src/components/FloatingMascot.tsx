@@ -6,10 +6,17 @@ import { playFlameSpeak } from '@/lib/sound'
 type Corner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 
 const CORNER_STYLES: Record<Corner, string> = {
-  'top-left': 'top-4 left-4',
-  'top-right': 'top-4 right-4',
-  'bottom-left': 'bottom-4 left-4',
-  'bottom-right': 'bottom-4 right-4',
+  'top-left': 'top-16 left-3',
+  'top-right': 'top-16 right-3',
+  'bottom-left': 'bottom-20 left-3',
+  'bottom-right': 'bottom-20 right-3',
+}
+
+const BUBBLE_POSITION: Record<Corner, string> = {
+  'top-left': 'top-full left-0 mt-2',
+  'top-right': 'top-full right-0 mt-2',
+  'bottom-left': 'bottom-full left-0 mb-2',
+  'bottom-right': 'bottom-full right-0 mb-2',
 }
 
 const ALL_CORNERS: Corner[] = ['top-left', 'top-right', 'bottom-left', 'bottom-right']
@@ -84,6 +91,7 @@ export function FloatingMascot({ mood = 'happy' }: FloatingMascotProps) {
   }, [pickNewCorner, startCycle])
 
   const positionClass = useMemo(() => CORNER_STYLES[corner], [corner])
+  const bubbleClass = useMemo(() => BUBBLE_POSITION[corner], [corner])
 
   return (
     <>
@@ -101,7 +109,7 @@ export function FloatingMascot({ mood = 'happy' }: FloatingMascotProps) {
           aria-label="Flamme compagnon — touche pour interagir"
         >
           {showMessage && (
-            <div className="absolute bottom-full left-1/2 z-50 mb-2 w-48 -translate-x-1/2">
+            <div className={`absolute z-50 w-52 ${bubbleClass}`}>
               <div className="relative rounded-xl border border-sable/60 bg-white px-3 py-2 text-xs leading-snug text-bordeaux shadow-lg dark:bg-slate-800 dark:text-slate-200 dark:border-white/10">
                 {currentMessage}
                 <div className="absolute -bottom-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-b border-r border-sable/60 bg-white dark:bg-slate-800 dark:border-white/10" />

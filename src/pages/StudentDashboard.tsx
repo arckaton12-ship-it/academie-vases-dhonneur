@@ -773,6 +773,7 @@ export default function StudentDashboard() {
   return (
     <div className="relative min-h-screen md:pl-[68px]">
       {currentNotif && <NotificationBanner notification={currentNotif} onDismiss={dismissNotif} />}
+      <FloatingMascot mood={mascotMood} />
       <Sidebar
         items={studentSidebarItems}
         activeKey={tab}
@@ -837,9 +838,6 @@ export default function StudentDashboard() {
         <div className="space-y-5">
           {/* Assiduité compacte */}
           <AttendanceGauge weeks={weeks} presenceRate={progress?.presenceRate ?? undefined} />
-
-          {/* Mascot companion — floating interactive */}
-          <FloatingMascot mood={mascotMood} />
 
           {/* Course Path */}
           {allCourses.length > 0 && (
