@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Logo } from './Logo'
+import { MascotCompanion } from './MascotCompanion'
 
 const SPLASH_KEY = 'academy_splash_seen'
 
@@ -52,6 +53,9 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
     >
       <div className={reduced ? '' : 'animate-splash-in'}>
         <Logo showText={false} size={120} />
+      </div>
+      <div className={reduced ? '' : 'animate-fade-in'} style={reduced ? undefined : { animationDelay: '0.3s' }}>
+        <MascotCompanion mood="welcoming" size={64} message={undefined} />
       </div>
       <p
         className={`mt-4 font-display text-lg text-bordeaux dark:text-slate-200 ${

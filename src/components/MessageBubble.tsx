@@ -99,7 +99,7 @@ export function MessageBubble({ message: m, isMine, showSenderName, senderName, 
 
   return (
     <div
-      className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
+      className={`msg-enter flex ${isMine ? 'justify-end' : 'justify-start'}`}
       style={{ transform: `translateX(${swipeX}px)`, transition: swipeX === 0 ? 'transform 0.2s ease' : 'none' }}
       onContextMenu={(e) => { e.preventDefault(); onLongPress?.(m) }}
       onTouchStart={handleTouchStart}

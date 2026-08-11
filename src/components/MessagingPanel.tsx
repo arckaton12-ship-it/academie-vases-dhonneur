@@ -517,9 +517,9 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
                 <div className="flex justify-start mt-2">
                   <div className="rounded-2xl rounded-bl-md bg-sable/50 px-4 py-2.5 dark:bg-white/10">
                     <div className="flex gap-1">
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-pierre/40 [animation-delay:0ms]" />
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-pierre/40 [animation-delay:150ms]" />
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-pierre/40 [animation-delay:300ms]" />
+                      <span className="typing-dot h-1.5 w-1.5 rounded-full bg-pierre/40" />
+                      <span className="typing-dot h-1.5 w-1.5 rounded-full bg-pierre/40" />
+                      <span className="typing-dot h-1.5 w-1.5 rounded-full bg-pierre/40" />
                     </div>
                   </div>
                 </div>

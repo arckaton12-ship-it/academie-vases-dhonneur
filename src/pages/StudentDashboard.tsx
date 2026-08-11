@@ -18,6 +18,11 @@ import { Badge } from '@/components/Badge'
 import { BadgeDrawer } from '@/components/BadgeDrawer'
 import { CertificateView } from '@/components/Certificate'
 import { SoundToggle } from '@/components/SoundToggle'
+import { MascotCompanion, MascotMood } from '@/components/MascotCompanion'
+import { NotificationBanner } from '@/components/NotificationBanner'
+import { CoursePath } from '@/components/CoursePath'
+import { useInAppNotifications } from '@/hooks/useInAppNotifications'
+import { registerServiceWorker } from '@/lib/pushNotifications'
 import { SectionWatermark } from '@/components/SectionWatermark'
 import { VerseReference } from '@/components/VerseReference'
 import { DayAccentBand } from '@/components/DayAccentBand'
@@ -159,6 +164,7 @@ export default function StudentDashboard() {
   })
 
   const [profile, setProfile] = useState<ProfileState | null>(null)
+  const { current: currentNotif, dismiss: dismissNotif } = useInAppNotifications({ userId: profile?.id })
   const [showRegistration, setShowRegistration] = useState(false)
   const [course, setCourse] = useState<Course | null>(null)
   const [streak, setStreak] = useState<Streak | null>(null)
@@ -181,6 +187,15 @@ export default function StudentDashboard() {
   const [miniTaskResponse, setMiniTaskResponse] = useState('')
   const [miniTaskSaving, setMiniTaskSaving] = useState(false)
   const [miniTaskSaved, setMiniTaskSaved] = useState(false)
+
+  // ---- Mascot companion mood
+  const mascotMood = useMemo<MascotMood>(() => {
+    if (!streak || streak.consecutive_weeks === 0) return 'welcoming'
+    if (progress && progress.presenceRate >= 80) return 'proud'
+    const hour = new Date().getHours()
+    if (hour >= 20 && (!progress || progress.presenceRate < 50)) return 'attentive'
+    return 'happy'
+  }, [streak, progress])
 
   // ---- Salle des badges + badge actif
   const [badgeProgress, setBadgeProgress] = useState<BadgeProgress[]>([])
@@ -283,6 +298,7 @@ export default function StudentDashboard() {
   }, [])
 
   useEffect(() => {
+    registerServiceWorker().catch(() => {})
     let cancelled = false
     ;(async () => {
       try {
@@ -446,6 +462,8 @@ export default function StudentDashboard() {
       })
       setSubmissions(await getMySubmissions(profile.id))
       setSubmitMsg((prev) => ({ ...prev, [assignmentId]: 'Rendu enregistré.' }))
+      toast('Devoir rendu avec succès !')
+      playSuccess()
       setProgress(await getStudentProgress(profile.id))
     } catch (err) {
       setSubmitMsg((prev) => ({ ...prev, [assignmentId]: err instanceof Error ? err.message : 'Erreur.' }))
@@ -753,6 +771,7 @@ export default function StudentDashboard() {
 
   return (
     <div className="relative min-h-screen md:pl-[68px]">
+      {currentNotif && <NotificationBanner notification={currentNotif} onDismiss={dismissNotif} />}
       <Sidebar
         items={studentSidebarItems}
         activeKey={tab}
@@ -817,6 +836,24 @@ export default function StudentDashboard() {
         <div className="space-y-5">
           {/* Assiduité compacte */}
           <AttendanceGauge weeks={weeks} presenceRate={progress?.presenceRate ?? undefined} />
+
+          {/* Mascot companion */}
+          <div className="flex justify-center">
+            <MascotCompanion mood={mascotMood} size={56} />
+          </div>
+
+          {/* Course Path */}
+          {allCourses.length > 0 && (
+            <CollapsibleCard title="Mon parcours" defaultOpen={false}>
+              <CoursePath
+                courses={allCourses}
+                currentWeek={course?.week ?? 1}
+                completedCourseIds={new Set(followed.map((c) => c.id))}
+                onSelectCourse={handleSelectCourse}
+                mascotMood={mascotMood}
+              />
+            </CollapsibleCard>
+          )}
 
           {/* Verset du jour */}
           <CollapsibleCard title="Verset du jour">

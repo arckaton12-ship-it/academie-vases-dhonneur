@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
+import { toast } from '@/components/ui/Toast'
+import { playSuccess } from '@/lib/sound'
 import { Assignment, MySubmission } from '@/lib/courses'
 
 interface DevoirsTabProps {
@@ -92,6 +94,8 @@ export function DevoirsTab({ assignments, submissions, courseName, onSubmit }: D
     try {
       await onSubmit(assignmentId, draft.content, draft.file)
       setSubmitMsg((prev) => ({ ...prev, [assignmentId]: 'Envoye !' }))
+      toast('Devoir envoyé avec succès !')
+      playSuccess()
       setDrafts((prev) => ({ ...prev, [assignmentId]: { content: '', file: null } }))
     } catch {
       setSubmitMsg((prev) => ({ ...prev, [assignmentId]: 'Erreur d\'envoi.' }))
