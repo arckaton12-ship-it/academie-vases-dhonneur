@@ -60,7 +60,7 @@ export async function signUp(input: SignUpInput) {
 
   const avatarUrl = input.avatarFile ? await uploadAvatar(input.avatarFile, data.user.id) : null
 
-  const { error: profileError } = await supabase.from('profiles').insert({
+  const { error: profileError } = await supabase.from('profiles').upsert({
     id: data.user.id,
     email: input.email,
     phone: input.phone ?? null,
@@ -70,11 +70,8 @@ export async function signUp(input: SignUpInput) {
     department: input.department ?? null,
     avatar_url: avatarUrl,
     role: input.role,
-  })
+  }, { onConflict: 'id', ignoreDuplicates: false })
   if (profileError) {
-    if (profileError.message?.includes('duplicate') || profileError.code === '23505') {
-      throw new Error("Un profil existe déjà pour cet utilisateur.")
-    }
     throw profileError
   }
 
