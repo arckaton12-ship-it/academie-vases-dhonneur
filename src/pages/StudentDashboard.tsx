@@ -20,6 +20,7 @@ import { CertificateView } from '@/components/Certificate'
 import { SoundToggle } from '@/components/SoundToggle'
 import { MascotCompanion, MascotMood } from '@/components/MascotCompanion'
 import { FloatingMascot } from '@/components/FloatingMascot'
+import { NotificationPrompt } from '@/components/NotificationPrompt'
 import { NotificationBanner } from '@/components/NotificationBanner'
 import { CoursePath } from '@/components/CoursePath'
 import { useInAppNotifications } from '@/hooks/useInAppNotifications'
@@ -300,6 +301,11 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     registerServiceWorker().catch(() => {})
+    import('@/lib/pushNotifications').then(({ onForegroundMessage, showLocalNotification }) => {
+      onForegroundMessage(({ title, body }) => {
+        showLocalNotification(title, body)
+      })
+    })
     let cancelled = false
     ;(async () => {
       try {
@@ -774,6 +780,7 @@ export default function StudentDashboard() {
     <div className="relative min-h-screen md:pl-[68px]">
       {currentNotif && <NotificationBanner notification={currentNotif} onDismiss={dismissNotif} />}
       <FloatingMascot mood={mascotMood} />
+      <NotificationPrompt />
       <Sidebar
         items={studentSidebarItems}
         activeKey={tab}

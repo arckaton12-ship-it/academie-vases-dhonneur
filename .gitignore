@@ -22,3 +22,6 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Firebase Admin SDK (NEVER commit — server-side only)
+*firebase-adminsdk*.json

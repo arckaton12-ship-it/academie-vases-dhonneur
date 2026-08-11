@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { sniffMime } from './fileValidation'
+import { sendPushNotification } from './pushSend'
 
 export interface ClassRow {
   id: string
@@ -850,10 +851,29 @@ export async function ensureBadges(studentId: string): Promise<BadgeRow[]> {
   if (cycles.has(2)) eligible.push('cycle-2')
   if (cycles.has(3)) eligible.push('cycle-3')
 
+  // Detect newly earned badges and send push
+  const { data: existingBadges } = await supabase.from('badges').select('badge_type').eq('student_id', studentId)
+  const existingTypes = new Set((existingBadges ?? []).map(b => b.badge_type))
+
   for (const badgeType of eligible) {
     await supabase
       .from('badges')
       .upsert({ student_id: studentId, badge_type: badgeType }, { onConflict: 'student_id,badge_type' })
+  }
+
+  const newBadges = eligible.filter(b => !existingTypes.has(b))
+  for (const badge of newBadges) {
+    const names: Record<string, string> = {
+      'premiere-semaine': 'Première Semaine',
+      'premier-mois': 'Premier Mois',
+      'assidu-huit': 'Assidu (8 semaines)',
+      'cinq-resumes': '5 Fiches',
+      'dix-resumes': '10 Fiches',
+      'cycle-1': 'Cycle 1',
+      'cycle-2': 'Cycle 2',
+      'cycle-3': 'Cycle 3',
+    }
+    sendPushNotification({ userId: studentId, title: 'Badge débloqué !', body: `Tu as obtenu le badge "${names[badge] ?? badge}".`, tag: 'badge' }).catch(() => {})
   }
 
   return getBadges(studentId)

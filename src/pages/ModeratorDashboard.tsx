@@ -14,6 +14,7 @@ import { VerseReference } from '@/components/VerseReference'
 import { DayAccentBand } from '@/components/DayAccentBand'
 import { SoulTrackingTab } from '@/components/SoulTrackingTab'
 import { supabase } from '@/lib/supabase'
+import { sendPushToRole } from '@/lib/pushSend'
 import {
   advanceStudent,
   getClasses,
@@ -515,6 +516,7 @@ function AnnoncesTab({
       setContent('')
       setMessage('Annonce publiée.')
       toast('Annonce publiée.')
+      sendPushToRole('student', 'Nouvelle annonce', title.trim(), 'announcement').catch(() => {})
       playSuccess()
       await loadAnnonces()
     } catch (err) {

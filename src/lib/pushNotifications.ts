@@ -1,13 +1,17 @@
-// Web Push Notification Manager
-// Handles Service Worker registration, permission requests, and token management
+import { getToken, onMessage } from 'firebase/messaging'
+import { messaging } from './firebase'
+import { supabase } from './supabase'
 
-const VAPID_KEY = '' // To be configured with Firebase VAPID key
+const VAPID_KEY = 'BG85r1i0f1V41z4iCMsnsmFdLU5ENpkcQS_4niz_oenYdg2eQWJua3jb-bKXyRfObueCjJHP2MXkp5RvkVcIsKQ'
+
+export function isPushSupported(): boolean {
+  return !!messaging && 'Notification' in window && 'serviceWorker' in navigator
+}
 
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (!('serviceWorker' in navigator)) return null
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js')
-    return reg
+    return await navigator.serviceWorker.register('/firebase-messaging-sw.js')
   } catch {
     return null
   }
@@ -20,22 +24,52 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
   return await Notification.requestPermission()
 }
 
-export async function getPushToken(): Promise<string | null> {
-  if (!('PushManager' in window)) return null
+export async function getAndSavePushToken(userId: string): Promise<string | null> {
+  if (!messaging) return null
   try {
-    const reg = await navigator.serviceWorker.ready
-    const subscription = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: VAPID_KEY || undefined,
+    const reg = await registerServiceWorker()
+    if (!reg) return null
+
+    const permission = await requestNotificationPermission()
+    if (permission !== 'granted') return null
+
+    const token = await getToken(messaging, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: reg,
     })
-    return JSON.stringify(subscription)
+
+    if (token) {
+      await supabase.from('push_tokens').upsert(
+        { user_id: userId, token, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id,token' }
+      )
+    }
+
+    return token
   } catch {
     return null
   }
 }
 
-export function isPushSupported(): boolean {
-  return 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window
+export async function removePushToken(userId: string): Promise<void> {
+  if (!messaging) return
+  try {
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY })
+    if (token) {
+      await supabase.from('push_tokens').delete().eq('user_id', userId).eq('token', token)
+    }
+  } catch {
+    // silent fail
+  }
+}
+
+export function onForegroundMessage(callback: (payload: { title: string; body: string }) => void): (() => void) | undefined {
+  if (!messaging) return undefined
+  return onMessage(messaging, (payload) => {
+    const title = payload.notification?.title ?? ''
+    const body = payload.notification?.body ?? ''
+    if (title) callback({ title, body })
+  })
 }
 
 export async function showLocalNotification(title: string, body: string, icon?: string) {
@@ -49,6 +83,6 @@ export async function showLocalNotification(title: string, body: string, icon?: 
       tag: `academy-${Date.now()}`,
     } as NotificationOptions & { vibrate?: number[] })
   } catch {
-    // SW not available, silently fail
+    // silent fail
   }
 }

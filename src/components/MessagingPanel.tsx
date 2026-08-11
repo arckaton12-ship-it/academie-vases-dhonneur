@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/Input'
 import { Avatar } from '@/components/Avatar'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { MessageBubble } from '@/components/MessageBubble'
+import { sendPushNotification } from '@/lib/pushSend'
 import { toast, toastError } from '@/components/ui/Toast'
 import {
   getConversations,
@@ -225,6 +226,17 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
 
     try {
       const realMsg = await sendMessage(activeId, text, replyTo?.id, clientId)
+      // Push notification to recipient
+      const convo = conversations.find((c) => c.id === activeId)
+      const recipientId = convo?.other_user?.id
+      if (recipientId && recipientId !== currentUserId) {
+        sendPushNotification({
+          userId: recipientId,
+          title: 'Nouveau message',
+          body: text.length > 80 ? text.substring(0, 80) + '...' : text,
+          tag: 'new-message',
+        }).catch(() => {})
+      }
       // Replace optimistic with real message
       setMessages((prev) =>
         prev.map((m) => m.client_id === clientId ? { ...realMsg, status: 'sent' } : m)

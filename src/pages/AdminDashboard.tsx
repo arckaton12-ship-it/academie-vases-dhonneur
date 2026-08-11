@@ -10,6 +10,7 @@ import { SoundToggle } from '@/components/SoundToggle'
 import { StudentProfileCard } from '@/components/StudentProfileCard'
 import { toast, toastError } from '@/components/ui/Toast'
 import { supabase } from '@/lib/supabase'
+import { sendPushNotification, sendPushToRole } from '@/lib/pushSend'
 import { playSuccess } from '@/lib/sound'
 import { generateSecurePassword } from '@/lib/rateLimit'
 import { SectionWatermark } from '@/components/SectionWatermark'
@@ -1798,6 +1799,7 @@ function CoursTab({
         await saveMiniTask(created.id, miniTask)
         setSuccess('Cours publié.')
         toast('Cours publié.')
+        sendPushToRole('student', 'Nouveau cours disponible', title.trim(), 'new-course').catch(() => {})
       }
       onRefresh()
       resetForm()
@@ -1967,6 +1969,7 @@ function NotationTab({ onGraded }: { onGraded: () => void }) {
       await gradeSubmission(sub.id, grade, feedbacks[sub.id]?.trim() ?? '')
       setItems((prev) => prev.map((s) => s.id === sub.id ? { ...s, grade, feedback: feedbacks[sub.id]?.trim() ?? '' } : s))
       setMessage('Note enregistrée.'); playSuccess(); toast('Note enregistrée.'); onGraded()
+      sendPushNotification({ userId: sub.student_id, title: 'Devoir corrigé', body: `Ton devoir "${sub.assignment?.description || 'Devoir'}" a été corrigé.`, tag: 'grade' }).catch(() => {})
     } catch (err) { setMessage(err instanceof Error ? err.message : 'Erreur.'); toastError('Erreur.') } finally { setSavingId(null) }
   }
 
@@ -1981,6 +1984,7 @@ function NotationTab({ onGraded }: { onGraded: () => void }) {
       await gradeResume(r.id, grade, rFeedbacks[r.id]?.trim() ?? '')
       setResumes((prev) => prev.map((x) => x.id === r.id ? { ...x, grade, feedback: rFeedbacks[r.id]?.trim() ?? '' } : x))
       setMessage('Correction enregistrée.'); playSuccess(); toast('Correction enregistrée.'); onGraded()
+      sendPushNotification({ userId: r.student_id, title: 'Fiche de révision corrigée', body: 'Ta fiche de révision a été corrigée.', tag: 'resume-graded' }).catch(() => {})
     } catch (err) { setMessage(err instanceof Error ? err.message : 'Erreur.'); toastError('Erreur.') } finally { setRSavingId(null) }
   }
 
@@ -2201,6 +2205,7 @@ function AdminAnnoncesTab({ classes, allCourses }: { classes: ClassRow[]; allCou
         toast('Annonce publiée.')
       }
       playSuccess()
+      sendPushToRole('student', 'Nouvelle annonce', title.trim(), 'announcement').catch(() => {})
       setTitle('')
       setContent('')
       if (viewClass) {
