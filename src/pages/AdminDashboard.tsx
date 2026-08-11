@@ -212,6 +212,19 @@ export default function AdminDashboard() {
     loadModerators().catch(() => undefined)
   }, [])
 
+  // Realtime refresh: when profiles table changes, reload students
+  const refreshStudents = useCallback(() => {
+    getStudents().then(setStudents).catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-profiles-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, refreshStudents)
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [refreshStudents])
+
   const loadModerators = useCallback(async () => {
     const mods = await getModerators()
     setModerators(mods)
@@ -968,10 +981,17 @@ export default function AdminDashboard() {
 
       {section === 'etudiants' && (
         <Card>
-          <CardTitle>Étudiants</CardTitle>
-          <CardDescription className="mt-1 mb-3">
-            Gestion complète des étudiants : filtres, notes, messages, suppression.
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Étudiants</CardTitle>
+              <CardDescription className="mt-1">
+                Gestion complète des étudiants : filtres, notes, messages, suppression.
+              </CardDescription>
+            </div>
+            <Button variant="outline" onClick={refreshStudents}>
+              Actualiser
+            </Button>
+          </div>
 
           {/* Filters */}
           <div className="mb-4 flex flex-wrap items-center gap-2">

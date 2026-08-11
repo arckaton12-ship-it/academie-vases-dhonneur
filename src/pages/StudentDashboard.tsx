@@ -910,7 +910,7 @@ export default function StudentDashboard() {
             {course ? (
               <>
                 <div className="mb-4">
-                  <CoursePlayer audioUrl={course.audio_url} videoUrl={course.video_url} />
+                  <CoursePlayer audioUrl={course.audio_url} videoUrl={course.video_url} week={course.week} title={course.title} />
                 </div>
 
                 {/* Quiz button */}

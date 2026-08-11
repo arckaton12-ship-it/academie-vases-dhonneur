@@ -1,6 +1,8 @@
 interface CoursePlayerProps {
   audioUrl?: string | null
   videoUrl?: string | null
+  week?: number | null
+  title?: string | null
 }
 
 function extractYouTubeId(url: string): string | null {
@@ -15,8 +17,22 @@ function extractYouTubeId(url: string): string | null {
   return null
 }
 
-export function CoursePlayer({ audioUrl, videoUrl }: CoursePlayerProps) {
+export function CoursePlayer({ audioUrl, videoUrl, week, title }: CoursePlayerProps) {
   const ytId = videoUrl ? extractYouTubeId(videoUrl) : null
+
+  const noMediaMessage = (() => {
+    const t = (title ?? '').toLowerCase()
+    if (t.includes('prise de contact') || t.includes('contact')) {
+      return "Cette semaine est dédiée à la prise de contact. Profites-en pour lire le programme et faire connaissance avec ta classe."
+    }
+    if (week === 1) {
+      return "Cette première semaine est consacrée à la prise de contact — pas de cours audio/vidéo pour le moment."
+    }
+    if (t.includes('rattrapage') || t.includes('examen') || t.includes('évaluation')) {
+      return "Ce cours n'a pas de contenu audio/vidéo prévu."
+    }
+    return "Le contenu audio/vidéo de ce cours sera bientôt disponible."
+  })()
 
   return (
     <div className="space-y-4">
@@ -51,8 +67,8 @@ export function CoursePlayer({ audioUrl, videoUrl }: CoursePlayerProps) {
       )}
 
       {!audioUrl && !videoUrl && (
-        <p className="rounded-card border border-pierre/15 bg-white/60 px-3 py-2.5 text-sm text-pierre">
-          Le contenu audio/vidéo de ce cours n'est pas encore disponible.
+        <p className="rounded-card border border-or/20 bg-or/5 px-3 py-2.5 text-sm text-bordeaux">
+          {noMediaMessage}
         </p>
       )}
     </div>
