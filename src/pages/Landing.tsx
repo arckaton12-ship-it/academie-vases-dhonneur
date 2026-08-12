@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/Logo'
 import { DarkModeToggle } from '@/components/DarkModeToggle'
 import { getLandingAvatars } from '@/lib/courses'
 import { Marquee } from '@/components/ui/Marquee'
+import { supabase } from '@/lib/supabase'
 
 const STATS = [
   { value: '3', label: 'Niveaux de formation' },
@@ -68,12 +69,33 @@ const FAQ = [
 ]
 
 export default function Landing() {
+  const navigate = useNavigate()
   const [avatars, setAvatars] = useState<{ url: string | null; name: string }[]>([])
   const [openFaq, setOpenFaq] = useState<number | null>(null)
 
   useEffect(() => {
     getLandingAvatars().then(setAvatars).catch(() => undefined)
   }, [])
+
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (cancelled || !session) return
+        const { data } = await supabase.from('profiles').select('role').eq('id', session.user.id).single()
+        if (cancelled || !data) return
+        const role = data.role as string
+        if (role === 'ADMINISTRATEUR') navigate('/admin/tableau-de-bord', { replace: true })
+        else if (role === 'MODERATEUR') navigate('/moderateur/tableau-de-bord', { replace: true })
+        else navigate('/etudiant/tableau-de-bord', { replace: true })
+      } catch {
+        // not logged in — stay on landing
+      }
+    })()
+    return () => { cancelled = true }
+  }, [navigate])
 
   return (
     <div className="relative min-h-screen overflow-hidden">
