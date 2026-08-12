@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCurrentProfile, signOut, UserRole } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 
 interface RequireRoleProps {
   roles: UserRole[]
@@ -13,8 +14,20 @@ export function RequireRole({ roles, children }: RequireRoleProps) {
 
   useEffect(() => {
     let cancelled = false
-    getCurrentProfile()
-      .then(async (profile) => {
+
+    const checkAuth = async () => {
+      try {
+        // Force refresh session on app load (mobile fix)
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          await supabase.auth.refreshSession()
+        }
+      } catch {
+        // silent fail — will be caught by getCurrentProfile
+      }
+
+      try {
+        const profile = await getCurrentProfile()
         if (cancelled) return
         if (!profile || !roles.includes(profile.role as UserRole)) {
           navigate('/')
@@ -27,12 +40,25 @@ export function RequireRole({ roles, children }: RequireRoleProps) {
           return
         }
         setAllowed(true)
-      })
-      .catch(() => {
+      } catch {
         if (!cancelled) navigate('/')
-      })
+      }
+    }
+
+    checkAuth()
+
+    // Listen for auth state changes (token refresh, sign out)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT') {
+        if (!cancelled) navigate('/')
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        // Session refreshed successfully
+      }
+    })
+
     return () => {
       cancelled = true
+      subscription.unsubscribe()
     }
   }, [navigate, roles])
 
