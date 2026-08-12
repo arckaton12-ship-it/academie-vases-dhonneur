@@ -1,6 +1,5 @@
--- =====================================================
--- 049 : Push tokens (Firebase Cloud Messaging)
--- =====================================================
+-- Table push_tokens (Firebase Cloud Messaging)
+-- Exécute dans le SQL Editor du dashboard Supabase
 
 CREATE TABLE IF NOT EXISTS push_tokens (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -13,13 +12,16 @@ CREATE TABLE IF NOT EXISTS push_tokens (
 
 ALTER TABLE push_tokens ENABLE ROW LEVEL SECURITY;
 
--- Users can manage their own tokens
-CREATE POLICY "Users can manage own push tokens"
-  ON push_tokens FOR ALL
-  USING (user_id = (SELECT auth.uid()));
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage own push tokens' AND tablename = 'push_tokens'
+  ) THEN
+    CREATE POLICY "Users can manage own push tokens"
+      ON push_tokens FOR ALL
+      USING (user_id = (SELECT auth.uid()));
+  END IF;
+END $$;
 
--- Index for lookup by token (used by Edge Function to find recipient)
 CREATE INDEX IF NOT EXISTS idx_push_tokens_token ON push_tokens(token);
-
--- Index for cleanup
 CREATE INDEX IF NOT EXISTS idx_push_tokens_user ON push_tokens(user_id);
