@@ -18,6 +18,7 @@ import { Badge } from '@/components/Badge'
 import { BadgeDrawer } from '@/components/BadgeDrawer'
 import { CertificateView } from '@/components/Certificate'
 import { SoundToggle } from '@/components/SoundToggle'
+import { SettingsTab } from '@/components/SettingsTab'
 import { MascotCompanion, MascotMood } from '@/components/MascotCompanion'
 import { FloatingMascot } from '@/components/FloatingMascot'
 import { NotificationPrompt } from '@/components/NotificationPrompt'
@@ -83,7 +84,7 @@ import {
 } from '@/lib/courses'
 import { BADGES, BADGE_ORDER, isBadgeKey } from '@/lib/badges'
 
-type Tab = 'academie' | 'annonces' | 'devoirs' | 'service' | 'revue' | 'profil' | 'messagerie' | 'badges'
+type Tab = 'academie' | 'annonces' | 'devoirs' | 'service' | 'revue' | 'parametres' | 'messagerie'
 
 interface ProfileState {
   id: string
@@ -153,7 +154,7 @@ export default function StudentDashboard() {
   const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('academie')
 
-  const TAB_ORDER: Tab[] = ['academie', 'annonces', 'devoirs', 'revue', 'service', 'messagerie', 'badges', 'profil']
+  const TAB_ORDER: Tab[] = ['academie', 'annonces', 'devoirs', 'revue', 'service', 'messagerie', 'parametres']
   const swipeHandlers = useSwipeGesture({
     onSwipeLeft: () => {
       const idx = TAB_ORDER.indexOf(tab)
@@ -772,8 +773,7 @@ export default function StudentDashboard() {
     { key: 'revue', label: 'Revue', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> },
     { key: 'service', label: 'Service', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 21h8m-4-4v4m-4-8a4 4 0 0 1-4-4V4h16v5a4 4 0 0 1-4 4h-4z"/><circle cx="12" cy="7" r="3"/></svg> },
     { key: 'messagerie', label: 'Messagerie', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
-    { key: 'badges', label: 'Badges', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="14" r="5.5"/><circle cx="12" cy="14" r="2"/><path d="M9 3l3 4 3-4M9 3v3M15 3v3"/></svg> },
-    { key: 'profil', label: 'Profil', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
+    { key: 'parametres', label: 'Paramètres', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> },
   ]
 
   return (
@@ -816,7 +816,7 @@ export default function StudentDashboard() {
               lastName={profile?.last_name}
               size={36}
               badgeType={profile?.active_badge ?? null}
-              onClick={() => setTab('profil')}
+              onClick={() => setTab('parametres')}
               onBadgeClick={openBadgeDrawer}
               className="md:hidden"
             />
@@ -826,11 +826,10 @@ export default function StudentDashboard() {
               lastName={profile?.last_name}
               size={40}
               badgeType={profile?.active_badge ?? null}
-              onClick={() => setTab('profil')}
+              onClick={() => setTab('parametres')}
               onBadgeClick={openBadgeDrawer}
               className="hidden md:block"
             />
-            <SoundToggle />
           </div>
         </div>
       </header>
@@ -1117,6 +1116,9 @@ export default function StudentDashboard() {
                 ))}
             </Card>
           )}
+
+          {/* Classement */}
+          <RankingsTab currentUserId={profile?.id ?? ''} />
         </div>
       )}
 
@@ -1497,261 +1499,28 @@ export default function StudentDashboard() {
         </div>
       )}
 
-      {tab === 'badges' && (
-        <div className="space-y-5">
-          <RankingsTab currentUserId={profile?.id ?? ''} />
-
-          <Card>
-            <CardTitle>Mes badges</CardTitle>
-            <CardDescription className="mt-1 mb-3">
-              Chaque étape franchie dessine ta fidélité. Seul ton badge actif s'affiche sur ton avatar.
-            </CardDescription>
-            {earnedBadges.length > 0 ? (
-              <div className="flex items-center gap-4">
-                <Badge type={earnedBadges[0]} size={56} />
-                <div>
-                  <p className="font-display text-lg text-bordeaux">
-                    {isBadgeKey(earnedBadges[0]) ? BADGES[earnedBadges[0]].label : earnedBadges[0]}
-                  </p>
-                  <p className="text-xs text-pierre">{earnedBadges.length} badge{earnedBadges.length > 1 ? 's' : ''} obtenu{earnedBadges.length > 1 ? 's' : ''}</p>
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-pierre">Aucun badge pour le moment.</p>
-            )}
-            <Button variant="outline" className="!px-3 !py-1.5 text-xs mt-3" onClick={openBadgeDrawer}>
-              Voir la salle des badges →
-            </Button>
-          </Card>
-        </div>
-      )}
-
-      {tab === 'profil' && profile && (
-        <div className="space-y-5">
-          {/* Stats Overview */}
-          <Card>
-            <CardTitle>Mes statistiques</CardTitle>
-            <CardDescription className="mt-1 mb-3">
-              Un aperçu rapide de ton parcours dans l'Académie.
-            </CardDescription>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <div className="rounded-lg border border-or/20 bg-or/5 p-3 text-center">
-                <p className="text-2xl font-bold text-or">{followedCount}</p>
-                <p className="text-[10px] text-pierre dark:text-slate-500">Cours suivis</p>
-              </div>
-              <div className="rounded-lg border border-olive/20 bg-olive/5 p-3 text-center">
-                <p className="text-2xl font-bold text-olive">{progress?.presenceRate ?? 0}%</p>
-                <p className="text-[10px] text-pierre dark:text-slate-500">Présence</p>
-              </div>
-              <div className="rounded-lg border border-bordeaux/20 bg-bordeaux/5 p-3 text-center">
-                <p className="text-2xl font-bold text-bordeaux dark:text-or">{weeks}</p>
-                <p className="text-[10px] text-pierre dark:text-slate-500">Semaines streak</p>
-              </div>
-              <div className="rounded-lg border border-or/20 bg-or/5 p-3 text-center">
-                <p className="text-2xl font-bold text-or">{progress?.averageGrade ?? '—'}</p>
-                <p className="text-[10px] text-pierre dark:text-slate-500">Moyenne</p>
-              </div>
-              <div className="rounded-lg border border-olive/20 bg-olive/5 p-3 text-center">
-                <p className="text-2xl font-bold text-olive">{earnedBadges.length}</p>
-                <p className="text-[10px] text-pierre dark:text-slate-500">Badges</p>
-              </div>
-              <div className="rounded-lg border border-bordeaux/20 bg-bordeaux/5 p-3 text-center">
-                <p className="text-2xl font-bold text-bordeaux dark:text-or">{progress?.resumeRate ?? 0}%</p>
-                <p className="text-[10px] text-pierre dark:text-slate-500">Résumés</p>
-              </div>
-            </div>
-          </Card>
-
-          {/* Timeline */}
-          {followed.length > 0 && (
-            <Card>
-              <CardTitle>Mon parcours</CardTitle>
-              <CardDescription className="mt-1 mb-3">
-                Ta progression chronologique dans l'Académie.
-              </CardDescription>
-              <div className="relative ml-3 border-l-2 border-or/30 pl-6">
-                {followedChronological.map((c, idx) => {
-                  const rev = resumeByCourse.get(c.id)
-                  const hasGrade = rev?.resume.grade != null
-                  const hasBadge = idx < earnedBadges.length
-                  return (
-                    <div key={c.id} className="relative mb-6 last:mb-0">
-                      <div className={`absolute -left-[31px] top-0 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white text-[10px] ${
-                        hasGrade ? 'bg-olive text-white' : 'bg-or text-bordeaux'
-                      }`}>
-                        {hasGrade ? '✓' : idx + 1}
-                      </div>
-                      <p className="text-sm font-semibold text-bordeaux dark:text-slate-100">
-                        Semaine {c.week} — {c.title}
-                      </p>
-                      {c.session_date && (
-                        <p className="text-[11px] text-pierre dark:text-slate-500">{formatDateFR(c.session_date)}</p>
-                      )}
-                      <div className="mt-1 flex flex-wrap gap-2 text-[10px]">
-                        {hasGrade && (
-                          <span className="rounded-full bg-olive/10 px-2 py-0.5 font-medium text-olive">
-                            Note: {rev!.resume.grade}/20
-                          </span>
-                        )}
-                        {rev?.resume.content && (
-                          <span className="rounded-full bg-bordeaux/10 px-2 py-0.5 font-medium text-bordeaux">
-                            Résumé écrit
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </Card>
-          )}
-
-          <Card>
-            <CardTitle>Paramètres du profil</CardTitle>
-            <CardDescription className="mt-2 mb-4">
-              Photo de profil et informations personnelles. Tout reste entre les mains de l'Académie.
-            </CardDescription>
-            <AvatarUpload
-              url={profile.avatar_url}
-              firstName={profile.first_name}
-              lastName={profile.last_name}
-              userId={profile.id}
-              badgeType={profile.active_badge ?? null}
-              onSaved={(url) => setProfile((prev) => (prev ? { ...prev, avatar_url: url } : prev))}
-            />
-          </Card>
-
-          <Card>
-            <CardTitle>Badge actif sur ton avatar</CardTitle>
-            <CardDescription className="mt-2 mb-3">
-              Choisis parmi tes badges obtenus celui qui s'affiche en médaillon doré sur ta photo de
-              profil. Un simple clic sur le médaillon ouvre la salle des badges.
-              {profile.active_badge && (
-                <span className="mt-2 block text-xs text-olive">
-                  Badge actif :{' '}
-                  {isBadgeKey(profile.active_badge) ? BADGES[profile.active_badge].label : profile.active_badge}
-                </span>
-              )}
-            </CardDescription>
-            {earnedBadges.length === 0 ? (
-              <p className="text-sm text-pierre">Aucun badge obtenu pour le moment.</p>
-            ) : (
-              <div className="flex flex-wrap items-start gap-3">
-                {earnedBadges.map((key) => (
-                  <button
-                    key={key}
-                    type="button"
-                    disabled={badgeBusy}
-                    onClick={() => handleSelectActiveBadge(key)}
-                    aria-pressed={profile.active_badge === key}
-                    className={`flex cursor-pointer flex-col items-center gap-1 rounded-card border p-2 transition-colors disabled:cursor-wait ${
-                      profile.active_badge === key
-                        ? 'border-or bg-or/10'
-                        : 'border-pierre/15 hover:border-or/50'
-                    }`}
-                  >
-                    <Badge type={key} size={44} />
-                    {profile.active_badge === key && (
-                      <span className="rounded-full bg-bordeaux px-2 py-0.5 font-mono text-[10px] text-parchemin">
-                        Actif
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-            <div className="mt-3">
-              <Button variant="ghost" className="!px-3 !py-1.5 text-xs underline" onClick={openBadgeDrawer}>
-                Voir toute la salle des badges
-              </Button>
-            </div>
-          </Card>
-
-          <Card>
-            <CardTitle>Mes informations</CardTitle>
-            <CardDescription className="mt-2 mb-4">
-              Modifie tes coordonnées : elles servent au suivi de la session.
-            </CardDescription>
-            <form onSubmit={handleSaveProfile} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="pf-first">Prénom</Label>
-                  <Input
-                    id="pf-first"
-                    required
-                    value={formFirst}
-                    onChange={(e) => setFormFirst(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="pf-last">Nom</Label>
-                  <Input
-                    id="pf-last"
-                    required
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="pf-phone">Téléphone</Label>
-                <Input
-                  id="pf-phone"
-                  value={formPhone}
-                  onChange={(e) => setFormPhone(e.target.value)}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="pf-tribe">Tribu</Label>
-                  <Input
-                    id="pf-tribe"
-                    value={formTribe}
-                    onChange={(e) => setFormTribe(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="pf-dept">Département</Label>
-                  <Input
-                    id="pf-dept"
-                    value={formDept}
-                    onChange={(e) => setFormDept(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="rounded-md border border-sable/60 bg-white/60 px-3 py-2 text-sm">
-                <span className="text-pierre">Classe : </span>
-                <span className="font-display font-semibold text-bordeaux">
-                  {course?.class?.name ?? 'Non assignée'}
-                </span>
-              </div>
-              <FieldError>{profileError ?? undefined}</FieldError>
-              {profileDone && <p className="text-sm text-olive">{profileDone}</p>}
-              <Button type="submit" disabled={profileSaving}>
-                {profileSaving ? 'Enregistrement…' : 'Enregistrer mes informations'}
-              </Button>
-            </form>
-          </Card>
-
-          <Card>
-            <CardTitle>Compte</CardTitle>
-            <CardDescription className="mt-2 mb-3">
-              Tu peux télécharger ton bulletin ou te déconnecter.
-            </CardDescription>
-            <div className="flex flex-wrap gap-2">
-              <BulletinPDF studentId={profile.id} />
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  await signOut()
-                  navigate('/')
-              }}
-            >
-              Se déconnecter
-            </Button>
-            </div>
-          </Card>
-        </div>
+      {tab === 'parametres' && profile && (
+        <SettingsTab
+          profile={profile}
+          earnedBadges={earnedBadges}
+          badgeBusy={badgeBusy}
+          formFirst={formFirst}
+          formName={formName}
+          formPhone={formPhone}
+          formTribe={formTribe}
+          formDept={formDept}
+          setFormFirst={setFormFirst}
+          setFormName={setFormName}
+          setFormPhone={setFormPhone}
+          setFormTribe={setFormTribe}
+          setFormDept={setFormDept}
+          profileSaving={profileSaving}
+          profileError={profileError}
+          profileDone={profileDone}
+          onSaveProfile={handleSaveProfile}
+          onSelectBadge={handleSelectActiveBadge}
+          onSignOut={async () => { await signOut(); navigate('/') }}
+        />
       )}
 
       {badgeDrawerOpen && (

@@ -52,9 +52,9 @@ export function Avatar({
       }}
       aria-label="Salle des badges"
       title="Voir la salle des badges"
-      className="absolute -bottom-1 -right-1 z-10 cursor-pointer rounded-full bg-parchemin p-[2px] shadow ring-1 ring-or/60 transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-bordeaux"
+      className="absolute bottom-0 right-0 z-10 cursor-pointer rounded-full bg-parchemin p-[2px] shadow ring-1 ring-or/60 transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-bordeaux"
     >
-      <BadgeCoin type={badgeType} size={Math.max(16, Math.round(size * 0.42))} />
+      <BadgeCoin type={badgeType} size={Math.max(14, Math.round(size * 0.38))} />
     </button>
   ) : null
 
