@@ -2,17 +2,17 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardTitle, CardDescription } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Input, Label, FieldError } from '@/components/ui/Input'
+import { Input, Label } from '@/components/ui/Input'
 import { SidebarLayout } from '@/components/ui/SidebarLayout'
-import { BulletinPDF } from '@/components/BulletinPDF'
 import { Logo } from '@/components/Logo'
 import { Avatar } from '@/components/Avatar'
-import { SoundToggle } from '@/components/SoundToggle'
-import { playSuccess } from '@/lib/sound'
+import { BulletinPDF } from '@/components/BulletinPDF'
 import { SectionWatermark } from '@/components/SectionWatermark'
 import { VerseReference } from '@/components/VerseReference'
 import { DayAccentBand } from '@/components/DayAccentBand'
 import { SoulTrackingTab } from '@/components/SoulTrackingTab'
+import { ModeratorSettingsTab } from '@/components/ModeratorSettingsTab'
+import { playSuccess } from '@/lib/sound'
 import { supabase } from '@/lib/supabase'
 import { sendPushToRole } from '@/lib/pushSend'
 import {
@@ -56,20 +56,18 @@ import { playClick } from '@/lib/sound'
 import { toast, toastError } from '@/components/ui/Toast'
 import { createConversation } from '@/lib/messaging'
 
-type Tab = 'programme' | 'rapport' | 'passage' | 'suivi' | 'annonces' | 'messagerie' | 'moderateurs' | 'inscription' | 'fiche'
+type Tab = 'programme' | 'eleves' | 'rapport' | 'annonces' | 'messagerie' | 'binomage' | 'parametres'
 
 const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
 
 const tabIcons: Record<Tab, React.ReactNode> = {
   programme: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+  eleves: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
   rapport: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
-  passage: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>,
-  suivi: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>,
   annonces: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
   messagerie: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-  moderateurs: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-  inscription: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>,
-  fiche: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+  binomage: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>,
+  parametres: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
 }
 
 export default function ModeratorDashboard() {
@@ -95,6 +93,14 @@ export default function ModeratorDashboard() {
   } | null>(null)
 
   const [pageError, setPageError] = useState<string | null>(null)
+
+  // Settings form state
+  const [formFirst, setFormFirst] = useState('')
+  const [formName, setFormName] = useState('')
+  const [formEmail, setFormEmail] = useState('')
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [profileError, setProfileError] = useState<string | null>(null)
+  const [profileDone, setProfileDone] = useState<string | null>(null)
 
   const loadAll = useCallback(async () => {
     const [classesData, coursesData, studentsData, submissionsData, streaksData, miniTasksData, supportsData] =
@@ -135,6 +141,9 @@ export default function ModeratorDashboard() {
             last_name: profile.last_name,
             avatar_url: profile.avatar_url,
           })
+          setFormFirst(profile.first_name ?? '')
+          setFormName(profile.last_name ?? '')
+          setFormEmail(profile.email ?? '')
           loadScope(profile.id).catch((err) =>
             setPageError(err instanceof Error ? err.message : 'Erreur de chargement de votre périmètre.')
           )
@@ -161,16 +170,35 @@ export default function ModeratorDashboard() {
     }
   }
 
+  const handleSaveProfile = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!moderatorProfile) return
+    setProfileSaving(true)
+    setProfileError(null)
+    setProfileDone(null)
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ first_name: formFirst, last_name: formName })
+        .eq('id', moderatorProfile.id)
+      if (error) throw error
+      setModeratorProfile((prev) => prev ? { ...prev, first_name: formFirst, last_name: formName } : prev)
+      setProfileDone('Profil enregistré.')
+    } catch (err) {
+      setProfileError(err instanceof Error ? err.message : 'Erreur lors de la sauvegarde.')
+    } finally {
+      setProfileSaving(false)
+    }
+  }
+
   const modTabs: [Tab, string][] = [
     ['programme', 'Programme'],
-    ['inscription', 'Inscription'],
+    ['eleves', 'Élèves'],
     ['rapport', 'Rapport'],
-    ['passage', 'Passage'],
-    ['fiche', 'Fiche étudiant'],
-    ['suivi', "Suivi d'âme"],
+    ['binomage', 'Binômage'],
     ['annonces', 'Annonces'],
     ['messagerie', 'Messagerie'],
-    ['moderateurs', 'Modérateurs'],
+    ['parametres', 'Paramètres'],
   ]
 
   return (
@@ -195,24 +223,6 @@ export default function ModeratorDashboard() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <SoundToggle />
-          <Avatar
-            url={moderatorProfile?.avatar_url}
-            firstName={moderatorProfile?.first_name}
-            lastName={moderatorProfile?.last_name}
-            size={40}
-          />
-          <Button
-            variant="ghost"
-            onClick={async () => {
-              await signOut()
-              navigate('/')
-            }}
-          >
-            Se déconnecter
-          </Button>
-        </div>
       </header>
 
       {pageError && (
@@ -231,6 +241,16 @@ export default function ModeratorDashboard() {
           supports={supports}
         />
       )}
+      {tab === 'eleves' && (
+        <ElevesTab
+          students={students}
+          ownClassIds={ownClassIds}
+          classById={classById}
+          classes={classes}
+          onMessageUser={handleMessageUser}
+          onCreated={() => loadAll()}
+        />
+      )}
       {tab === 'rapport' && (
         <RapportTab
           students={students}
@@ -242,9 +262,6 @@ export default function ModeratorDashboard() {
           onReportsChanged={() => loadAll()}
         />
       )}
-      {tab === 'passage' && (
-        <PassageTab students={students} classes={classes} classById={classById} onAdvanced={() => loadAll()} />
-      )}
       {tab === 'annonces' && (
         <AnnoncesTab classes={classes} ownClassIds={ownClassIds} />
       )}
@@ -253,23 +270,24 @@ export default function ModeratorDashboard() {
           <MessagingPanel currentUserId={moderatorProfile?.id ?? ''} userRole="MODERATEUR" />
         </div>
       )}
-      {tab === 'suivi' && (
-        <SoulTrackingTabWrapper />
+      {tab === 'binomage' && (
+        <BinomageTab students={students} classes={classes} classById={classById} onAdvanced={() => loadAll()} />
       )}
-      {tab === 'moderateurs' && (
-        <ModeratorsTab classById={classById} onMessageUser={handleMessageUser} />
-      )}
-
-      {tab === 'inscription' && (
-        <InscriptionTab
-          ownClassIds={ownClassIds}
-          classes={classes}
-          onCreated={() => loadAll()}
+      {tab === 'parametres' && (
+        <ModeratorSettingsTab
+          profile={moderatorProfile ?? { id: '', first_name: '', last_name: '', avatar_url: null }}
+          formFirst={formFirst}
+          formName={formName}
+          formEmail={formEmail}
+          setFormFirst={setFormFirst}
+          setFormName={setFormName}
+          setFormEmail={setFormEmail}
+          profileSaving={profileSaving}
+          profileError={profileError}
+          profileDone={profileDone}
+          onSaveProfile={handleSaveProfile}
+          onSignOut={async () => { await signOut(); navigate('/') }}
         />
-      )}
-
-      {tab === 'fiche' && (
-        <FicheTab students={students} ownClassIds={ownClassIds} classById={classById} />
       )}
 
       </div>
@@ -918,7 +936,7 @@ function RapportTab({
   )
 }
 
-function PassageTab({
+function BinomageTab({
   students,
   classes,
   classById,
@@ -1066,41 +1084,118 @@ function PassageTab({
   )
 }
 
-function SoulTrackingTabWrapper() {
-  const [students, setStudents] = useState<{ id: string; first_name: string; last_name: string }[]>([])
+function ElevesTab({
+  students,
+  ownClassIds,
+  classById,
+  classes,
+  onMessageUser,
+  onCreated,
+}: {
+  students: StudentProfile[]
+  ownClassIds: string[]
+  classById: Map<string, ClassRow>
+  classes: ClassRow[]
+  onMessageUser: (userId: string) => void
+  onCreated: () => void
+}) {
+  const [subTab, setSubTab] = useState<'fiche' | 'suivi' | 'inscription'>('fiche')
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const myStudents = students.filter((s) => ownClassIds.includes(s.class_id ?? ''))
 
-  useEffect(() => {
-    getStudents()
-      .then(s => setStudents(s))
-      .finally(() => setLoading(false))
-  }, [])
-
-  if (loading) return <div className="animate-pulse h-20 rounded-card bg-pierre/10" />
-
-  const selected = students.find(s => s.id === selectedId)
+  const subTabs: [string, string][] = [
+    ['fiche', 'Fiche étudiant'],
+    ['suivi', "Suivi d'âme"],
+    ['inscription', 'Inscription'],
+  ]
 
   return (
-    <Card>
-      <CardTitle>Suivi d'âme</CardTitle>
-      <CardDescription className="mt-2 mb-4">Sélectionne un étudiant pour consulter/modifier sa fiche de suivi pastoral.</CardDescription>
-
+    <div className="space-y-4">
+      {/* Sub-navigation */}
       <div className="flex flex-wrap gap-2">
-        {students.map(s => (
-          <button key={s.id} onClick={() => setSelectedId(s.id)}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${selectedId === s.id ? 'bg-or text-white' : 'bg-pierre/10 text-pierre hover:bg-or/20'}`}>
-            {s.first_name} {s.last_name}
+        {subTabs.map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setSubTab(key as typeof subTab)}
+            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+              subTab === key
+                ? 'bg-bordeaux text-parchemin'
+                : 'bg-pierre/10 text-pierre hover:bg-pierre/20'
+            }`}
+          >
+            {label}
           </button>
         ))}
       </div>
 
-      {selected && (
-        <div className="mt-6">
-          <SoulTrackingTab studentId={selected.id} studentName={`${selected.first_name} ${selected.last_name}`} />
+      {subTab === 'fiche' && (
+        <div className="space-y-4">
+          <Card>
+            <CardTitle>Fiche étudiant</CardTitle>
+            <CardDescription className="mt-1">
+              Consulte le profil complet d'un étudiant de tes classes.
+            </CardDescription>
+            <ul className="mt-3 max-h-64 overflow-y-auto space-y-1">
+              {myStudents.map((s) => (
+                <li key={s.id}>
+                  <button
+                    onClick={() => { setSelectedId(s.id); playClick() }}
+                    className={`flex w-full items-center gap-3 px-3 py-2 rounded-card text-left text-sm transition-colors ${
+                      selectedId === s.id ? 'bg-bordeaux/10' : 'hover:bg-sable/30'
+                    }`}
+                  >
+                    <Avatar url={(s as any).avatar_url} firstName={s.first_name} lastName={s.last_name} size={28} />
+                    <div>
+                      <p className="font-medium text-bordeaux">{s.last_name} {s.first_name}</p>
+                      <p className="text-[11px] text-pierre">{classById.get(s.class_id ?? '')?.name ?? '—'}</p>
+                    </div>
+                  </button>
+                </li>
+              ))}
+              {myStudents.length === 0 && (
+                <p className="text-xs text-pierre">Aucun étudiant dans tes classes.</p>
+              )}
+            </ul>
+          </Card>
+          {selectedId && <StudentProfileCard studentId={selectedId} onClose={() => setSelectedId(null)} />}
         </div>
       )}
-    </Card>
+
+      {subTab === 'suivi' && (
+        <Card>
+          <CardTitle>Suivi d'âme</CardTitle>
+          <CardDescription className="mt-2 mb-4">Sélectionne un étudiant pour consulter/modifier sa fiche de suivi pastoral.</CardDescription>
+          <div className="flex flex-wrap gap-2">
+            {myStudents.map(s => (
+              <button key={s.id} onClick={() => setSelectedId(s.id)}
+                className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${selectedId === s.id ? 'bg-or text-white' : 'bg-pierre/10 text-pierre hover:bg-or/20'}`}>
+                {s.first_name} {s.last_name}
+              </button>
+            ))}
+            {myStudents.length === 0 && (
+              <p className="text-xs text-pierre">Aucun étudiant dans tes classes.</p>
+            )}
+          </div>
+          {selectedId && (() => {
+            const selected = myStudents.find(s => s.id === selectedId)
+            if (!selected) return null
+            return (
+              <div className="mt-6">
+                <SoulTrackingTab studentId={selected.id} studentName={`${selected.first_name} ${selected.last_name}`} />
+              </div>
+            )
+          })()}
+        </Card>
+      )}
+
+      {subTab === 'inscription' && (
+        <InscriptionTab
+          ownClassIds={ownClassIds}
+          classes={classes}
+          onCreated={onCreated}
+        />
+      )}
+    </div>
   )
 }
 
@@ -1324,48 +1419,4 @@ function InscriptionTab({
   )
 }
 
-function FicheTab({
-  students,
-  ownClassIds,
-  classById,
-}: {
-  students: StudentProfile[]
-  ownClassIds: string[]
-  classById: Map<string, ClassRow>
-}) {
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const myStudents = students.filter((s) => ownClassIds.includes(s.class_id ?? ''))
 
-  return (
-    <div className="space-y-4">
-      <Card>
-        <CardTitle>Fiche étudiant</CardTitle>
-        <CardDescription className="mt-1">
-          Consulte le profil complet d'un étudiant de tes classes.
-        </CardDescription>
-        <ul className="mt-3 max-h-64 overflow-y-auto space-y-1">
-          {myStudents.map((s) => (
-            <li key={s.id}>
-              <button
-                onClick={() => { setSelectedId(s.id); playClick() }}
-                className={`flex w-full items-center gap-3 px-3 py-2 rounded-card text-left text-sm transition-colors ${
-                  selectedId === s.id ? 'bg-bordeaux/10' : 'hover:bg-sable/30'
-                }`}
-              >
-                <Avatar url={(s as any).avatar_url} firstName={s.first_name} lastName={s.last_name} size={28} />
-                <div>
-                  <p className="font-medium text-bordeaux">{s.last_name} {s.first_name}</p>
-                  <p className="text-[11px] text-pierre">{classById.get(s.class_id ?? '')?.name ?? '—'}</p>
-                </div>
-              </button>
-            </li>
-          ))}
-          {myStudents.length === 0 && (
-            <p className="text-xs text-pierre">Aucun étudiant dans tes classes.</p>
-          )}
-        </ul>
-      </Card>
-      {selectedId && <StudentProfileCard studentId={selectedId} onClose={() => setSelectedId(null)} />}
-    </div>
-  )
-}
