@@ -1328,20 +1328,28 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <Label htmlFor="acc-tribe">Tribu</Label>
-                  <Input
+                  <select
                     id="acc-tribe"
                     value={newAccount.tribe}
                     onChange={(e) => setNewAccount((prev) => ({ ...prev, tribe: e.target.value }))}
-                  />
+                    className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
+                  >
+                    <option value="">—</option>
+                    {['Ruben', 'Siméon', 'Lévi', 'Juda', 'Zabulon', 'Issacar', 'Dan', 'Gad', 'Aser', 'Nephtali', 'Joseph', 'Benjamin', 'Aucune'].map(t => <option key={t}>{t}</option>)}
+                  </select>
                 </div>
               </div>
               <div>
                 <Label htmlFor="acc-dept">Département</Label>
-                <Input
+                <select
                   id="acc-dept"
                   value={newAccount.department}
                   onChange={(e) => setNewAccount((prev) => ({ ...prev, department: e.target.value }))}
-                />
+                  className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
+                >
+                  <option value="">—</option>
+                  {['ACCUEIL', 'ADMINISTRATION', 'ADN', "ACADÉMIE D'HONNEUR", 'BAPTÊME', 'BLOOM', 'CHANTRES', 'COMMUNICATION', 'COMPTABILITÉ', 'DÉCORATION', 'DIGITAL', "ENFANT D'HONNEUR", 'ELEEO', 'GDC', 'INTERCESSION', 'LOGE PASTORALE', 'LEAMANS', "MÉDECINE D'HONNEUR", 'MOYENS GÉNÉRAUX', 'MRES', "PLUME D'HONNEUR", 'PROTOCOLE', "COEUR D'HONNEUR", 'SAINTE CÈNE', 'EVANGÉLISATION', 'AUCUN'].map(d => <option key={d}>{d}</option>)}
+                </select>
               </div>
               {accountMsg && (
                 <p

@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
-const CLASSES = ['Connaître & Servir Christ', 'Croître avec Jésus', 'Consécration']
+const CLASSES = ['Classe 1', 'Classe 2', 'Classe 3']
 const SEXES = ['Homme', 'Femme']
 const CANAUX = ['En Présentiel', 'En Ligne (avec autorisation)']
 const SITUATIONS = ['Célibataire', 'Fiancé(e)', 'Marié(e)', 'Veuf/Veuve']
-const TRIBUS = ['Lévi', 'Juda', 'Siméon', 'Ruben', 'Zabulon', 'Issacar', 'Dan', 'Nephtali', 'Gad', 'Aser', 'Manassé', 'Éphraïm', 'Benjamin', 'Aucune']
-const DEPARTEMENTS = ['Intercession', 'Chantre', 'Communication', 'Accueil', 'Gestion des Cultes', "Médecine d'Honneur", 'Portier', 'Évangélisation', 'Amis des Nouveaux (ADN)', 'Social', 'Aucun']
+const TRIBUS = ['Ruben', 'Siméon', 'Lévi', 'Juda', 'Zabulon', 'Issacar', 'Dan', 'Gad', 'Aser', 'Nephtali', 'Joseph', 'Benjamin', 'Aucune']
+const DEPARTEMENTS = ['ACCUEIL', 'ADMINISTRATION', 'ADN', 'ACADÉMIE D\'HONNEUR', 'BAPTÊME', 'BLOOM', 'CHANTRES', 'COMMUNICATION', 'COMPTABILITÉ', 'DÉCORATION', 'DIGITAL', 'ENFANT D\'HONNEUR', 'ELEEO', 'GDC', 'INTERCESSION', 'LOGE PASTORALE', 'LEAMANS', 'MÉDECINE D\'HONNEUR', 'MOYENS GÉNÉRAUX', 'MRES', 'PLUME D\'HONNEUR', 'PROTOCOLE', 'COEUR D\'HONNEUR', 'SAINTE CÈNE', 'EVANGÉLISATION', 'AUCUN']
+const PAYMENT_MODES = ['Espèces', 'Mobile Money', 'Carte Visa']
 const TYPES = ['Nouveau', 'Ancien']
 const NIVEAUX = ['Bon', 'Moyen', 'Faible']
 
@@ -175,7 +176,7 @@ export default function RegistrationStep2({ profile, onComplete }: Props) {
           <div><label className={label}>Classe *</label><select className={select} value={form.class_name} onChange={e => set('class_name', e.target.value)}><option value="">—</option>{CLASSES.map(c => <option key={c}>{c}</option>)}</select></div>
           <div><label className={label}>Taille T-Shirt</label><input className={input} value={form.tshirt_size} onChange={e => set('tshirt_size', e.target.value)} /></div>
           <div><label className={label}>Canal de formation</label><select className={select} value={form.training_channel} onChange={e => set('training_channel', e.target.value)}><option value="">—</option>{CANAUX.map(c => <option key={c}>{c}</option>)}</select></div>
-          <div><label className={label}>Mode de paiement</label><input className={input} value={form.payment_mode} onChange={e => set('payment_mode', e.target.value)} /></div>
+          <div><label className={label}>Mode de paiement</label><select className={select} value={form.payment_mode} onChange={e => set('payment_mode', e.target.value)}><option value="">—</option>{PAYMENT_MODES.map(p => <option key={p}>{p}</option>)}</select></div>
           <div><label className={label}>Profession</label><input className={input} value={form.profession} onChange={e => set('profession', e.target.value)} /></div>
           <div><label className={label}>Quartier</label><input className={input} value={form.neighborhood} onChange={e => set('neighborhood', e.target.value)} /></div>
           <div><label className={label}>Date de naissance</label><input className={input} type="date" value={form.birth_date} onChange={e => set('birth_date', e.target.value)} /></div>

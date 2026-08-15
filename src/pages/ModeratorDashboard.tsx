@@ -1401,7 +1401,10 @@ function InscriptionTab({
           </div>
           <div>
             <Label>Tribu</Label>
-            <Input value={tribe} onChange={(e) => setTribe(e.target.value)} className="mt-1" />
+            <select value={tribe} onChange={(e) => setTribe(e.target.value)} className="mt-1 w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or">
+              <option value="">—</option>
+              {['Ruben', 'Siméon', 'Lévi', 'Juda', 'Zabulon', 'Issacar', 'Dan', 'Gad', 'Aser', 'Nephtali', 'Joseph', 'Benjamin', 'Aucune'].map(t => <option key={t}>{t}</option>)}
+            </select>
           </div>
         </div>
         <div>

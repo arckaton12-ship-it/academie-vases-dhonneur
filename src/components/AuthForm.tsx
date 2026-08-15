@@ -5,8 +5,8 @@ import { signUp, signIn, UserRole } from '@/lib/auth'
 import { isAvatarFile } from '@/lib/avatars'
 import { canSignUp, recordSignUp } from '@/lib/rateLimit'
 
-const TRIBUS = ['Lévi', 'Juda', 'Siméon', 'Ruben', 'Zabulon', 'Issacar', 'Dan', 'Nephtali', 'Gad', 'Aser', 'Manassé', 'Éphraïm', 'Benjamin', 'Aucune']
-const DEPARTEMENTS = ['Intercession', 'Chantre', 'Communication', 'Accueil', 'Gestion des Cultes', "Médecine d'Honneur", 'Portier', 'Évangélisation', 'Amis des Nouveaux (ADN)', 'Social', 'Aucun']
+const TRIBUS = ['Ruben', 'Siméon', 'Lévi', 'Juda', 'Zabulon', 'Issacar', 'Dan', 'Gad', 'Aser', 'Nephtali', 'Joseph', 'Benjamin', 'Aucune']
+const DEPARTEMENTS = ['ACCUEIL', 'ADMINISTRATION', 'ADN', 'ACADÉMIE D\'HONNEUR', 'BAPTÊME', 'BLOOM', 'CHANTRES', 'COMMUNICATION', 'COMPTABILITÉ', 'DÉCORATION', 'DIGITAL', 'ENFANT D\'HONNEUR', 'ELEEO', 'GDC', 'INTERCESSION', 'LOGE PASTORALE', 'LEAMANS', 'MÉDECINE D\'HONNEUR', 'MOYENS GÉNÉRAUX', 'MRES', 'PLUME D\'HONNEUR', 'PROTOCOLE', 'COEUR D\'HONNEUR', 'SAINTE CÈNE', 'EVANGÉLISATION', 'AUCUN']
 
 interface AuthFormProps {
   mode: 'signup' | 'signin'
