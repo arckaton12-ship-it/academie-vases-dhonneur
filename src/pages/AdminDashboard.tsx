@@ -664,8 +664,10 @@ export default function AdminDashboard() {
       })
       await loadModerators()
     } catch (err) {
-      setAccountMsg(err instanceof Error ? err.message : 'Erreur de création du compte.')
-      toastError('Erreur.')
+      const msg = err instanceof Error ? err.message : 'Erreur inconnue.'
+      console.error('[CoursTab] submit error:', err)
+      setError(msg)
+      toastError(msg)
     } finally {
       setAccountSaving(false)
     }
@@ -1849,8 +1851,10 @@ function CoursTab({
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    console.log('[CoursTab] submit', { classId, title, week, audioFile, videoFile })
     if (!classId || !title.trim()) {
       setError('La classe et le titre sont obligatoires.')
+      toastError('La classe et le titre sont obligatoires.')
       return
     }
     setLoading(true)
