@@ -862,86 +862,6 @@ export default function StudentDashboard() {
             </CollapsibleCard>
           )}
 
-          {/* Verset du jour */}
-          <CollapsibleCard title="Verset du jour">
-            <div className="quote-in relative pl-10">
-              <span
-                className="absolute left-0 top-1 font-display text-5xl leading-none text-or"
-                aria-hidden="true"
-              >
-                "
-              </span>
-              {dailyVerse ? (
-                <>
-                  <p className="font-display text-lg leading-snug text-bordeaux">{dailyVerse.verse_text}</p>
-                  <p className="mt-2 font-mono text-xs uppercase tracking-wide text-pierre">
-                    {dailyVerse.verse_reference}
-                  </p>
-                </>
-              ) : (
-                <p className="text-sm text-pierre italic">
-                  Le verset du jour n'est pas encore disponible pour ta classe.
-                </p>
-              )}
-            </div>
-          </CollapsibleCard>
-
-          {/* Recherche rapprochée du player */}
-          <CollapsibleCard title="Rechercher un cours" defaultOpen={false}>
-            <p className="mb-3 text-xs text-pierre">
-              Parcours les cours de ta classe par mot-clé et par semaine.
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Titre, description… (ex. semaine 3)"
-                className="max-w-xs"
-              />
-              <select
-                value={searchWeek}
-                onChange={(e) => setSearchWeek(e.target.value)}
-                aria-label="Filtrer par semaine"
-                className="rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or focus-visible:outline-none"
-              >
-                <option value="">Toutes les semaines</option>
-                {weekOptions.map((w) => (
-                  <option key={w} value={w}>
-                    Semaine {w}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {searchQuery.trim() !== '' || searchWeek !== '' ? (
-              <div className="mt-3">
-                {filteredCourses.length === 0 ? (
-                  <p className="text-sm text-pierre">Aucun cours ne correspond à ta recherche.</p>
-                ) : (
-                  <ul className="space-y-1.5">
-                    {filteredCourses.map((c) => (
-                      <li key={c.id}>
-                        <button
-                          type="button"
-                          onClick={() => handleSelectCourse(c)}
-                          className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-pierre/15 px-3 py-2 text-left text-sm transition-colors hover:border-or/60 hover:bg-or/5"
-                        >
-                          <span className="font-medium text-bordeaux">
-                            Semaine {c.week} — {c.title}
-                          </span>
-                          <span className="shrink-0 text-xs text-pierre">Ouvrir →</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ) : (
-              <p className="mt-2 text-xs text-pierre">
-                Astuce : tape « semaine 3 » ou un mot du titre pour retrouver un cours.
-              </p>
-            )}
-          </CollapsibleCard>
-
           <Card>
             <CardTitle>{course ? course.title : 'Cours de la semaine'}</CardTitle>
             {course && (
@@ -1055,6 +975,86 @@ export default function StudentDashboard() {
               <p className="text-sm text-pierre">Aucun cours publié pour ta classe pour le moment.</p>
             )}
           </Card>
+
+          {/* Méditation Biblique du Jour */}
+          <CollapsibleCard title="Méditation Biblique du Jour — Verset(s) à Méditer">
+            <div className="quote-in relative pl-10">
+              <span
+                className="absolute left-0 top-1 font-display text-5xl leading-none text-or"
+                aria-hidden="true"
+              >
+                "
+              </span>
+              {dailyVerse ? (
+                <>
+                  <p className="font-display text-lg leading-snug text-bordeaux">{dailyVerse.verse_text}</p>
+                  <p className="mt-2 font-mono text-xs uppercase tracking-wide text-pierre">
+                    {dailyVerse.verse_reference}
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-pierre italic">
+                  Le verset du jour n'est pas encore disponible pour ta classe.
+                </p>
+              )}
+            </div>
+          </CollapsibleCard>
+
+          {/* Recherche de cours */}
+          <CollapsibleCard title="Rechercher un cours" defaultOpen={false}>
+            <p className="mb-3 text-xs text-pierre">
+              Parcours les cours de ta classe par mot-clé et par semaine.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Titre, description… (ex. semaine 3)"
+                className="max-w-xs"
+              />
+              <select
+                value={searchWeek}
+                onChange={(e) => setSearchWeek(e.target.value)}
+                aria-label="Filtrer par semaine"
+                className="rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or focus-visible:outline-none"
+              >
+                <option value="">Toutes les semaines</option>
+                {weekOptions.map((w) => (
+                  <option key={w} value={w}>
+                    Semaine {w}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {searchQuery.trim() !== '' || searchWeek !== '' ? (
+              <div className="mt-3">
+                {filteredCourses.length === 0 ? (
+                  <p className="text-sm text-pierre">Aucun cours ne correspond à ta recherche.</p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {filteredCourses.map((c) => (
+                      <li key={c.id}>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectCourse(c)}
+                          className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-pierre/15 px-3 py-2 text-left text-sm transition-colors hover:border-or/60 hover:bg-or/5"
+                        >
+                          <span className="font-medium text-bordeaux">
+                            Semaine {c.week} — {c.title}
+                          </span>
+                          <span className="shrink-0 text-xs text-pierre">Ouvrir →</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ) : (
+              <p className="mt-2 text-xs text-pierre">
+                Astuce : tape « semaine 3 » ou un mot du titre pour retrouver un cours.
+              </p>
+            )}
+          </CollapsibleCard>
 
           <Card>
             <CardTitle>Ton tableau de bord</CardTitle>
