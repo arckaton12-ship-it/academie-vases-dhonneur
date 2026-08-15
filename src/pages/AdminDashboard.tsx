@@ -212,7 +212,7 @@ export default function AdminDashboard() {
       getAllResumes(),
       getAllMiniTaskResponses(),
     ])
-      .then(([s, c, co, su, at, st, badges, resumes, minis]) => {
+      .then(async ([s, c, co, su, at, st, badges, resumes, minis]) => {
         setStudents(s)
         setClasses(c)
         setCourses(co)
@@ -222,7 +222,15 @@ export default function AdminDashboard() {
         setAllBadges(badges)
         setAllResumes(resumes)
         setMiniResponses(minis)
-        if (c.length > 0) setSelectedClassId(c[0].id)
+        if (c.length > 0) {
+          setSelectedClassId(c[0].id)
+          const [courseData, studentData] = await Promise.all([
+            getClassCourses(c[0].id),
+            s.filter((st) => st.class_id === c[0].id),
+          ])
+          setClassCourses(courseData)
+          setClassStudents(studentData)
+        }
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'Erreur de chargement.'))
       .finally(() => setLoading(false))

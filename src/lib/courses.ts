@@ -132,6 +132,29 @@ export async function getStudentCourse(classId: string): Promise<Course | null> 
   return (data ?? null) as Course | null
 }
 
+export async function getCurrentWeekForClass(classId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('courses')
+    .select('week, session_date')
+    .eq('class_id', classId)
+    .order('week', { ascending: true })
+  if (error) throw error
+  if (!data || data.length === 0) return 1
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  let currentWeek = 1
+  for (const course of data) {
+    if (course.session_date) {
+      const sessionDate = new Date(course.session_date)
+      sessionDate.setHours(0, 0, 0, 0)
+      if (sessionDate <= today) {
+        currentWeek = course.week
+      }
+    }
+  }
+  return currentWeek
+}
+
 export async function getStudents(): Promise<StudentProfile[]> {
   const { data, error } = await supabase
     .from('profiles')

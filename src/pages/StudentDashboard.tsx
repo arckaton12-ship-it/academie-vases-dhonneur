@@ -44,6 +44,7 @@ import {
   getAssignments,
   getClassCourses,
   getStudentCourse,
+  getCurrentWeekForClass,
   getStudentStreak,
   getResume,
   saveResume,
@@ -170,6 +171,7 @@ export default function StudentDashboard() {
   const { current: currentNotif, dismiss: dismissNotif } = useInAppNotifications({ userId: profile?.id })
   const [showRegistration, setShowRegistration] = useState(false)
   const [course, setCourse] = useState<Course | null>(null)
+  const [currentWeek, setCurrentWeek] = useState(1)
   const [streak, setStreak] = useState<Streak | null>(null)
   const [summary, setSummary] = useState('')
   const [summarySaved, setSummarySaved] = useState(false)
@@ -357,14 +359,16 @@ export default function StudentDashboard() {
         }
 
         if (classId) {
-          const [courseData, classCourses, verse] = await Promise.all([
+          const [courseData, classCourses, verse, week] = await Promise.all([
             getStudentCourse(classId),
             getClassCourses(classId),
             getDailyVerse(classId),
+            getCurrentWeekForClass(classId),
           ])
           if (cancelled) return
           setAllCourses(classCourses)
           setDailyVerse(verse)
+          setCurrentWeek(week)
           if (courseData) {
             await loadCourse(courseData, p.id)
           }
@@ -850,7 +854,7 @@ export default function StudentDashboard() {
             <CollapsibleCard title="Mon parcours" defaultOpen={false}>
               <CoursePath
                 courses={allCourses}
-                currentWeek={course?.week ?? 1}
+                currentWeek={currentWeek}
                 completedCourseIds={new Set(followed.map((c) => c.id))}
                 onSelectCourse={handleSelectCourse}
                 mascotMood={mascotMood}
