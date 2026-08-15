@@ -52,7 +52,7 @@ const TESTIMONIALS = [
 const FAQ = [
   {
     q: 'L\'académie est-elle vraiment gratuite ?',
-    a: 'Oui, entièrement. Aucun frais d\'inscription ni de cours. L\'académie est un service de l\'Assemblée Eaux Paisibles de Yaoundé.',
+    a: 'Presque gratuit, une contribution de 10000 F seulement est demandée pour son Kit (T-Shirt de l\'Académie, Cahier de Méditation, Agapé) entièrement. Aucun frais d\'inscription. L\'Académie est une école de formation des disciples de l\'église Vases d\'Honneur, implémentée par l\'Assemblée Eaux Paisibles de Yaoundé.',
   },
   {
     q: 'Comment ça marche concrètement ?',
@@ -60,7 +60,7 @@ const FAQ = [
   },
   {
     q: 'Je peux rejoindre à tout moment ?',
-    a: 'Les inscriptions sont ouvertes en permanence. Tu commences au niveau 1 et tu progresses selon ton rythme et les recommandations de ton modérateur.',
+    a: 'Les inscriptions sont ouvertes 3 fois dans l\'année. Renseigne-toi pour la prochaine session, et tu commences au niveau 1 et tu progresses selon ton rythme et les recommandations de l\'administration de l\'École.',
   },
   {
     q: 'Quel est le niveau requis ?',
