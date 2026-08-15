@@ -43,6 +43,8 @@ import { ClassPicker } from '@/components/ClassPicker'
 import {
   getAssignments,
   getClassCourses,
+  getCourses,
+  getClasses,
   getStudentCourse,
   getCurrentWeekForClass,
   getStudentStreak,
@@ -359,14 +361,18 @@ export default function StudentDashboard() {
         }
 
         if (classId) {
-          const [courseData, classCourses, verse, week] = await Promise.all([
+          const [courseData, classCourses, verse, week, allClasses] = await Promise.all([
             getStudentCourse(classId),
             getClassCourses(classId),
             getDailyVerse(classId),
             getCurrentWeekForClass(classId),
+            getClasses(),
           ])
           if (cancelled) return
-          setAllCourses(classCourses)
+          const studentClass = allClasses.find(c => c.id === classId)
+          const isLevel3 = studentClass?.level === 3
+          const searchCourses = isLevel3 ? await getCourses() : classCourses
+          setAllCourses(searchCourses)
           setDailyVerse(verse)
           setCurrentWeek(week)
           if (courseData) {
