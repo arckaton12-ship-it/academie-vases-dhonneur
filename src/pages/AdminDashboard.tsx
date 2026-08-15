@@ -2145,11 +2145,26 @@ function AdminClassRequestsTab({ classes }: { classes: ClassRow[] }) {
 
   async function loadRequests() {
     setLoading(true)
-    const { data } = await supabase
+    const { data: reqs } = await supabase
       .from('class_requests')
-      .select('id, student_id, requested_class_name, status, created_at, profiles!class_requests_student_id_fkey(first_name, last_name, email)')
+      .select('id, student_id, requested_class_name, status, created_at')
       .order('created_at', { ascending: false })
-    setRequests(data ?? [])
+    if (!reqs || reqs.length === 0) {
+      setRequests([])
+      setLoading(false)
+      return
+    }
+    const ids = [...new Set(reqs.map(r => r.student_id))]
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, email')
+      .in('id', ids)
+    const profileMap = new Map((profiles ?? []).map(p => [p.id, p]))
+    const merged = reqs.map(r => ({
+      ...r,
+      profiles: profileMap.get(r.student_id) ? [profileMap.get(r.student_id)!] : null,
+    }))
+    setRequests(merged)
     setLoading(false)
   }
 
