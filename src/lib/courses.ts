@@ -1647,3 +1647,47 @@ export async function setStudentClass(studentId: string, classId: string): Promi
   })
   if (error) throw error
 }
+
+// =====================================================
+// §10 Bilan hebdomadaire
+// =====================================================
+export interface WeeklyBilan {
+  id: string
+  student_id: string
+  week_number: number
+  resume_done: boolean
+  meditation_status: 'all_days' | 'some_days' | 'none'
+  meditation_days: number
+  evangelisation_status: 'soul_won' | 'evangelized_no_soul' | 'none'
+  contact_name: string | null
+  contact_phone: string | null
+  created_at: string | null
+}
+
+export async function getWeeklyBilan(studentId: string, weekNumber: number): Promise<WeeklyBilan | null> {
+  const { data, error } = await supabase
+    .from('weekly_bilan')
+    .select('*')
+    .eq('student_id', studentId)
+    .eq('week_number', weekNumber)
+    .maybeSingle()
+  if (error) throw error
+  return (data ?? null) as WeeklyBilan | null
+}
+
+export async function saveWeeklyBilan(bilan: Omit<WeeklyBilan, 'id' | 'created_at'>) {
+  const { error } = await supabase
+    .from('weekly_bilan')
+    .upsert(bilan, { onConflict: 'student_id,week_number' })
+  if (error) throw error
+}
+
+export async function getAllBilansForWeek(weekNumber: number): Promise<(WeeklyBilan & { student?: { first_name: string; last_name: string; class_id: string | null } | null })[]> {
+  const { data, error } = await supabase
+    .from('weekly_bilan')
+    .select('*, student:profiles(first_name, last_name, class_id)')
+    .eq('week_number', weekNumber)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data ?? []) as any
+}

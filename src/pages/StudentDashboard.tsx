@@ -72,6 +72,8 @@ import {
   uploadNoteFile,
   submitNotes,
   isNoteImageFile,
+  getWeeklyBilan,
+  saveWeeklyBilan,
   Assignment,
   Course,
   Streak,
@@ -214,6 +216,15 @@ export default function StudentDashboard() {
 
   // ---- Verset du jour par classe
   const [dailyVerse, setDailyVerse] = useState<{ verse_text: string; verse_reference: string } | null>(null)
+
+  // ---- Bilan hebdomadaire
+  const [bilanResume, setBilanResume] = useState(false)
+  const [bilanMeditation, setBilanMeditation] = useState<'all_days' | 'some_days' | 'none'>('none')
+  const [bilanMeditationDays, setBilanMeditationDays] = useState(0)
+  const [bilanEvangelisation, setBilanEvangelisation] = useState<'soul_won' | 'evangelized_no_soul' | 'none'>('none')
+  const [bilanContactName, setBilanContactName] = useState('')
+  const [bilanContactPhone, setBilanContactPhone] = useState('')
+  const [bilanSaved, setBilanSaved] = useState(false)
 
   // ---- Recherche de cours (page Académie)
   const [allCourses, setAllCourses] = useState<Course[]>([])
@@ -377,6 +388,18 @@ export default function StudentDashboard() {
           setCurrentWeek(week)
           if (courseData) {
             await loadCourse(courseData, p.id)
+            try {
+              const bilan = await getWeeklyBilan(p.id, week)
+              if (bilan && !cancelled) {
+                setBilanResume(bilan.resume_done)
+                setBilanMeditation(bilan.meditation_status)
+                setBilanMeditationDays(bilan.meditation_days)
+                setBilanEvangelisation(bilan.evangelisation_status)
+                setBilanContactName(bilan.contact_name ?? '')
+                setBilanContactPhone(bilan.contact_phone ?? '')
+                setBilanSaved(true)
+              }
+            } catch { /* no bilan yet */ }
           }
         }
       } catch {
@@ -462,6 +485,26 @@ export default function StudentDashboard() {
       toastError('Erreur.')
     } finally {
       setMiniTaskSaving(false)
+    }
+  }
+
+  async function handleSaveBilan() {
+    if (!profile || !currentWeek) return
+    try {
+      await saveWeeklyBilan({
+        student_id: profile.id,
+        week_number: currentWeek,
+        resume_done: bilanResume,
+        meditation_status: bilanMeditation,
+        meditation_days: bilanMeditation === 'some_days' ? bilanMeditationDays : bilanMeditation === 'all_days' ? 7 : 0,
+        evangelisation_status: bilanEvangelisation,
+        contact_name: bilanContactName || null,
+        contact_phone: bilanContactPhone || null,
+      })
+      setBilanSaved(true)
+      toast('Bilan enregistré.')
+    } catch {
+      toastError('Erreur lors de la sauvegarde du bilan.')
     }
   }
 
@@ -1003,6 +1046,77 @@ export default function StudentDashboard() {
                   Le verset du jour n'est pas encore disponible pour ta classe.
                 </p>
               )}
+            </div>
+          </CollapsibleCard>
+
+          {/* Mon Bilan de la Semaine */}
+          <CollapsibleCard title="Mon Bilan de la Semaine" defaultOpen={false}>
+            <div className="space-y-4">
+              {/* Résumé */}
+              <div>
+                <Label className="font-semibold text-bordeaux">Résumé</Label>
+                <div className="mt-1 flex gap-3">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="radio" name="bilan-resume" checked={bilanResume} onChange={() => setBilanResume(true)} className="accent-bordeaux" />
+                    J'ai fait mon résumé
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="radio" name="bilan-resume" checked={!bilanResume} onChange={() => setBilanResume(false)} className="accent-bordeaux" />
+                    Je n'ai pas fait mon résumé
+                  </label>
+                </div>
+              </div>
+
+              {/* Méditation */}
+              <div>
+                <Label className="font-semibold text-bordeaux">Méditation de la Bible</Label>
+                <div className="mt-1 space-y-1">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="radio" name="bilan-med" checked={bilanMeditation === 'all_days'} onChange={() => setBilanMeditation('all_days')} className="accent-bordeaux" />
+                    J'ai médité tous les jours
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="radio" name="bilan-med" checked={bilanMeditation === 'some_days'} onChange={() => setBilanMeditation('some_days')} className="accent-bordeaux" />
+                    J'ai médité seulement
+                    <input type="number" min={1} max={6} value={bilanMeditationDays} onChange={(e) => setBilanMeditationDays(Number(e.target.value))} className="mx-1 w-14 rounded border border-pierre/30 px-1 py-0.5 text-center text-sm" />
+                    jour(s)
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="radio" name="bilan-med" checked={bilanMeditation === 'none'} onChange={() => setBilanMeditation('none')} className="accent-bordeaux" />
+                    Je n'ai pas médité
+                  </label>
+                </div>
+              </div>
+
+              {/* Évangélisation */}
+              <div>
+                <Label className="font-semibold text-bordeaux">Évangélisation</Label>
+                <div className="mt-1 space-y-1">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="radio" name="bilan-evan" checked={bilanEvangelisation === 'soul_won'} onChange={() => setBilanEvangelisation('soul_won')} className="accent-bordeaux" />
+                    J'ai gagné une âme par l'évangélisation
+                  </label>
+                  {bilanEvangelisation === 'soul_won' && (
+                    <div className="ml-6 grid grid-cols-2 gap-2">
+                      <Input placeholder="Nom de la personne" value={bilanContactName} onChange={(e) => setBilanContactName(e.target.value)} />
+                      <Input placeholder="Numéro de téléphone" value={bilanContactPhone} onChange={(e) => setBilanContactPhone(e.target.value)} />
+                    </div>
+                  )}
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="radio" name="bilan-evan" checked={bilanEvangelisation === 'evangelized_no_soul'} onChange={() => setBilanEvangelisation('evangelized_no_soul')} className="accent-bordeaux" />
+                    J'ai évangélisé, sans gagner une âme
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="radio" name="bilan-evan" checked={bilanEvangelisation === 'none'} onChange={() => setBilanEvangelisation('none')} className="accent-bordeaux" />
+                    Je n'ai pas évangélisé
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <Button onClick={handleSaveBilan}>{bilanSaved ? 'Modifier' : 'Enregistrer'} le bilan</Button>
+                {bilanSaved && <span className="text-xs text-olive">Bilan enregistré ✓</span>}
+              </div>
             </div>
           </CollapsibleCard>
 
