@@ -118,7 +118,7 @@ export default function Landing() {
         </div>
 
         <h1 className="font-display text-3xl font-bold text-bordeaux drop-shadow-sm sm:text-5xl lg:text-6xl dark:text-slate-100">
-          Forme-toi.<br />
+          Formes-toi.<br />
           <span className="text-or">Grandis.</span><br />
           Sers le Maître.
         </h1>

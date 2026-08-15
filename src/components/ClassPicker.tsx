@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { toast } from '@/components/ui/Toast'
+import { sendPushToRole } from '@/lib/pushSend'
 
 const CLASSES = [
-  { name: 'Connaître & Servir Christ', level: 1 },
-  { name: 'Croître avec Jésus', level: 2 },
-  { name: 'Consécration', level: 3 },
+  { name: 'Classe 1 : Connaître Christ', level: 1 },
+  { name: 'Classe 2 : Croître avec Jésus', level: 2 },
+  { name: 'Classe 3 : Consécration & Service', level: 3 },
 ]
 
 interface ClassPickerProps {
@@ -46,6 +47,7 @@ export function ClassPicker({ userId, onPicked }: ClassPickerProps) {
       setRequestStatus('pending')
       setRequestMsg(result.msg)
       toast(result.msg)
+      sendPushToRole('admin', 'Nouvelle demande de classe', `Un étudiant demande l'accès à la classe "${selected}"`, 'class_request').catch(() => {})
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Erreur')
     } finally {

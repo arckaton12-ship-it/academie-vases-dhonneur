@@ -1,0 +1,11 @@
+VOICI LE RETOUR DU PASTEUR MIKE 
+moi en fonction de ce retour je veux savoir si les admins recoivent une notification pour la demende de validation de chaque etudiant ? d'ailleur vu sa demande nous allons decentraliser la chose 
+
+
+"Please RIddy
+Nous avons oublié une catégorie d’Accès. 
+Il s'agit des Administrateur des Classes. Il faut ajouter cela. Les Adeministrateurs des Classes ont accès à  : 
+La liste des étudiants de la Classe qu'ils administrent. ils peuvent faire des modifications sur les fiches étudiants de leur classe. 
+Ils ont accès au présence, résumé, méditation, service de leur classe pour les noter. 
+Ils ont accès au dashboard de leur classe. et  je crois que sur la page d'acceuil  “Formes" doit avoir un “s” à la fin.
+Ca ne marche toujours pas. Je n'ai pas toujours en tant que administrateur les notifications des étudiants qui demande accès et qui demandent à s’isncrire."
