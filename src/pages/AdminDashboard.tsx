@@ -999,16 +999,6 @@ export default function AdminDashboard() {
         </>
       )}
 
-      {section === 'messagerie' && (
-        <div className="space-y-4">
-          <MessagingPanel currentUserId={adminProfile?.id ?? ''} userRole="ADMINISTRATEUR" />
-        </div>
-      )}
-
-      {section === 'annonces' && (
-        <AdminAnnoncesTab classes={classes} allCourses={courses} />
-      )}
-
       {section === 'export' && (
         <Card>
           <CardTitle>Export des données</CardTitle>
