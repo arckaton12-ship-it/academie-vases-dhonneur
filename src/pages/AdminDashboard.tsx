@@ -436,7 +436,7 @@ export default function AdminDashboard() {
     }
     if (studentSort === 'name') list.sort((a, b) => a.last_name.localeCompare(b.last_name))
     else if (studentSort === 'class') list.sort((a, b) => (a.class?.name ?? 'ZZZ').localeCompare(b.class?.name ?? 'ZZZ'))
-    else list.sort((a, b) => a.email.localeCompare(b.email))
+    else list.sort((a, b) => (a.created_at ?? '').localeCompare(b.created_at ?? ''))
     return list
   }, [students, studentFilterClass, studentSearch, studentSort])
 
@@ -1188,7 +1188,10 @@ export default function AdminDashboard() {
       )}
 
       {section === 'notation' && (
-        <NotationTab onGraded={() => {}} />
+        <NotationTab onGraded={() => {
+          getSubmissions().then(setSubmissions).catch(() => {})
+          getStudents().then(setStudents).catch(() => {})
+        }} />
       )}
 
       {section === 'etudiants' && (

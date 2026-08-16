@@ -23,21 +23,6 @@ export async function sniffMime(file: File): Promise<MimeGuess | null> {
   return null
 }
 
-export function isCourseMediaFile(file: File): boolean {
-  const allowed = ['audio/mpeg', 'audio/mp3', 'video/mp4', 'video/webm', 'video/ogg', 'application/pdf']
-  return allowed.includes(file.type)
-}
-
-export function isAssignmentFile(file: File): boolean {
-  const allowed = ['application/pdf', 'image/png', 'image/jpeg', 'image/gif', 'image/webp']
-  return allowed.includes(file.type)
-}
-
-export function isNoteImageFile(file: File): boolean {
-  const allowed = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'application/pdf']
-  return allowed.includes(file.type)
-}
-
 export function isAvatarFile(file: File): boolean {
   return ['image/png', 'image/jpeg', 'image/gif', 'image/webp'].includes(file.type) && file.size <= 5 * 1024 * 1024
 }

@@ -49,6 +49,8 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
   const [otherOnline, setOtherOnline] = useState<boolean | null>(null)
   const [studentProfile, setStudentProfile] = useState<{ class_id: string | null; department: string | null } | null>(null)
   const [serviceGroupLoading, setServiceGroupLoading] = useState(false)
+  const conversationsRef = useRef(conversations)
+  conversationsRef.current = conversations
 
   // Load student profile for service group
   useEffect(() => {
@@ -270,7 +272,7 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
     try {
       const realMsg = await sendMessage(activeId, text, replyTo?.id, clientId)
       // Push notification to recipient
-      const convo = conversations.find((c) => c.id === activeId)
+      const convo = conversationsRef.current.find((c) => c.id === activeId)
       const recipientId = convo?.other_user?.id
       if (recipientId && recipientId !== currentUserId) {
         sendPushNotification({

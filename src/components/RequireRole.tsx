@@ -39,21 +39,23 @@ export function RequireRole({ roles, children }: RequireRoleProps) {
 
           if (cancelled) return
 
-          if (profile) {
-            if (profile.active === false) {
-              await supabase.auth.signOut().catch(() => undefined)
-              if (cancelled) return
-              navigate('/', { replace: true })
-              return
-            }
-            if (!roles.includes(profile.role as UserRole)) {
-              navigate('/', { replace: true })
-              return
-            }
+          if (!profile) {
+            navigate('/', { replace: true })
+            return
           }
-          // If profile query fails, trust the session exists (user just logged in)
+          if (profile.active === false) {
+            await supabase.auth.signOut().catch(() => undefined)
+            if (cancelled) return
+            navigate('/', { replace: true })
+            return
+          }
+          if (!roles.includes(profile.role as UserRole)) {
+            navigate('/', { replace: true })
+            return
+          }
         } catch {
-          // Profile query failed — but session exists, allow access
+          navigate('/', { replace: true })
+          return
         }
 
         setAllowed(true)

@@ -36,6 +36,7 @@ export interface StudentProfile {
   active_badge: string | null
   binome_id: string | null
   class?: Pick<ClassRow, 'name' | 'level'> | null
+  created_at: string | null
 }
 
 export interface Submission {
@@ -608,16 +609,37 @@ export async function submitNotes(input: {
   comment: string
   urls: string[]
 }): Promise<Submission> {
+  const { data: existing } = await supabase
+    .from('submissions')
+    .select('id')
+    .eq('student_id', input.studentId)
+    .eq('course_id', input.courseId)
+    .eq('type', 'notes')
+    .maybeSingle()
+
+  const payload = {
+    student_id: input.studentId,
+    course_id: input.courseId,
+    type: 'notes',
+    content: input.comment,
+    attachments: input.urls,
+    file_url: input.urls[0] ?? null,
+  }
+
+  if (existing) {
+    const { data, error } = await supabase
+      .from('submissions')
+      .update(payload)
+      .eq('id', existing.id)
+      .select()
+      .single()
+    if (error) throw error
+    return data as Submission
+  }
+
   const { data, error } = await supabase
     .from('submissions')
-    .insert({
-      student_id: input.studentId,
-      course_id: input.courseId,
-      type: 'notes',
-      content: input.comment,
-      attachments: input.urls,
-      file_url: input.urls[0] ?? null,
-    })
+    .insert(payload)
     .select()
     .single()
   if (error) throw error

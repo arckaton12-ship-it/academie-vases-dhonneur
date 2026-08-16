@@ -70,47 +70,68 @@ export async function getConversations(): Promise<Conversation[]> {
     }
   }
 
-  const enriched = await Promise.all(
-    convos.map(async (c) => {
-      let other_user: Conversation['other_user'] = null
+  const otherIds = new Set<string>()
+  for (const c of convos) {
+    if (c.type !== 'SERVICE_GROUP') {
+      otherIds.add(c.participant_1 === userId ? c.participant_2 : c.participant_1)
+    }
+  }
+  const conversationIds = convos.map(c => c.id)
 
-      if (c.type === 'SERVICE_GROUP' && c.service_group_key) {
-        // For service group conversations, show department name
-        const dept = c.service_group_key.split(':')[1] || 'Groupe'
-        other_user = { id: 'service-group', first_name: dept, last_name: '(Service)', avatar_url: null }
-      } else {
-        const otherId = c.participant_1 === userId ? c.participant_2 : c.participant_1
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name, avatar_url')
-          .eq('id', otherId)
-          .single()
-        other_user = profile ?? null
-      }
+  const profileIds = [...otherIds]
+  const [{ data: profiles }, { data: allMessages }, { data: unreadMessages }] = await Promise.all([
+    profileIds.length > 0
+      ? supabase.from('profiles').select('id, first_name, last_name, avatar_url').in('id', profileIds)
+      : Promise.resolve({ data: [] }),
+    conversationIds.length > 0
+      ? supabase
+          .from('messages')
+          .select('conversation_id, content, sent_at, sender_id')
+          .in('conversation_id', conversationIds)
+          .order('sent_at', { ascending: false })
+      : Promise.resolve({ data: [] }),
+    conversationIds.length > 0
+      ? supabase
+          .from('messages')
+          .select('conversation_id')
+          .in('conversation_id', conversationIds)
+          .neq('sender_id', userId)
+          .is('read_at', null)
+      : Promise.resolve({ data: [] }),
+  ])
 
-      const { data: lastMsg } = await supabase
-        .from('messages')
-        .select('content, sent_at, sender_id')
-        .eq('conversation_id', c.id)
-        .order('sent_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+  const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p]))
 
-      const { count } = await supabase
-        .from('messages')
-        .select('id', { count: 'exact', head: true })
-        .eq('conversation_id', c.id)
-        .neq('sender_id', userId)
-        .is('read_at', null)
+  const lastMsgMap = new Map<string, { content: string; sent_at: string; sender_id: string }>()
+  for (const msg of allMessages ?? []) {
+    if (!lastMsgMap.has(msg.conversation_id)) {
+      lastMsgMap.set(msg.conversation_id, { content: msg.content, sent_at: msg.sent_at, sender_id: msg.sender_id })
+    }
+  }
 
-      return {
-        ...c,
-        other_user,
-        last_message: lastMsg ?? null,
-        unread_count: count ?? 0,
-      }
-    })
-  )
+  const unreadMap = new Map<string, number>()
+  for (const msg of unreadMessages ?? []) {
+    unreadMap.set(msg.conversation_id, (unreadMap.get(msg.conversation_id) ?? 0) + 1)
+  }
+
+  const enriched = convos.map((c) => {
+    let other_user: Conversation['other_user'] = null
+
+    if (c.type === 'SERVICE_GROUP' && c.service_group_key) {
+      const dept = c.service_group_key.split(':')[1] || 'Groupe'
+      other_user = { id: 'service-group', first_name: dept, last_name: '(Service)', avatar_url: null }
+    } else {
+      const otherId = c.participant_1 === userId ? c.participant_2 : c.participant_1
+      other_user = (profileMap.get(otherId) as Conversation['other_user']) ?? null
+    }
+
+    return {
+      ...c,
+      other_user,
+      last_message: lastMsgMap.get(c.id) ?? null,
+      unread_count: unreadMap.get(c.id) ?? 0,
+    }
+  })
 
   return enriched.sort((a, b) => {
     const aTime = a.last_message?.sent_at ?? a.created_at
