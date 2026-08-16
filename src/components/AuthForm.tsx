@@ -58,8 +58,22 @@ export function AuthForm({ mode, role, onSuccess }: AuthFormProps) {
         await signIn(email, password)
       }
       onSuccess()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue.')
+    } catch (err: any) {
+      console.error('[AuthForm] Error:', err)
+      const msg = err?.message || err?.error_description || err?.msg || ''
+      if (msg.includes('rate') || msg.includes('too many') || msg.includes('429')) {
+        setError('Trop de tentatives. Réessaie dans quelques secondes.')
+      } else if (msg.includes('already') || msg.includes('exist')) {
+        setError('Un compte existe déjà avec cet email. Connecte-toi plutôt.')
+      } else if (msg.includes('Invalid') || msg.includes('invalid') || msg.includes('credentials')) {
+        setError('Email ou mot de passe incorrect.')
+      } else if (msg.includes('fetch') || msg.includes('network') || msg.includes('Failed')) {
+        setError('Problème de connexion. Vérifie ta connexion internet.')
+      } else if (msg) {
+        setError(msg)
+      } else {
+        setError("Une erreur est survenue. Réessaie.")
+      }
     } finally {
       setLoading(false)
     }

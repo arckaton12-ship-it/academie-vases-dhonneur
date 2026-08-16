@@ -168,7 +168,7 @@ export function StudentProfileCard({ studentId, onClose }: StudentProfileCardPro
           { label: 'Présence', value: `${Math.round(attendanceRate)}%` },
           { label: 'Résumés', value: String(resumeCount) },
           { label: 'Note moy.', value: avgGrade != null ? `${avgGrade.toFixed(1)}/20` : '—' },
-          { label: 'Série', value: `${currentStreak}j` },
+           { label: 'Méditation', value: `${currentStreak}j` },
         ].map((s) => (
           <div key={s.label} className="rounded-card bg-or/10 p-2 text-center">
             <p className="text-[10px] text-pierre">{s.label}</p>

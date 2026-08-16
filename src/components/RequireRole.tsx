@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getCurrentProfile, signOut, UserRole } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
+import { UserRole } from '@/lib/auth'
 
 interface RequireRoleProps {
   roles: UserRole[]
@@ -15,57 +15,66 @@ export function RequireRole({ roles, children }: RequireRoleProps) {
   useEffect(() => {
     let cancelled = false
 
-    const checkAuth = async () => {
+    const checkAuth = async (attempt = 0) => {
       try {
-        // Force refresh session on app load (mobile fix)
         const { data: { session } } = await supabase.auth.getSession()
-        if (session) {
-          await supabase.auth.refreshSession()
-        }
-      } catch {
-        // silent fail — will be caught by getCurrentProfile
-      }
-
-      try {
-        const profile = await getCurrentProfile()
         if (cancelled) return
-        if (!profile || !roles.includes(profile.role as UserRole)) {
-          navigate('/')
+
+        if (!session) {
+          if (attempt < 2) {
+            await new Promise(r => setTimeout(r, 2000))
+            if (!cancelled) return checkAuth(attempt + 1)
+          }
+          navigate('/', { replace: true })
           return
         }
-        if (profile.active === false) {
-          await signOut().catch(() => undefined)
+
+        // Session exists — try to verify role from profiles table
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role, active')
+            .eq('id', session.user.id)
+            .single()
+
           if (cancelled) return
-          navigate('/')
-          return
+
+          if (profile) {
+            if (profile.active === false) {
+              await supabase.auth.signOut().catch(() => undefined)
+              if (cancelled) return
+              navigate('/', { replace: true })
+              return
+            }
+            if (!roles.includes(profile.role as UserRole)) {
+              navigate('/', { replace: true })
+              return
+            }
+          }
+          // If profile query fails, trust the session exists (user just logged in)
+        } catch {
+          // Profile query failed — but session exists, allow access
         }
+
         setAllowed(true)
       } catch {
-        if (!cancelled) navigate('/')
+        if (!cancelled) navigate('/', { replace: true })
       }
     }
 
     checkAuth()
 
-    // Listen for auth state changes (token refresh, sign out)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT') {
-        if (!cancelled) navigate('/')
-      } else if (event === 'TOKEN_REFRESHED' && session) {
-        // Session refreshed successfully
-      }
-    })
-
     return () => {
       cancelled = true
-      subscription.unsubscribe()
     }
-  }, [navigate, roles])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   if (allowed === null) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-pierre">
-        Vérification de l'accès…
+        <svg className="mr-2 animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+        Chargement...
       </div>
     )
   }

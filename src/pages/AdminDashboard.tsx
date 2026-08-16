@@ -68,17 +68,19 @@ import {
   getResumesForGrading,
   gradeResume,
   ResumeForGrading,
+  assignAdminClassClass,
+  getAdminClassClasses,
 } from '@/lib/courses'
 import { getCurrentProfile, signOut } from '@/lib/auth'
 import { exportToCSV, exportToPDF, exportStudentBulletinPDF, ExportRow } from '@/lib/export'
 import { FieldError } from '@/components/ui/Input'
 import { MessagingPanel } from '@/components/MessagingPanel'
 import { QuizTab } from '@/components/QuizTab'
-import { getAnnouncements, createAnnouncement, createBroadcastAnnouncement, Announcement, deleteStudent } from '@/lib/courses'
+import { getAnnouncements, createAnnouncement, createBroadcastAnnouncement, updateAnnouncement, deleteAnnouncement, Announcement, deleteStudent } from '@/lib/courses'
 import { sendBroadcastMessage } from '@/lib/messaging'
 import { createConversation } from '@/lib/messaging'
 
-type Section = 'vue' | 'gestion' | 'cours_quiz' | 'notes' | 'messagerie' | 'annonces' | 'export' | 'parametres' | 'cours' | 'classes' | 'etudiants' | 'moderateurs' | 'versets' | 'notation' | 'quiz' | 'demandes'
+type Section = 'vue' | 'gestion' | 'cours_quiz' | 'notes' | 'messagerie' | 'annonces' | 'export' | 'parametres' | 'cours' | 'classes' | 'etudiants' | 'moderateurs' | 'versets' | 'notation' | 'quiz' | 'demandes' | 'admin_classe'
 
 const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
 
@@ -96,6 +98,7 @@ const sectionIcons: Record<string, React.ReactNode> = {
   notation: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
   etudiants: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>,
   moderateurs: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  admin_classe: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
   versets: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg>,
   quiz: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
   demandes: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>,
@@ -561,6 +564,27 @@ export default function AdminDashboard() {
     }
   }
 
+  const [graduationStudentId, setGraduationStudentId] = useState('')
+  const [graduationMsg, setGraduationMsg] = useState<string | null>(null)
+
+  async function promoteToGraduation() {
+    if (!graduationStudentId) return
+    setGraduationMsg(null)
+    try {
+      const graduationClass = classes.find(c => c.level === 4)
+      if (!graduationClass) { setGraduationMsg('Classe Graduation non trouvée.'); return }
+      const { error } = await supabase.from('profiles').update({ class_id: graduationClass.id }).eq('id', graduationStudentId)
+      if (error) throw error
+      setGraduationMsg('Étudiant promu en Graduation !')
+      toast('Étudiant promu en Graduation !')
+      setGraduationStudentId('')
+      const all = await getStudents()
+      setStudents(all)
+    } catch (err) {
+      setGraduationMsg(err instanceof Error ? err.message : 'Erreur de promotion.')
+    }
+  }
+
   async function demoteModerator(moderatorId: string) {
     if (!window.confirm('Repasser ce modérateur en étudiant ?')) return
     setModeratorMsg(null)
@@ -648,14 +672,14 @@ export default function AdminDashboard() {
         password: pwd,
         firstName: newAccount.firstName.trim(),
         lastName: newAccount.lastName.trim(),
-        role: newAccount.role as 'MODERATEUR' | 'ADMINISTRATEUR' | 'ETUDIANT',
+        role: newAccount.role as 'MODERATEUR' | 'ADMINISTRATEUR' | 'ETUDIANT' | 'ADMIN_CLASSE',
         phone: newAccount.phone.trim() || undefined,
         tribe: newAccount.tribe.trim() || undefined,
         department: newAccount.department.trim() || undefined,
       })
-      if (newAccount.role === 'MODERATEUR') {
+      if (newAccount.role === 'MODERATEUR' || newAccount.role === 'ADMIN_CLASSE') {
         setCreatedPassword(pwd)
-        setAccountMsg(`Compte modérateur créé. Mot de passe temporaire à transmettre :`)
+        setAccountMsg(`Compte ${newAccount.role === 'ADMIN_CLASSE' ? 'administrateur de classe' : 'modérateur'} créé. Mot de passe temporaire à transmettre :`)
       } else {
         setAccountMsg('Compte créé avec succès.')
       }
@@ -809,6 +833,7 @@ export default function AdminDashboard() {
     ['notation', 'Notes'],
     ['etudiants', 'Élèves'],
     ['moderateurs', 'Modérateurs'],
+    ['admin_classe', 'Admin Classe'],
     ['versets', 'Versets'],
     ['messagerie', 'Messagerie'],
     ['annonces', 'Annonces'],
@@ -868,7 +893,7 @@ export default function AdminDashboard() {
           <Card className="mt-4">
             <CardTitle>Engagement des étudiants</CardTitle>
             <CardDescription className="mt-1 mb-3">
-              Comment la formation prend corps : résumés, séries, badges et mini-tâches à travers toute l'Académie.
+              Comment la formation prend corps : résumés, méditations, badges et mini-tâches à travers toute l'Académie.
             </CardDescription>
             <div className="grid gap-4 sm:grid-cols-5">
               <Card>
@@ -880,7 +905,7 @@ export default function AdminDashboard() {
                 <p className="font-display text-3xl text-bordeaux">{loading ? '—' : `${resumeRate}%`}</p>
               </Card>
               <Card>
-                <CardDescription>Streak moyen</CardDescription>
+                <CardDescription>Méditation moyenne</CardDescription>
                 <p className="font-display text-3xl text-bordeaux">{loading ? '—' : avgStreak}</p>
               </Card>
               <Card>
@@ -1255,7 +1280,35 @@ export default function AdminDashboard() {
           </Card>
 
           <Card>
-            <CardTitle>Créer un compte</CardTitle>
+            <CardTitle>Promouvoir en Graduation</CardTitle>
+            <CardDescription className="mt-1 mb-3">
+              Transfère un étudiant de Classe 3 vers la classe Graduation (promotion finale).
+            </CardDescription>
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="min-w-56 flex-1">
+                <Label htmlFor="graduation-student">Étudiant (Classe 3)</Label>
+                <select
+                  id="graduation-student"
+                  value={graduationStudentId}
+                  onChange={(e) => setGraduationStudentId(e.target.value)}
+                  className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
+                >
+                  <option value="">Sélectionner un étudiant…</option>
+                  {students.filter(s => s.class?.level === 3).map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.last_name} {s.first_name} — {s.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Button variant="primary" onClick={promoteToGraduation} disabled={!graduationStudentId}>
+                Promouvoir en Graduation
+              </Button>
+            </div>
+            {graduationMsg && <p className="mt-2 text-sm text-olive">{graduationMsg}</p>}
+          </Card>
+
+          <Card>
             <CardDescription className="mt-1 mb-4">
               Crée directement un compte modérateur, administrateur ou étudiant. La personne pourra se
               connecter aussitôt.
@@ -1315,6 +1368,7 @@ export default function AdminDashboard() {
                   >
                     <option value="MODERATEUR">Modérateur</option>
                     <option value="ADMINISTRATEUR">Administrateur</option>
+                    <option value="ADMIN_CLASSE">Administrateur de Classe</option>
                     <option value="ETUDIANT">Étudiant</option>
                   </select>
                 </div>
@@ -1549,6 +1603,59 @@ export default function AdminDashboard() {
               </ul>
             )}
             {moderatorMsg && <p className="mt-3 text-sm text-olive">{moderatorMsg}</p>}
+          </Card>
+        </div>
+      )}
+
+      {section === 'admin_classe' && (
+        <div className="space-y-4">
+          <Card>
+            <CardTitle>Administrateurs de Classe</CardTitle>
+            <CardDescription className="mt-1 mb-3">
+              Gère les administrateurs de classe — chacun gère les étudiants d'une classe spécifique.
+            </CardDescription>
+            {(() => {
+              const adminClasses = students.filter(s => s.role === 'ADMIN_CLASSE')
+              if (adminClasses.length === 0) {
+                return <p className="text-sm text-pierre">Aucun administrateur de classe créé. Utilise l'onglet "Créer un compte" ci-dessus.</p>
+              }
+              return (
+                <ul className="space-y-3">
+                  {adminClasses.map(ac => (
+                    <li key={ac.id} className="rounded-card border border-pierre/15 p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-medium text-bordeaux">{ac.first_name} {ac.last_name}</p>
+                          <p className="text-xs text-pierre">{ac.email}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          {classes.filter(c => c.level <= 3).map(c => (
+                            <button
+                              key={c.id}
+                              onClick={async () => {
+                                const current = await getAdminClassClasses(ac.id)
+                                const next = current.includes(c.id)
+                                  ? current.filter((id: string) => id !== c.id)
+                                  : [...current, c.id]
+                                try {
+                                  await assignAdminClassClass(ac.id, c.id)
+                                  toast('Classe assignée.')
+                                } catch {
+                                  toastError('Erreur.')
+                                }
+                              }}
+                              className="rounded-md border border-pierre/30 px-2 py-1 text-xs text-bordeaux hover:bg-or/10"
+                            >
+                              {c.name.split(' : ')[0]}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )
+            })()}
           </Card>
         </div>
       )}
@@ -2301,6 +2408,10 @@ function AdminAnnoncesTab({ classes, allCourses }: { classes: ClassRow[]; allCou
   const [annonces, setAnnonces] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(true)
   const [viewClass, setViewClass] = useState(classes[0]?.id ?? '')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editContent, setEditContent] = useState('')
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!viewClass) { setLoading(false); return }
@@ -2340,6 +2451,35 @@ function AdminAnnoncesTab({ classes, allCourses }: { classes: ClassRow[]; allCou
       toastError('Erreur.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleEditSave(id: string) {
+    if (!editTitle.trim() || !editContent.trim()) return
+    try {
+      await updateAnnouncement(id, editTitle.trim(), editContent.trim())
+      toast('Annonce modifiée.')
+      setEditingId(null)
+      if (viewClass) {
+        const data = await getAnnouncements(viewClass)
+        setAnnonces(data)
+      }
+    } catch {
+      toastError('Erreur lors de la modification.')
+    }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      await deleteAnnouncement(id)
+      toast('Annonce supprimée.')
+      setDeleteConfirmId(null)
+      if (viewClass) {
+        const data = await getAnnouncements(viewClass)
+        setAnnonces(data)
+      }
+    } catch {
+      toastError('Erreur lors de la suppression.')
     }
   }
 
@@ -2416,12 +2556,36 @@ function AdminAnnoncesTab({ classes, allCourses }: { classes: ClassRow[]; allCou
           <ul className="space-y-3">
             {annonces.map((a) => (
               <li key={a.id} className="rounded-card border border-pierre/15 p-4">
-                <p className="font-medium text-bordeaux">{a.title}</p>
-                <p className="mt-1 text-sm text-pierre whitespace-pre-wrap">{a.content}</p>
-                <p className="mt-2 text-[11px] text-pierre">
-                  {a.moderator?.first_name} {a.moderator?.last_name} —{' '}
-                  {new Date(a.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                </p>
+                {editingId === a.id ? (
+                  <div className="space-y-2">
+                    <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Titre..." />
+                    <textarea rows={3} value={editContent} onChange={(e) => setEditContent(e.target.value)} className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or focus-visible:outline-none" />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => handleEditSave(a.id)}>Enregistrer</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>Annuler</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="font-medium text-bordeaux">{a.title}</p>
+                    <p className="mt-1 text-sm text-pierre whitespace-pre-wrap">{a.content}</p>
+                    <p className="mt-2 text-[11px] text-pierre">
+                      {a.moderator?.first_name} {a.moderator?.last_name} —{' '}
+                      {new Date(a.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                    <div className="mt-2 flex gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => { setEditingId(a.id); setEditTitle(a.title); setEditContent(a.content); }}>Modifier</Button>
+                      {deleteConfirmId === a.id ? (
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="destructive" onClick={() => handleDelete(a.id)}>Confirmer</Button>
+                          <Button size="sm" variant="ghost" onClick={() => setDeleteConfirmId(null)}>Non</Button>
+                        </div>
+                      ) : (
+                        <Button size="sm" variant="ghost" onClick={() => setDeleteConfirmId(a.id)}>Supprimer</Button>
+                      )}
+                    </div>
+                  </>
+                )}
               </li>
             ))}
           </ul>

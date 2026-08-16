@@ -20,12 +20,14 @@ const BASE_PATHS: Record<UserRole, string> = {
   ETUDIANT: '/etudiant',
   ADMINISTRATEUR: '/admin',
   MODERATEUR: '/moderateur',
+  ADMIN_CLASSE: '/moderateur',
 }
 
 const DASHBOARDS: Record<UserRole, string> = {
   ETUDIANT: '/etudiant/tableau-de-bord',
   ADMINISTRATEUR: '/admin/tableau-de-bord',
   MODERATEUR: '/moderateur/tableau-de-bord',
+  ADMIN_CLASSE: '/moderateur/tableau-de-bord',
 }
 
 export function AuthPage({ mode, role, title, redirectTo }: AuthPageProps) {
@@ -40,32 +42,20 @@ export function AuthPage({ mode, role, title, redirectTo }: AuthPageProps) {
   const [welcomeName, setWelcomeName] = useState<string | null>(null)
 
   async function handleSuccess() {
-    try {
-      const profile = await getCurrentProfile()
-      if (mode === 'signup' && profile?.first_name) {
-        setWelcomeName(profile.first_name)
-        return
-      }
-      if (profile?.role === 'ADMINISTRATEUR') {
-        navigate('/admin/tableau-de-bord')
-        return
-      }
-      if (profile?.role === 'MODERATEUR') {
-        if (profile?.must_change_password) {
-          navigate('/moderateur/changer-mot-de-passe')
+    // Simple direct navigation based on the login page role
+    // RequireRole will verify access on the destination page
+    if (mode === 'signup') {
+      try {
+        const profile = await getCurrentProfile()
+        if (profile?.first_name) {
+          setWelcomeName(profile.first_name)
           return
         }
-        navigate('/moderateur/tableau-de-bord')
-        return
+      } catch {
+        // fall through
       }
-      if (profile?.role === 'ETUDIANT') {
-        navigate('/etudiant/tableau-de-bord')
-        return
-      }
-    } catch {
-      // profil illisible : on garde la redirection par défaut
     }
-    navigate(redirectTo)
+    navigate(redirectTo, { replace: true })
   }
 
   const handleWelcomeComplete = useCallback(() => {

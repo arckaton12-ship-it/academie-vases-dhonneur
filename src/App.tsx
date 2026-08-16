@@ -14,7 +14,7 @@ import { ToastContainer } from '@/components/ui/Toast'
 import { PWAInstall, PWAInstallButton } from '@/components/PWAInstall'
 import { ChangePasswordPage } from '@/pages/ChangePasswordPage'
 
-const MODERATOR_ROLES: UserRole[] = ['MODERATEUR', 'ADMINISTRATEUR']
+const MODERATOR_ROLES: UserRole[] = ['MODERATEUR', 'ADMINISTRATEUR', 'ADMIN_CLASSE']
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(shouldShowSplash())
@@ -56,6 +56,7 @@ export default function App() {
           <Route path="/moderateur/inscription" element={<ModeratorSignup />} />
           <Route path="/moderateur/connexion" element={<ModeratorLogin />} />
           <Route path="/moderateur/changer-mot-de-passe" element={<ChangePasswordPage />} />
+          <Route path="/admin-classe/connexion" element={<ModeratorLogin />} />
           <Route
             path="/moderateur/tableau-de-bord"
             element={

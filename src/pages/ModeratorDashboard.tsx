@@ -34,6 +34,7 @@ import {
   getAnnouncements,
   createAnnouncement,
   deleteAnnouncement,
+  updateAnnouncement,
   ClassRow,
   Course,
   StudentProfile,
@@ -127,7 +128,15 @@ export default function ModeratorDashboard() {
       getModeratorClasses(profileId),
       getModeratorSchedules(profileId),
     ])
-    setOwnClassIds(cls.map((c) => c.id))
+    let classIds = cls.map((c) => c.id)
+    if (classIds.length === 0) {
+      const { data: adminClasses } = await supabase
+        .from('admin_class_classes')
+        .select('class_id')
+        .eq('admin_id', profileId)
+      classIds = (adminClasses ?? []).map((r: any) => r.class_id)
+    }
+    setOwnClassIds(classIds)
     setOwnSchedules(sched)
   }, [])
 
@@ -498,6 +507,10 @@ function AnnoncesTab({
   const [content, setContent] = useState('')
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editContent, setEditContent] = useState('')
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
 
   const manageableClasses = ownClassIds.length > 0
     ? classes.filter((c) => ownClassIds.includes(c.id))
@@ -546,15 +559,27 @@ function AnnoncesTab({
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm('Supprimer cette annonce ?')) return
     try {
       await deleteAnnouncement(id)
       setMessage('Annonce supprimée.')
       toast('Annonce supprimée.')
+      setDeleteConfirmId(null)
       await loadAnnonces()
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Erreur de suppression.')
       toastError('Erreur.')
+    }
+  }
+
+  async function handleEditSave(id: string) {
+    if (!editTitle.trim() || !editContent.trim()) return
+    try {
+      await updateAnnouncement(id, editTitle.trim(), editContent.trim())
+      toast('Annonce modifiée.')
+      setEditingId(null)
+      await loadAnnonces()
+    } catch {
+      toastError('Erreur lors de la modification.')
     }
   }
 
@@ -617,21 +642,37 @@ function AnnoncesTab({
           <ul className="space-y-3">
             {annonces.map((a) => (
               <li key={a.id} className="rounded-card border border-pierre/15 p-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-medium text-bordeaux">{a.title}</p>
-                    <p className="mt-1 text-sm text-pierre whitespace-pre-wrap">{a.content}</p>
-                    <p className="mt-2 text-[11px] text-pierre">
-                      {new Date(a.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </p>
+                {editingId === a.id ? (
+                  <div className="space-y-2">
+                    <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Titre..." />
+                    <textarea rows={3} value={editContent} onChange={(e) => setEditContent(e.target.value)} className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or" />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => handleEditSave(a.id)}>Enregistrer</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>Annuler</Button>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => handleDelete(a.id)}
-                    className="text-xs text-red-700 underline flex-shrink-0"
-                  >
-                    Supprimer
-                  </button>
-                </div>
+                ) : (
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-medium text-bordeaux">{a.title}</p>
+                      <p className="mt-1 text-sm text-pierre whitespace-pre-wrap">{a.content}</p>
+                      <p className="mt-2 text-[11px] text-pierre">
+                        {new Date(a.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <button onClick={() => { setEditingId(a.id); setEditTitle(a.title); setEditContent(a.content); }} className="text-xs text-olive underline">Modifier</button>
+                      {deleteConfirmId === a.id ? (
+                        <div className="flex gap-2">
+                          <button onClick={() => handleDelete(a.id)} className="text-xs text-red-700 underline">Oui</button>
+                          <button onClick={() => setDeleteConfirmId(null)} className="text-xs text-pierre underline">Non</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setDeleteConfirmId(a.id)} className="text-xs text-red-700 underline">Supprimer</button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -906,7 +947,7 @@ function RapportTab({
                 <th className="px-3 py-2 font-medium text-bordeaux">Classe</th>
                 <th className="px-3 py-2 font-medium text-bordeaux">Soumissions</th>
                 <th className="px-3 py-2 font-medium text-bordeaux">Moyenne</th>
-                <th className="px-3 py-2 font-medium text-bordeaux">Streak</th>
+                <th className="px-3 py-2 font-medium text-bordeaux">Méditation</th>
               </tr>
             </thead>
             <tbody>

@@ -174,7 +174,7 @@ export function BulletinPDF({ studentId, studentName }: BulletinPDFProps) {
         ['Moyenne devoirs', d.avg_submission !== null ? `${d.avg_submission}/20` : '—'],
         ['Moyenne quiz', d.avg_quiz !== null ? `${d.avg_quiz}/20` : '—'],
         ['Taux de presence', `${d.attendance_rate}% (${d.attended_courses}/${d.total_courses})`],
-        ['Streak semaines', d.streak ? `${d.streak.consecutive_weeks}` : '0'],
+        ['Méditation semaines', d.streak ? `${d.streak.consecutive_weeks}` : '0'],
       ]
 
       stats.forEach(([label, value]) => {

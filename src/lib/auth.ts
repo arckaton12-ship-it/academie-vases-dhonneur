@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 import { uploadAvatar } from './avatars'
 
-export type UserRole = 'ETUDIANT' | 'MODERATEUR' | 'ADMINISTRATEUR'
+export type UserRole = 'ETUDIANT' | 'MODERATEUR' | 'ADMINISTRATEUR' | 'ADMIN_CLASSE'
 
 export interface SignUpInput {
   email: string
@@ -80,7 +80,10 @@ export async function signUp(input: SignUpInput) {
 
 export async function signIn(email: string, password: string) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-  if (error) throw error
+  if (error) {
+    console.error('[signIn] Supabase error:', error.message, error.status)
+    throw error
+  }
   return data
 }
 
@@ -90,15 +93,42 @@ export async function signOut() {
 }
 
 export async function getCurrentProfile() {
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) return null
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userData.user.id)
-    .single()
-  if (error) throw error
-  return data
+  try {
+    // First try getUser() which validates the JWT with the server
+    let userId: string | null = null
+    try {
+      const { data: userData } = await supabase.auth.getUser()
+      if (userData.user) {
+        userId = userData.user.id
+      }
+    } catch {
+      // getUser() failed (network issue), try getSession() as fallback
+    }
+
+    // Fallback: read session from localStorage (no network call)
+    if (!userId) {
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (sessionData.session?.user) {
+        userId = sessionData.session.user.id
+      }
+    }
+
+    if (!userId) return null
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
+    if (error) {
+      console.error('[getCurrentProfile] Query error:', error.message)
+      return null
+    }
+    return data
+  } catch (err) {
+    console.error('[getCurrentProfile] Unexpected error:', err)
+    return null
+  }
 }
 
 export interface ProfileUpdateInput {

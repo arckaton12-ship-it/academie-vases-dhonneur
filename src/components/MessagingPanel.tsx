@@ -5,6 +5,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { MessageBubble } from '@/components/MessageBubble'
 import { sendPushNotification } from '@/lib/pushSend'
 import { toast, toastError } from '@/components/ui/Toast'
+import { supabase } from '@/lib/supabase'
 import {
   getConversations,
   getMessages,
@@ -15,6 +16,7 @@ import {
   getAvailableContacts,
   updateMyStatus,
   getUserOnlineStatus,
+  getOrCreateServiceGroupConversation,
   Conversation,
   Message,
   Contact,
@@ -46,6 +48,49 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
   const [replyTo, setReplyTo] = useState<Message | null>(null)
   const [contextMenu, setContextMenu] = useState<{ msg: Message; x: number; y: number } | null>(null)
   const [otherOnline, setOtherOnline] = useState<boolean | null>(null)
+  const [studentProfile, setStudentProfile] = useState<{ class_id: string | null; department: string | null } | null>(null)
+  const [serviceGroupLoading, setServiceGroupLoading] = useState(false)
+
+  // Load student profile for service group
+  useEffect(() => {
+    if (userRole !== 'ETUDIANT') return
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) return
+      supabase.from('profiles').select('class_id, department').eq('id', data.user.id).single().then(({ data: profile }) => {
+        if (profile) setStudentProfile({ class_id: profile.class_id, department: profile.department })
+      })
+    }).catch(() => {})
+  }, [userRole])
+
+  async function openServiceGroup() {
+    if (!studentProfile?.class_id || !studentProfile?.department) {
+      toastError('Ta tribu ou département n\'est pas renseigné. Va dans les paramètres.')
+      return
+    }
+    setServiceGroupLoading(true)
+    try {
+      const convo = await getOrCreateServiceGroupConversation(studentProfile.class_id, studentProfile.department)
+      // Check if already in list
+      const existing = conversations.find((c) => c.id === convo.id)
+      if (!existing) {
+        const dept = studentProfile.department || 'Service'
+        const enriched: Conversation = {
+          ...convo,
+          other_user: { id: 'service-group', first_name: dept, last_name: '(Service)', avatar_url: null },
+          last_message: null,
+          unread_count: 0,
+        }
+        setConversations((prev) => [enriched, ...prev])
+      }
+      setActiveId(convo.id)
+      setMobileShowChat(true)
+    } catch (e: any) {
+      console.error('[Messaging] openServiceGroup:', e)
+      toastError(e?.message || 'Impossible d\'ouvrir le groupe de service.')
+    } finally {
+      setServiceGroupLoading(false)
+    }
+  }
 
   // Load conversations
   useEffect(() => {
@@ -413,6 +458,23 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
           )}
         </div>
 
+        {userRole === 'ETUDIANT' && studentProfile?.department && (
+          <div className="border-b border-pierre/15 px-3 py-2 dark:border-white/10">
+            <button
+              onClick={openServiceGroup}
+              disabled={serviceGroupLoading}
+              className="flex w-full items-center gap-2 rounded-lg bg-or/10 px-3 py-2 text-left text-xs font-medium text-or transition-colors hover:bg-or/20 dark:bg-or/10 dark:hover:bg-or/20 disabled:opacity-50"
+            >
+              {serviceGroupLoading ? (
+                <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              )}
+              Parler à mon Groupe de Service
+            </button>
+          </div>
+        )}
+
         {filteredConvos.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
             <p className="text-xs text-pierre dark:text-slate-500">{conversations.length === 0 ? 'Aucune conversation.' : 'Aucun resultat.'}</p>
@@ -431,13 +493,19 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
                     className={`flex w-full items-center gap-3 px-3 py-3 text-left transition-colors ${activeId === c.id ? 'bg-bordeaux/10 dark:bg-or/10' : 'hover:bg-sable/30 dark:hover:bg-white/5'}`}
                   >
                     <div className="relative">
-                      <Avatar url={c.other_user?.avatar_url} firstName={c.other_user?.first_name} lastName={c.other_user?.last_name} size={36} />
+                      {c.type === 'SERVICE_GROUP' ? (
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-or/15 text-or">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        </div>
+                      ) : (
+                        <Avatar url={c.other_user?.avatar_url} firstName={c.other_user?.first_name} lastName={c.other_user?.last_name} size={36} />
+                      )}
                       {unread && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-or ring-2 ring-white dark:ring-slate-900" />}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between">
                         <p className={`truncate text-xs ${unread ? 'font-bold text-bordeaux dark:text-slate-100' : 'font-medium text-bordeaux dark:text-slate-200'}`}>
-                          {c.other_user?.first_name} {c.other_user?.last_name}
+                          {c.type === 'SERVICE_GROUP' ? `${c.other_user?.first_name} — Groupe` : `${c.other_user?.first_name} ${c.other_user?.last_name}`}
                         </p>
                         {c.last_message && (
                           <span className="ml-2 shrink-0 text-[10px] text-pierre dark:text-slate-500">{formatLastMsgTime(c.last_message.sent_at)}</span>
@@ -476,12 +544,25 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
               <button onClick={() => setMobileShowChat(false)} className="md:hidden text-bordeaux hover:text-bordeaux/80 dark:text-or">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
               </button>
-              <Avatar url={activeConvo?.other_user?.avatar_url} firstName={activeConvo?.other_user?.first_name} lastName={activeConvo?.other_user?.last_name} size={32} />
+              {activeConvo?.type === 'SERVICE_GROUP' ? (
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-or/15 text-or">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+              ) : (
+                <Avatar url={activeConvo?.other_user?.avatar_url} firstName={activeConvo?.other_user?.first_name} lastName={activeConvo?.other_user?.last_name} size={32} />
+              )}
               <div>
                 <p className="text-sm font-semibold text-bordeaux dark:text-slate-100">
-                  {activeConvo?.other_user?.first_name} {activeConvo?.other_user?.last_name}
+                  {activeConvo?.type === 'SERVICE_GROUP'
+                    ? `${activeConvo?.other_user?.first_name} — Groupe`
+                    : `${activeConvo?.other_user?.first_name} ${activeConvo?.other_user?.last_name}`}
                 </p>
-                <p className="text-[10px] text-olive">{otherOnline === true ? 'En ligne' : otherOnline === false ? 'Hors ligne' : ''}</p>
+                {activeConvo?.type !== 'SERVICE_GROUP' && (
+                  <p className="text-[10px] text-olive">{otherOnline === true ? 'En ligne' : otherOnline === false ? 'Hors ligne' : ''}</p>
+                )}
+                {activeConvo?.type === 'SERVICE_GROUP' && (
+                  <p className="text-[10px] text-olive">Discussion de groupe</p>
+                )}
               </div>
             </div>
 

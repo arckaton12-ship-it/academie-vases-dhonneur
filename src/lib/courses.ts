@@ -1004,7 +1004,7 @@ export async function setMeditationGrade(userId: string, grade: number | null) {
 // =====================================================
 // Gestion des modérateurs (admin) : rôle, classes, planning
 // =====================================================
-export async function setModeratorRole(userId: string, role: 'MODERATEUR' | 'ETUDIANT') {
+export async function setModeratorRole(userId: string, role: 'MODERATEUR' | 'ETUDIANT' | 'ADMIN_CLASSE') {
   const { error } = await supabase.from('profiles').update({ role }).eq('id', userId)
   if (error) throw error
 }
@@ -1333,7 +1333,7 @@ export async function adminCreateUser(input: {
   password: string
   firstName: string
   lastName: string
-  role: 'MODERATEUR' | 'ADMINISTRATEUR' | 'ETUDIANT'
+  role: 'MODERATEUR' | 'ADMINISTRATEUR' | 'ETUDIANT' | 'ADMIN_CLASSE'
   phone?: string
   tribe?: string
   department?: string
@@ -1349,6 +1349,17 @@ export async function adminCreateUser(input: {
     p_department: input.department ?? null,
   })
   if (error) throw error
+}
+
+export async function assignAdminClassClass(adminId: string, classId: string): Promise<void> {
+  const { error } = await supabase.from('admin_class_classes').upsert({ admin_id: adminId, class_id: classId }, { onConflict: 'admin_id,class_id' })
+  if (error) throw error
+}
+
+export async function getAdminClassClasses(adminId: string): Promise<string[]> {
+  const { data, error } = await supabase.from('admin_class_classes').select('class_id').eq('admin_id', adminId)
+  if (error) throw error
+  return (data ?? []).map(r => r.class_id)
 }
 
 // ---- Soul Tracking (Fiche de suivi d'âme) ----
@@ -1505,6 +1516,11 @@ export async function createBroadcastAnnouncement(title: string, content: string
 
 export async function deleteAnnouncement(announcementId: string): Promise<void> {
   const { error } = await supabase.from('announcements').delete().eq('id', announcementId)
+  if (error) throw error
+}
+
+export async function updateAnnouncement(announcementId: string, title: string, content: string): Promise<void> {
+  const { error } = await supabase.from('announcements').update({ title: title.trim(), content: content.trim() }).eq('id', announcementId)
   if (error) throw error
 }
 

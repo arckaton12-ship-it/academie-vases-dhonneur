@@ -84,12 +84,22 @@ export default function Landing() {
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (cancelled || !session) return
-        const { data } = await supabase.from('profiles').select('role').eq('id', session.user.id).single()
-        if (cancelled || !data) return
-        const role = data.role as string
-        if (role === 'ADMINISTRATEUR') navigate('/admin/tableau-de-bord', { replace: true })
-        else if (role === 'MODERATEUR') navigate('/moderateur/tableau-de-bord', { replace: true })
-        else navigate('/etudiant/tableau-de-bord', { replace: true })
+        // Check role from JWT user metadata (no DB query needed)
+        const userMeta = session.user.user_metadata || {}
+        const rawRole = userMeta.role as string | undefined
+        if (cancelled) return
+        if (rawRole === 'ADMINISTRATEUR') navigate('/admin/tableau-de-bord', { replace: true })
+        else if (rawRole === 'MODERATEUR' || rawRole === 'ADMIN_CLASSE') navigate('/moderateur/tableau-de-bord', { replace: true })
+        else if (rawRole === 'ETUDIANT') navigate('/etudiant/tableau-de-bord', { replace: true })
+        else {
+          // Role not in JWT metadata — try DB lookup
+          const { data } = await supabase.from('profiles').select('role').eq('id', session.user.id).single()
+          if (cancelled || !data) return
+          const role = data.role as string
+          if (role === 'ADMINISTRATEUR') navigate('/admin/tableau-de-bord', { replace: true })
+          else if (role === 'MODERATEUR' || role === 'ADMIN_CLASSE') navigate('/moderateur/tableau-de-bord', { replace: true })
+          else navigate('/etudiant/tableau-de-bord', { replace: true })
+        }
       } catch {
         // not logged in — stay on landing
       }

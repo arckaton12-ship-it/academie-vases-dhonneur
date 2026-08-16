@@ -2,10 +2,11 @@ import { supabase } from './supabase'
 
 export interface Conversation {
   id: string
-  type: 'DIRECT' | 'MODERATEUR_ETUDIANT' | 'MODERATEUR_MODERATEUR'
+  type: 'DIRECT' | 'MODERATEUR_ETUDIANT' | 'MODERATEUR_MODERATEUR' | 'SERVICE_GROUP'
   participant_1: string
   participant_2: string
   created_at: string
+  service_group_key?: string | null
   other_user?: { id: string; first_name: string; last_name: string; avatar_url: string | null } | null
   last_message?: { content: string; sent_at: string; sender_id: string } | null
   unread_count?: number
@@ -52,12 +53,21 @@ export async function getConversations(): Promise<Conversation[]> {
 
   const enriched = await Promise.all(
     convos.map(async (c) => {
-      const otherId = c.participant_1 === userId ? c.participant_2 : c.participant_1
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, avatar_url')
-        .eq('id', otherId)
-        .single()
+      let other_user: Conversation['other_user'] = null
+
+      if (c.type === 'SERVICE_GROUP' && c.service_group_key) {
+        // For service group conversations, show department name
+        const dept = c.service_group_key.split(':')[1] || 'Groupe'
+        other_user = { id: 'service-group', first_name: dept, last_name: '(Service)', avatar_url: null }
+      } else {
+        const otherId = c.participant_1 === userId ? c.participant_2 : c.participant_1
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, avatar_url')
+          .eq('id', otherId)
+          .single()
+        other_user = profile ?? null
+      }
 
       const { data: lastMsg } = await supabase
         .from('messages')
@@ -76,7 +86,7 @@ export async function getConversations(): Promise<Conversation[]> {
 
       return {
         ...c,
-        other_user: profile ?? null,
+        other_user,
         last_message: lastMsg ?? null,
         unread_count: count ?? 0,
       }
@@ -175,6 +185,41 @@ export async function createConversation(
   return data as Conversation
 }
 
+export async function getOrCreateServiceGroupConversation(classId: string, department: string): Promise<Conversation> {
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData.user) throw new Error('Non authentifié')
+  const groupKey = `${classId}:${department}`
+  const { data: existing } = await supabase
+    .from('conversations')
+    .select('*')
+    .eq('service_group_key', groupKey)
+    .eq('type', 'SERVICE_GROUP')
+    .maybeSingle()
+  if (existing) return existing as Conversation
+  const { data, error } = await supabase
+    .from('conversations')
+    .insert({
+      type: 'SERVICE_GROUP',
+      participant_1: userData.user.id,
+      participant_2: userData.user.id,
+      service_group_key: groupKey,
+    })
+    .select()
+    .single()
+  if (error) throw error
+  return data as Conversation
+}
+
+export async function getServiceGroupMembers(classId: string, department: string): Promise<Contact[]> {
+  const { data } = await supabase
+    .from('profiles')
+    .select('id, first_name, last_name, avatar_url, role')
+    .eq('class_id', classId)
+    .eq('department', department)
+    .eq('active', true)
+  return (data ?? []) as Contact[]
+}
+
 export function subscribeToMessages(
   conversationId: string,
   callback: (msg: Message) => void
@@ -245,6 +290,22 @@ export async function getAvailableContacts(): Promise<Contact[]> {
       .from('moderator_classes')
       .select('class_id')
       .eq('moderator_id', userId)
+    const classIds = (myClasses ?? []).map((r: any) => r.class_id)
+    if (classIds.length === 0) return []
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, avatar_url, role')
+      .in('class_id', classIds)
+      .eq('role', 'ETUDIANT')
+      .eq('active', true)
+    return (data ?? []) as Contact[]
+  }
+
+  if (me.role === 'ADMIN_CLASSE') {
+    const { data: myClasses } = await supabase
+      .from('admin_class_classes')
+      .select('class_id')
+      .eq('admin_id', userId)
     const classIds = (myClasses ?? []).map((r: any) => r.class_id)
     if (classIds.length === 0) return []
     const { data } = await supabase

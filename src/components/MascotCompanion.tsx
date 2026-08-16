@@ -19,14 +19,14 @@ const MESSAGES: Record<MascotMood, string[]> = {
     "Tu es exactly là où Dieu veut que tu sois.",
   ],
   proud: [
-    "Bien joué, tu as tenu ta série !",
+    "Bien joué, tu as tenu ta méditation !",
     "Félicitations, c'est bien mérité !",
     "Ta fidélité porte ses fruits.",
     "Le Seigneur voit ton engagement.",
     "Bravo, tu avances avec force !",
   ],
   attentive: [
-    "Ta série t'attend — le cours est là quand tu es prêt.",
+    "Ta méditation t'attend — le cours est là quand tu es prêt.",
     "Pas de pression, mais ta place te manque.",
     "Un petit pas aujourd'hui fait un grand chemin demain.",
     "Ta flamme brille encore, nourris-la !",

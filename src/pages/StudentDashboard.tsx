@@ -459,7 +459,7 @@ export default function StudentDashboard() {
       await refreshBadgeProgress(profile.id)
       setMessage(
         result.newlyMarked
-          ? 'Présence marquée. Ta série continue.'
+          ?       'Présence marquée. Ta méditation continue.'
           : 'Tu avais déjà marqué ta présence pour ce cours.'
       )
       if (result.newlyMarked) toast('Présence enregistrée.')

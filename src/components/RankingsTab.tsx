@@ -137,7 +137,7 @@ export function RankingsTab({ currentUserId }: { currentUserId: string }) {
             <div>
               <p className="text-sm font-bold text-bordeaux dark:text-slate-100">Ton rang</p>
               <p className="text-xs text-pierre dark:text-slate-400">
-                {myRank.badge_count} badge{myRank.badge_count > 1 ? 's' : ''} · {myRank.streak} sem. streak
+                {myRank.badge_count} badge{myRank.badge_count > 1 ? 's' : ''} · {myRank.streak} sem. méditation
               </p>
             </div>
           </div>
