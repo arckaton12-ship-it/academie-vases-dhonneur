@@ -66,7 +66,15 @@ export default function App() {
             }
           />
 
-          <Route path="*" element={<Landing />} />
+          <Route path="*" element={
+            <div className="flex min-h-screen items-center justify-center px-4">
+              <div className="text-center">
+                <h1 className="font-display text-4xl text-bordeaux">404</h1>
+                <p className="mt-2 text-sm text-pierre">Page introuvable.</p>
+                <a href="/" className="mt-4 inline-block text-sm font-medium text-bordeaux underline">Retour à l'accueil</a>
+              </div>
+            </div>
+          } />
         </Routes>
         </BrowserRouter>
         <PWAInstall />

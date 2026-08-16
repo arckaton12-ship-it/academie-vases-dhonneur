@@ -21,6 +21,12 @@ export async function sendPushNotification({ userId, title, body, tag, url }: Se
   }
 }
 
+const ROLE_MAP: Record<string, string> = {
+  student: 'ETUDIANT',
+  moderator: 'MODERATEUR',
+  admin: 'ADMINISTRATEUR',
+}
+
 export async function sendPushToRole(
   role: 'student' | 'moderator' | 'admin',
   title: string,
@@ -29,10 +35,11 @@ export async function sendPushToRole(
   url?: string
 ): Promise<void> {
   try {
+    const dbRole = ROLE_MAP[role] ?? role
     const { data: profiles } = await supabase
       .from('profiles')
       .select('id')
-      .eq('role', role)
+      .eq('role', dbRole)
 
     if (!profiles) return
 

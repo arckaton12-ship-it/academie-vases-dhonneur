@@ -42,6 +42,12 @@ export async function getConversations(): Promise<Conversation[]> {
   if (!userData.user) return []
   const userId = userData.user.id
 
+  const { data: me } = await supabase
+    .from('profiles')
+    .select('class_id, department')
+    .eq('id', userId)
+    .maybeSingle()
+
   const { data, error } = await supabase
     .from('conversations')
     .select('*')
@@ -49,7 +55,20 @@ export async function getConversations(): Promise<Conversation[]> {
     .order('created_at', { ascending: false })
   if (error) throw error
 
-  const convos = (data ?? []) as Conversation[]
+  let convos = (data ?? []) as Conversation[]
+
+  if (me?.class_id && me?.department) {
+    const groupKey = `${me.class_id}:${me.department}`
+    const { data: serviceConvos } = await supabase
+      .from('conversations')
+      .select('*')
+      .eq('type', 'SERVICE_GROUP')
+      .eq('service_group_key', groupKey)
+    const existingIds = new Set(convos.map(c => c.id))
+    for (const sc of serviceConvos ?? []) {
+      if (!existingIds.has(sc.id)) convos.push(sc as Conversation)
+    }
+  }
 
   const enriched = await Promise.all(
     convos.map(async (c) => {

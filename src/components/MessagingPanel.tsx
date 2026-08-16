@@ -44,7 +44,6 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [searchContact, setSearchContact] = useState('')
   const [searchConvos, setSearchConvos] = useState('')
-  const [isTyping, setIsTyping] = useState(false)
   const [replyTo, setReplyTo] = useState<Message | null>(null)
   const [contextMenu, setContextMenu] = useState<{ msg: Message; x: number; y: number } | null>(null)
   const [otherOnline, setOtherOnline] = useState<boolean | null>(null)
@@ -247,7 +246,6 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
     if (!text || !activeId || sending) return
 
     setSending(true)
-    setIsTyping(true)
 
     // Optimistic: add message immediately with status 'sending'
     const clientId = `cid_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
@@ -302,7 +300,6 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
       toastError(e?.message || 'Echec de l\'envoi.')
     } finally {
       setSending(false)
-      setIsTyping(false)
     }
   }
 
@@ -605,18 +602,6 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
                   </div>
                 )
               })}
-
-              {isTyping && (
-                <div className="flex justify-start mt-2">
-                  <div className="rounded-2xl rounded-bl-md bg-sable/50 px-4 py-2.5 dark:bg-white/10">
-                    <div className="flex gap-1">
-                      <span className="typing-dot h-1.5 w-1.5 rounded-full bg-pierre/40" />
-                      <span className="typing-dot h-1.5 w-1.5 rounded-full bg-pierre/40" />
-                      <span className="typing-dot h-1.5 w-1.5 rounded-full bg-pierre/40" />
-                    </div>
-                  </div>
-                </div>
-              )}
 
               <div ref={messagesEnd} />
             </div>

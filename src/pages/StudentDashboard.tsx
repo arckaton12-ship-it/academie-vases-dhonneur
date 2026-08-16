@@ -646,15 +646,17 @@ export default function StudentDashboard() {
       setNotesMsg('Ajoute au moins une photo de tes notes manuscrites.')
       return
     }
+    for (const file of notesFiles) {
+      if (!isNoteImageFile(file)) {
+        setNotesMsg('Fichier non autorisé : image ou PDF de 10 Mo maximum.')
+        return
+      }
+    }
     setNotesSubmitting(true)
     setNotesMsg(null)
     try {
       const urls: string[] = []
       for (const file of notesFiles) {
-        if (!isNoteImageFile(file)) {
-          setNotesMsg('Fichier non autorisé : image ou PDF de 10 Mo maximum.')
-          return
-        }
         urls.push(await uploadNoteFile(file, profile.id))
       }
       await submitNotes({

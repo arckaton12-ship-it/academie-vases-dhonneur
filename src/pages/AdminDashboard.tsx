@@ -1010,12 +1010,98 @@ export default function AdminDashboard() {
       )}
 
       {section === 'export' && (
-        <ExportSection
-          students={students}
-          classes={classes}
-          submissions={submissions}
-          streaks={streaks}
-        />
+        <Card>
+          <CardTitle>Export des données</CardTitle>
+          <CardDescription className="mt-1 mb-3">
+            Exports à la demande : CSV de suivi et bulletins PDF individuels par étudiant.
+          </CardDescription>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => exportToCSV('suivi-par-classe.csv', classHeaders, classRows())}>
+              Suivi par classe → CSV
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() =>
+                exportToPDF(
+                  'suivi-par-classe.pdf',
+                  'Suivi par classe — Académie Vases d\'Honneur',
+                  'Effectifs et cours publiés par classe',
+                  classHeaders,
+                  classRows()
+                )
+              }
+            >
+              Suivi par classe → PDF
+            </Button>
+            <Button variant="outline" onClick={() => exportToCSV('liste-etudiants.csv', studentHeaders, studentRows())}>
+              Étudiants → CSV
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() =>
+                exportToPDF(
+                  'liste-etudiants.pdf',
+                  'Liste des étudiants',
+                  'Répertoire des étudiants inscrits',
+                  studentHeaders,
+                  studentRows()
+                )
+              }
+            >
+              Étudiants → PDF
+            </Button>
+          </div>
+
+          <div className="mt-6 rounded-md border border-sable/60 p-4">
+            <p className="mb-3 text-sm font-medium text-bordeaux">
+              Notes, présence et méditation par classe
+            </p>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="w-64">
+                <Label htmlFor="export-class">Classe</Label>
+                <select
+                  id="export-class"
+                  value={exportClassId}
+                  onChange={(e) => setExportClassId(e.target.value)}
+                  className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
+                >
+                  <option value="">Toutes les classes</option>
+                  {classes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => exportToCSV('notes-et-presence.csv', gradeHeaders, gradeRows())}
+              >
+                Notes & présence → CSV
+              </Button>
+            </div>
+          </div>
+          <div className="mt-6 border-t border-sable/60 pt-4">
+            <p className="mb-3 text-sm font-medium text-bordeaux">Bulletins individuels</p>
+            <ul className="space-y-2 text-sm">
+              {students.map((s) => (
+                <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-pierre/15 px-3 py-2">
+                  <span className="text-pierre">
+                    {s.last_name} {s.first_name} — {s.class?.name ?? 'Sans classe'}
+                  </span>
+                  <Button
+                    variant="outline"
+                    className="!px-3 !py-1 text-xs"
+                    onClick={() => downloadBulletin(s)}
+                  >
+                    Bulletin PDF
+                  </Button>
+                </li>
+              ))}
+              {students.length === 0 && <p className="text-pierre">Aucun étudiant.</p>}
+            </ul>
+          </div>
+        </Card>
       )}
 
       {section === 'parametres' && (
@@ -1610,56 +1696,7 @@ export default function AdminDashboard() {
       )}
 
       {section === 'admin_classe' && (
-        <div className="space-y-4">
-          <Card>
-            <CardTitle>Administrateurs de Classe</CardTitle>
-            <CardDescription className="mt-1 mb-3">
-              Gère les administrateurs de classe — chacun gère les étudiants d'une classe spécifique.
-            </CardDescription>
-            {(() => {
-              const adminClasses = students.filter(s => s.role === 'ADMIN_CLASSE')
-              if (adminClasses.length === 0) {
-                return <p className="text-sm text-pierre">Aucun administrateur de classe créé. Utilise l'onglet "Créer un compte" ci-dessus.</p>
-              }
-              return (
-                <ul className="space-y-3">
-                  {adminClasses.map(ac => (
-                    <li key={ac.id} className="rounded-card border border-pierre/15 p-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="font-medium text-bordeaux">{ac.first_name} {ac.last_name}</p>
-                          <p className="text-xs text-pierre">{ac.email}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          {classes.filter(c => c.level <= 3).map(c => (
-                            <button
-                              key={c.id}
-                              onClick={async () => {
-                                const current = await getAdminClassClasses(ac.id)
-                                const next = current.includes(c.id)
-                                  ? current.filter((id: string) => id !== c.id)
-                                  : [...current, c.id]
-                                try {
-                                  await assignAdminClassClass(ac.id, c.id)
-                                  toast('Classe assignée.')
-                                } catch {
-                                  toastError('Erreur.')
-                                }
-                              }}
-                              className="rounded-md border border-pierre/30 px-2 py-1 text-xs text-bordeaux hover:bg-or/10"
-                            >
-                              {c.name.split(' : ')[0]}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )
-            })()}
-          </Card>
-        </div>
+        <AdminClasseSection classes={classes} />
       )}
 
       {section === 'versets' && (
@@ -1814,101 +1851,6 @@ export default function AdminDashboard() {
 
       {section === 'demandes' && (
         <AdminClassRequestsTab classes={classes} />
-      )}
-
-      {section === 'export' && (
-        <Card>
-          <CardTitle>Export des données</CardTitle>
-          <CardDescription className="mt-1 mb-3">
-            Exports à la demande : CSV de suivi et bulletins PDF individuels par étudiant.
-          </CardDescription>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => exportToCSV('suivi-par-classe.csv', classHeaders, classRows())}>
-              Suivi par classe → CSV
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() =>
-                exportToPDF(
-                  'suivi-par-classe.pdf',
-                  'Suivi par classe — Académie Vases d\'Honneur',
-                  'Effectifs et cours publiés par classe',
-                  classHeaders,
-                  classRows()
-                )
-              }
-            >
-              Suivi par classe → PDF
-            </Button>
-            <Button variant="outline" onClick={() => exportToCSV('liste-etudiants.csv', studentHeaders, studentRows())}>
-              Étudiants → CSV
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() =>
-                exportToPDF(
-                  'liste-etudiants.pdf',
-                  'Liste des étudiants',
-                  'Répertoire des étudiants inscrits',
-                  studentHeaders,
-                  studentRows()
-                )
-              }
-            >
-              Étudiants → PDF
-            </Button>
-          </div>
-
-          <div className="mt-6 rounded-md border border-sable/60 p-4">
-            <p className="mb-3 text-sm font-medium text-bordeaux">
-              Notes, présence et méditation par classe
-            </p>
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="w-64">
-                <Label htmlFor="export-class">Classe</Label>
-                <select
-                  id="export-class"
-                  value={exportClassId}
-                  onChange={(e) => setExportClassId(e.target.value)}
-                  className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
-                >
-                  <option value="">Toutes les classes</option>
-                  {classes.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <Button
-                variant="outline"
-                onClick={() => exportToCSV('notes-et-presence.csv', gradeHeaders, gradeRows())}
-              >
-                Notes & présence → CSV
-              </Button>
-            </div>
-          </div>
-          <div className="mt-6 border-t border-sable/60 pt-4">
-            <p className="mb-3 text-sm font-medium text-bordeaux">Bulletins individuels</p>
-            <ul className="space-y-2 text-sm">
-              {students.map((s) => (
-                <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-pierre/15 px-3 py-2">
-                  <span className="text-pierre">
-                    {s.last_name} {s.first_name} — {s.class?.name ?? 'Sans classe'}
-                  </span>
-                  <Button
-                    variant="outline"
-                    className="!px-3 !py-1 text-xs"
-                    onClick={() => downloadBulletin(s)}
-                  >
-                    Bulletin PDF
-                  </Button>
-                </li>
-              ))}
-              {students.length === 0 && <p className="text-pierre">Aucun étudiant.</p>}
-            </ul>
-          </div>
-        </Card>
       )}
 
       </div>
@@ -2600,26 +2542,68 @@ function AdminAnnoncesTab({ classes, allCourses }: { classes: ClassRow[]; allCou
   )
 }
 
-// ============ Export Section ============
+function AdminClasseSection({ classes }: { classes: ClassRow[] }) {
+  const [admins, setAdmins] = useState<{ id: string; first_name: string; last_name: string; email: string }[]>([])
+  const [loading, setLoading] = useState(true)
 
-function ExportSection({
-  students,
-  classes,
-  submissions,
-  streaks,
-}: {
-  students: StudentProfile[]
-  classes: ClassRow[]
-  submissions: Submission[]
-  streaks: Streak[]
-}) {
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, email')
+          .eq('role', 'ADMIN_CLASSE')
+        setAdmins((data ?? []) as { id: string; first_name: string; last_name: string; email: string }[])
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [])
+
   return (
-    <Card>
-      <CardTitle>Export</CardTitle>
-      <CardDescription className="mt-1 mb-3">
-        Exportation des données.
-      </CardDescription>
-      <p className="text-sm text-pierre">Section Export intégrée.</p>
-    </Card>
+    <div className="space-y-4">
+      <Card>
+        <CardTitle>Administrateurs de Classe</CardTitle>
+        <CardDescription className="mt-1 mb-3">
+          Gère les administrateurs de classe — chacun gère les étudiants d'une classe spécifique.
+        </CardDescription>
+        {loading ? (
+          <p className="text-sm text-pierre">Chargement…</p>
+        ) : admins.length === 0 ? (
+          <p className="text-sm text-pierre">Aucun administrateur de classe créé. Utilise l'onglet "Modérateurs" pour en créer un avec le rôle "Administrateur de Classe".</p>
+        ) : (
+          <ul className="space-y-3">
+            {admins.map(ac => (
+              <li key={ac.id} className="rounded-card border border-pierre/15 p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-medium text-bordeaux">{ac.first_name} {ac.last_name}</p>
+                    <p className="text-xs text-pierre">{ac.email}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    {classes.filter(c => c.level <= 3).map(c => (
+                      <button
+                        key={c.id}
+                        onClick={async () => {
+                          try {
+                            await assignAdminClassClass(ac.id, c.id)
+                            toast('Classe assignée.')
+                          } catch {
+                            toastError('Erreur.')
+                          }
+                        }}
+                        className="rounded-md border border-pierre/30 px-2 py-1 text-xs text-bordeaux hover:bg-or/10"
+                      >
+                        {c.name.split(' : ')[0]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+    </div>
   )
 }

@@ -37,6 +37,10 @@ export function BulletinPDF({ studentId, studentName }: BulletinPDFProps) {
     try {
       const { data, error } = await supabase.rpc('get_student_bulletin', { p_student_id: studentId })
       if (error) throw error
+      if (!data) {
+        alert('Les données du bulletin ne sont pas disponibles pour cet étudiant.')
+        return
+      }
 
       const d = data as BulletinData
       const { jsPDF } = await import('jspdf')

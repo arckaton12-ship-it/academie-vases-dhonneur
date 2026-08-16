@@ -264,7 +264,7 @@ export default function ModeratorDashboard() {
       )}
       {tab === 'rapport' && (
         <RapportTab
-          students={students}
+          students={ownClassIds.length > 0 ? students.filter(s => ownClassIds.includes(s.class_id ?? '')) : students}
           submissions={submissions}
           streaks={streaks}
           classById={classById}
@@ -282,7 +282,7 @@ export default function ModeratorDashboard() {
         </div>
       )}
       {tab === 'binomage' && (
-        <BinomageTab students={students} classes={classes} classById={classById} onAdvanced={() => loadAll()} />
+        <BinomageTab students={ownClassIds.length > 0 ? students.filter(s => ownClassIds.includes(s.class_id ?? '')) : students} classes={classes} classById={classById} onAdvanced={() => loadAll()} />
       )}
       {tab === 'parametres' && (
         <ModeratorSettingsTab
