@@ -1707,3 +1707,71 @@ export async function getAllBilansForWeek(weekNumber: number): Promise<(WeeklyBi
   if (error) throw error
   return (data ?? []) as any
 }
+
+const SATURDAY_REMINDER_TITLE_RESUME = '📋 Rappel — Résumé du cours'
+const SATURDAY_REMINDER_TITLE_COURS = '⛪ Rappel — Cours de demain'
+
+const SATURDAY_REMINDER_CONTENT_RESUME =
+  "Ton résumé du cours de la semaine est attendu aujourd'hui au plus tard à 22H59.\nTu peux l'envoyer à l'adresse E-mail suivante : vhassembleeeauxpaisibles@gmail.com\nOu directement dans l'application (onglet Cours → Résumé).\n\nL'administration."
+const SATURDAY_REMINDER_CONTENT_COURS =
+  "Ton prochain cours de l'académie c'est demain à 11h en présentiel à l'église.\nBien vouloir te munir de :\n• Ton cahier de méditation\n• Ton résumé imprimé\nà remettre aux admins de ta classe avant le début du cours.\n\nL'administration."
+
+export async function sendSaturdayReminders(): Promise<{ sent: boolean; count: number }> {
+  const now = new Date()
+  const dayOfWeek = now.getUTCDay()
+  if (dayOfWeek !== 6) return { sent: false, count: 0 }
+
+  const todayStr = now.toISOString().slice(0, 10)
+
+  const { data: existing } = await supabase
+    .from('announcements')
+    .select('id')
+    .eq('title', SATURDAY_REMINDER_TITLE_RESUME)
+    .gte('created_at', `${todayStr}T00:00:00Z`)
+    .lte('created_at', `${todayStr}T23:59:59Z`)
+    .limit(1)
+
+  if (existing && existing.length > 0) return { sent: false, count: 0 }
+
+  const { data: classes } = await supabase.from('classes').select('id')
+  if (!classes || classes.length === 0) return { sent: false, count: 0 }
+
+  const { data: userData } = await supabase.auth.getUser()
+  const modId = userData.user?.id
+  if (!modId) return { sent: false, count: 0 }
+
+  const rows = []
+  for (const c of classes) {
+    rows.push(
+      { moderator_id: modId, class_id: c.id, title: SATURDAY_REMINDER_TITLE_RESUME, content: SATURDAY_REMINDER_CONTENT_RESUME },
+      { moderator_id: modId, class_id: c.id, title: SATURDAY_REMINDER_TITLE_COURS, content: SATURDAY_REMINDER_CONTENT_COURS }
+    )
+  }
+
+  const { error } = await supabase.from('announcements').insert(rows)
+  if (error) throw error
+
+  try {
+    const { data: students } = await supabase
+      .from('profiles')
+      .select('id, first_name')
+      .eq('role', 'ETUDIANT')
+
+    if (students) {
+      for (const s of students) {
+        const greeting = s.first_name ? `${s.first_name}, ` : ''
+        sendPushNotification({
+          userId: s.id,
+          title: SATURDAY_REMINDER_TITLE_RESUME,
+          body: `Bonjour ${greeting}ton résumé du cours est attendu aujourd'hui à 22H59.`,
+          tag: 'saturday-resume',
+          url: '/etudiant/tableau-de-bord',
+        }).catch(() => {})
+      }
+    }
+  } catch {
+    // push is best-effort
+  }
+
+  return { sent: true, count: classes.length }
+}

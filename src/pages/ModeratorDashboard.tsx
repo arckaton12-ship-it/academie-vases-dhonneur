@@ -15,6 +15,7 @@ import { ModeratorSettingsTab } from '@/components/ModeratorSettingsTab'
 import { playSuccess } from '@/lib/sound'
 import { supabase } from '@/lib/supabase'
 import { sendPushToRole } from '@/lib/pushSend'
+import { sendSaturdayReminders } from '@/lib/courses'
 import {
   advanceStudent,
   getClasses,
@@ -162,6 +163,7 @@ export default function ModeratorDashboard() {
     loadAll().catch((err) =>
       setPageError(err instanceof Error ? err.message : 'Erreur de chargement des données.')
     )
+    sendSaturdayReminders().catch(() => {})
   }, [loadAll, loadScope])
 
   const classById = useMemo(
@@ -626,6 +628,9 @@ function AnnoncesTab({
               className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
             />
           </div>
+          <p className="mt-1 mb-3 text-xs text-pierre/70 italic">
+            Les étudiants verront "Bonjour [prénom]," en début de message (personnalisé automatiquement).
+          </p>
           <Button type="submit" disabled={saving}>
             {saving ? 'Publication…' : 'Publier l\u2019annonce'}
           </Button>

@@ -111,7 +111,7 @@ interface ServiceDraft {
   focus: string
 }
 
-function AnnoncesEtudiantTab({ classId }: { classId: string | null }) {
+function AnnoncesEtudiantTab({ classId, studentFirstName }: { classId: string | null; studentFirstName: string | null }) {
   const [annonces, setAnnonces] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -141,7 +141,7 @@ function AnnoncesEtudiantTab({ classId }: { classId: string | null }) {
             {annonces.map((a) => (
               <li key={a.id} className="rounded-card border border-pierre/15 p-4">
                 <p className="font-medium text-bordeaux">{a.title}</p>
-                <p className="mt-1 text-sm text-pierre whitespace-pre-wrap">{a.content}</p>
+                <p className="mt-1 text-sm text-pierre whitespace-pre-wrap">{studentFirstName ? `Bonjour ${studentFirstName},\n\n` : ''}{a.content}</p>
                 <p className="mt-2 text-[11px] text-pierre">
                   {a.moderator?.first_name} {a.moderator?.last_name} —{' '}
                   {new Date(a.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -558,14 +558,11 @@ export default function StudentDashboard() {
       })
       setProfileDone('Informations enregistrées.')
       toast('Profil enregistré.')
-      const p = await loadProfile()
-      if (p) {
-        setFormName(p.last_name ?? '')
-        setFormFirst(p.first_name ?? '')
-        setFormPhone(p.phone ?? '')
-        setFormTribe(p.tribe ?? '')
-        setFormDept(p.department ?? '')
-      }
+      setFormName('')
+      setFormFirst('')
+      setFormPhone('')
+      setFormTribe('')
+      setFormDept('')
     } catch (err) {
       setProfileError(err instanceof Error ? err.message : 'Erreur à l\u2019enregistrement.')
       toastError('Erreur.')
@@ -1247,7 +1244,7 @@ export default function StudentDashboard() {
       )}
 
       {tab === 'annonces' && (
-        <AnnoncesEtudiantTab classId={profile?.class_id ?? null} />
+        <AnnoncesEtudiantTab classId={profile?.class_id ?? null} studentFirstName={profile?.first_name ?? null} />
       )}
 
       {tab === 'devoirs' && (

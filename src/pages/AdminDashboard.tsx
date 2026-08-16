@@ -13,6 +13,7 @@ import { sendPushNotification, sendPushToRole } from '@/lib/pushSend'
 import { playSuccess } from '@/lib/sound'
 import { generateSecurePassword } from '@/lib/rateLimit'
 import { SectionWatermark } from '@/components/SectionWatermark'
+import { sendSaturdayReminders } from '@/lib/courses'
 import { VerseReference } from '@/components/VerseReference'
 import { DayAccentBand } from '@/components/DayAccentBand'
 import {
@@ -238,6 +239,7 @@ export default function AdminDashboard() {
       .catch((err) => setError(err instanceof Error ? err.message : 'Erreur de chargement.'))
       .finally(() => setLoading(false))
     loadModerators().catch(() => undefined)
+    sendSaturdayReminders().catch(() => {})
   }, [])
 
   // Realtime refresh: when profiles table changes, reload students
@@ -2525,6 +2527,9 @@ function AdminAnnoncesTab({ classes, allCourses }: { classes: ClassRow[]; allCou
               required
             />
           </div>
+          <p className="mt-1 mb-3 text-xs text-pierre/70 italic">
+            Les étudiants verront "Bonjour [prénom]," en début de message (personnalisé automatiquement).
+          </p>
           <Button type="submit" disabled={saving}>
             {saving ? 'Publication...' : 'Publier l\'annonce'}
           </Button>
