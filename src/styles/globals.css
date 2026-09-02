@@ -58,8 +58,8 @@ h1, h2, h3, h4 {
 @layer components {
   .glass {
     background: var(--glass-bg);
-    backdrop-filter: blur(16px) saturate(1.4);
-    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    backdrop-filter: blur(16px) saturate(1.15);
+    -webkit-backdrop-filter: blur(16px) saturate(1.15);
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
   }
@@ -329,6 +329,13 @@ h1, h2, h3, h4 {
   .glass-card {
     padding: 16px !important;
   }
+
+  /* Sidebar: better touch targets on mobile */
+  .sidebar-item {
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+    font-size: 0.9rem !important;
+  }
 }
 
 /* Tablet (768px–1024px) */
@@ -520,3 +527,42 @@ h1, h2, h3, h4 {
 .float-drift { animation: floatDrift 4s ease-in-out infinite; }
 .corner-enter { animation: cornerEnter 0.3s ease-out both; }
 .corner-exit { animation: cornerExit 0.3s ease-in both; }
+
+/* Streak flame animations */
+@keyframes flicker1 {
+  0%, 100% { transform: scaleY(1) scaleX(1); }
+  25% { transform: scaleY(1.04) scaleX(0.97); }
+  50% { transform: scaleY(0.96) scaleX(1.03); }
+  75% { transform: scaleY(1.02) scaleX(0.98); }
+}
+@keyframes flicker2 {
+  0%, 100% { transform: scaleY(1) scaleX(1) translateX(0); }
+  33% { transform: scaleY(1.06) scaleX(0.95) translateX(-0.5px); }
+  66% { transform: scaleY(0.94) scaleX(1.04) translateX(0.5px); }
+}
+@keyframes flicker3 {
+  0%, 100% { transform: scaleY(1) scaleX(1) translateX(0); }
+  20% { transform: scaleY(1.08) scaleX(0.93) translateX(-1px); }
+  40% { transform: scaleY(0.93) scaleX(1.06) translateX(1px); }
+  60% { transform: scaleY(1.05) scaleX(0.96) translateX(-0.5px); }
+  80% { transform: scaleY(0.97) scaleX(1.03) translateX(0.5px); }
+}
+.streak-flame--1 .streak-flame-outer,
+.streak-flame--1 .streak-flame-mid,
+.streak-flame--1 .streak-flame-inner { transform-origin: bottom center; animation: flicker1 2s ease-in-out infinite; }
+.streak-flame--2 .streak-flame-outer,
+.streak-flame--2 .streak-flame-mid,
+.streak-flame--2 .streak-flame-inner { transform-origin: bottom center; animation: flicker2 1.5s ease-in-out infinite; }
+.streak-flame--3 .streak-flame-outer { transform-origin: bottom center; animation: flicker3 1.2s ease-in-out infinite; }
+.streak-flame--3 .streak-flame-mid { transform-origin: bottom center; animation: flicker2 1.0s ease-in-out infinite 0.1s; }
+.streak-flame--3 .streak-flame-inner { transform-origin: bottom center; animation: flicker1 0.8s ease-in-out infinite 0.2s; }
+
+@keyframes xpFloat {
+  0% { opacity: 0; transform: translateY(8px) scale(0.8); }
+  20% { opacity: 1; transform: translateY(0) scale(1); }
+  80% { opacity: 1; transform: translateY(-12px) scale(1.05); }
+  100% { opacity: 0; transform: translateY(-24px) scale(0.9); }
+}
+.xp-float {
+  animation: xpFloat 2s ease-out forwards;
+}

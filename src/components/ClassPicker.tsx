@@ -47,7 +47,7 @@ export function ClassPicker({ userId, onPicked }: ClassPickerProps) {
       setRequestStatus('pending')
       setRequestMsg(result.msg)
       toast(result.msg)
-      sendPushToRole('admin', 'Nouvelle demande de classe', `Un étudiant demande l'accès à la classe "${selected}"`, 'class_request').catch(() => {})
+      sendPushToRole('ADMINISTRATEUR', 'Nouvelle demande de classe', `Un étudiant demande l'accès à la classe "${selected}"`, 'class_request').catch(() => {})
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Erreur')
     } finally {

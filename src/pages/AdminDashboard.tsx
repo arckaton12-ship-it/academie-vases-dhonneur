@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardTitle, CardDescription } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -43,6 +43,7 @@ import {
   addVerse,
   removeVerse,
   toggleVerseActive,
+  setVerseDay,
   ClassRow,
   Course,
   StudentProfile,
@@ -59,6 +60,7 @@ import {
   updateCourse,
   deleteCourse,
   uploadCourseFile,
+  uploadCourseAudio,
   uploadSupportFile,
   getMiniTask,
   saveMiniTask,
@@ -70,20 +72,28 @@ import {
   gradeResume,
   ResumeForGrading,
   assignAdminClassClass,
+  removeAdminClassClass,
   getAdminClassClasses,
+  getAnnouncements,
+  createAnnouncement,
+  createBroadcastAnnouncement,
+  updateAnnouncement,
+  deleteAnnouncement,
+  deleteStudent,
+  Announcement,
 } from '@/lib/courses'
 import { getCurrentProfile, signOut } from '@/lib/auth'
 import { exportToCSV, exportToPDF, exportStudentBulletinPDF, ExportRow } from '@/lib/export'
 import { FieldError } from '@/components/ui/Input'
 import { MessagingPanel } from '@/components/MessagingPanel'
 import { QuizTab } from '@/components/QuizTab'
-import { getAnnouncements, createAnnouncement, createBroadcastAnnouncement, updateAnnouncement, deleteAnnouncement, Announcement, deleteStudent } from '@/lib/courses'
-import { sendBroadcastMessage } from '@/lib/messaging'
-import { createConversation } from '@/lib/messaging'
+import { sendBroadcastMessage, createConversation } from '@/lib/messaging'
 
-type Section = 'vue' | 'gestion' | 'cours_quiz' | 'notes' | 'messagerie' | 'annonces' | 'export' | 'parametres' | 'cours' | 'classes' | 'etudiants' | 'moderateurs' | 'versets' | 'notation' | 'quiz' | 'demandes' | 'admin_classe'
+type Section = 'vue' | 'gestion' | 'cours_quiz' | 'notes' | 'messagerie' | 'annonces' | 'export' | 'parametres' | 'cours' | 'classes' | 'etudiants' | 'moderateurs' | 'meditation' | 'notation' | 'quiz' | 'demandes' | 'admin_classe'
 
 const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
+
+let saturdayRemindersSent = false
 
 const sectionIcons: Record<string, React.ReactNode> = {
   vue: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
@@ -100,7 +110,7 @@ const sectionIcons: Record<string, React.ReactNode> = {
   etudiants: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>,
   moderateurs: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
   admin_classe: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-  versets: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg>,
+  meditation: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg>,
   quiz: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
   demandes: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>,
 }
@@ -136,6 +146,14 @@ export default function AdminDashboard() {
 
   const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null)
   const [profileStudentId, setProfileStudentId] = useState<string | null>(null)
+  const profileCardRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (profileStudentId && profileCardRef.current) {
+      profileCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [profileStudentId])
+
   const [bulletin, setBulletin] = useState<{ progress: StudentProgress; courses: Course[] } | null>(null)
   const [bulletinLoading, setBulletinLoading] = useState(false)
   const [meditationDraft, setMeditationDraft] = useState('')
@@ -149,7 +167,7 @@ export default function AdminDashboard() {
   const [moderatorMsg, setModeratorMsg] = useState<string | null>(null)
   const [promoteStudentId, setPromoteStudentId] = useState('')
   const [slotDrafts, setSlotDrafts] = useState<
-    Record<string, { day: string; start: string; end: string; notes: string }>
+    Record<string, { day: string; start: string; end: string; notes: string; date: string }>
   >({})
   const [slotSavingId, setSlotSavingId] = useState<string | null>(null)
 
@@ -166,6 +184,7 @@ export default function AdminDashboard() {
   const [accountMsg, setAccountMsg] = useState<string | null>(null)
   const [accountSaving, setAccountSaving] = useState(false)
   const [createdPassword, setCreatedPassword] = useState<string | null>(null)
+  const [showModPwd, setShowModPwd] = useState(false)
 
   const [broadcastText, setBroadcastText] = useState('')
   const [broadcastSending, setBroadcastSending] = useState(false)
@@ -179,12 +198,17 @@ export default function AdminDashboard() {
   const [verseMsg, setVerseMsg] = useState<string | null>(null)
   const [verseSaving, setVerseSaving] = useState(false)
   const [verseLoading, setVerseLoading] = useState(false)
+  const [verseDay, setVerseDayVal] = useState<number | ''>('')
 
   // ---- Students filter + sort
   const [studentFilterClass, setStudentFilterClass] = useState('')
   const [studentSort, setStudentSort] = useState<'name' | 'class' | 'date'>('name')
   const [studentSearch, setStudentSearch] = useState('')
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+
+  // ---- Paginated student list (client-side from filteredStudents)
+  const [studentPage, setStudentPage] = useState(1)
+  const STUDENT_PAGE_SIZE = 50
 
   // Settings form state
   const [formFirst, setFormFirst] = useState('')
@@ -239,7 +263,10 @@ export default function AdminDashboard() {
       .catch((err) => setError(err instanceof Error ? err.message : 'Erreur de chargement.'))
       .finally(() => setLoading(false))
     loadModerators().catch(() => undefined)
-    sendSaturdayReminders().catch(() => {})
+    if (!saturdayRemindersSent) {
+      saturdayRemindersSent = true
+      sendSaturdayReminders().catch(() => {})
+    }
   }, [])
 
   // Realtime refresh: when profiles table changes, reload students
@@ -275,7 +302,7 @@ export default function AdminDashboard() {
   }, [])
 
   const loadAll = useCallback(async () => {
-    const [s, c, co, su, at, st, badges, resumes, minis] = await Promise.all([
+    const [sRes, cRes, coRes, suRes, atRes, stRes, badgesRes, resumesRes, minisRes] = await Promise.allSettled([
       getStudents(),
       getClasses(),
       getCourses(),
@@ -286,15 +313,15 @@ export default function AdminDashboard() {
       getAllResumes(),
       getAllMiniTaskResponses(),
     ])
-    setStudents(s)
-    setClasses(c)
-    setCourses(co)
-    setSubmissions(su)
-    setAttendances(at)
-    setStreaks(st)
-    setAllBadges(badges)
-    setAllResumes(resumes)
-    setMiniResponses(minis)
+    if (sRes.status === 'fulfilled') setStudents(sRes.value)
+    if (cRes.status === 'fulfilled') setClasses(cRes.value)
+    if (coRes.status === 'fulfilled') setCourses(coRes.value)
+    if (suRes.status === 'fulfilled') setSubmissions(suRes.value)
+    if (atRes.status === 'fulfilled') setAttendances(atRes.value)
+    if (stRes.status === 'fulfilled') setStreaks(stRes.value)
+    if (badgesRes.status === 'fulfilled') setAllBadges(badgesRes.value)
+    if (resumesRes.status === 'fulfilled') setAllResumes(resumesRes.value)
+    if (minisRes.status === 'fulfilled') setMiniResponses(minisRes.value)
   }, [])
 
   const byClass = useMemo(() => {
@@ -343,7 +370,6 @@ export default function AdminDashboard() {
         const attended = attendedByStudent.get(s.id) ?? 0
         return total > 0 ? Math.round((attended / total) * 100) : 0
       })
-      .filter((r) => r > 0)
     if (rates.length === 0) return '—'
     return `${Math.round(rates.reduce((acc, r) => acc + r, 0) / rates.length)}%`
   }, [students, courses, attendances])
@@ -372,13 +398,9 @@ export default function AdminDashboard() {
     for (const c of courses) {
       if (c.class_id) coursesByClass.set(c.class_id, (coursesByClass.get(c.class_id) ?? 0) + 1)
     }
-    const attendanceByClass = new Map<string, { attended: number; total: number }>()
+    const attendedByStudent = new Map<string, number>()
     for (const a of attendances) {
-      const cid = studentClassId.get(a.student_id)
-      if (!cid) continue
-      const rec = attendanceByClass.get(cid) ?? { attended: 0, total: coursesByClass.get(cid) ?? 0 }
-      rec.attended += 1
-      attendanceByClass.set(cid, rec)
+      attendedByStudent.set(a.student_id, (attendedByStudent.get(a.student_id) ?? 0) + 1)
     }
     const resumeSetByClass = new Map<string, Set<string>>()
     for (const r of allResumes) {
@@ -404,13 +426,20 @@ export default function AdminDashboard() {
       gradedByClass.set(cid, rec)
     }
     return classes.map((c) => {
-      const at = attendanceByClass.get(c.id)
-      const presence = at && at.total > 0 ? Math.round((at.attended / at.total) * 100) : 0
+      const classStudents = students.filter((s) => s.class_id === c.id && s.active)
+      const total = coursesByClass.get(c.id) ?? 0
+      const classRates = classStudents.map((s) => {
+        const attended = attendedByStudent.get(s.id) ?? 0
+        return total > 0 ? Math.round((attended / total) * 100) : 0
+      })
+      const presence = classRates.length > 0
+        ? Math.round(classRates.reduce((a, r) => a + r, 0) / classRates.length)
+        : 0
       const graded = gradedByClass.get(c.id)
       return {
         className: c.name,
-        students: students.filter((s) => s.class_id === c.id && s.active).length,
-        presence: at && at.total > 0 ? `${presence}%` : '—',
+        students: classStudents.length,
+        presence: total > 0 && classStudents.length > 0 ? `${presence}%` : '—',
         resumes: resumeSetByClass.get(c.id)?.size ?? 0,
         badges: badgeByClass.get(c.id) ?? 0,
         graded: graded?.count ?? 0,
@@ -439,6 +468,12 @@ export default function AdminDashboard() {
     else list.sort((a, b) => (a.created_at ?? '').localeCompare(b.created_at ?? ''))
     return list
   }, [students, studentFilterClass, studentSearch, studentSort])
+
+  const studentTotal = filteredStudents.length
+  const paginatedStudents = useMemo(() => {
+    const start = (studentPage - 1) * STUDENT_PAGE_SIZE
+    return filteredStudents.slice(start, start + STUDENT_PAGE_SIZE)
+  }, [filteredStudents, studentPage])
 
   const classRows = (): ExportRow[] => byClass.map((r) => [r.className, r.students, r.courses])
   const studentRows = (): ExportRow[] =>
@@ -505,14 +540,13 @@ export default function AdminDashboard() {
     setBulletinMsg(null)
     setBulletinLoading(true)
     try {
+      const freshStudents = await getStudents()
+      const st = freshStudents.find((s) => s.id === studentId)
       const [progress, coursesData] = await Promise.all([
         getStudentProgress(studentId),
-        (async () => {
-          const st = students.find((s) => s.id === studentId)
-          return st?.class_id ? getClassCourses(st.class_id) : []
-        })(),
+        st?.class_id ? getClassCourses(st.class_id) : Promise.resolve([]),
       ])
-      const meditation = students.find((s) => s.id === studentId)?.meditation_grade ?? null
+      const meditation = st?.meditation_grade ?? null
       setBulletin({ progress, courses: coursesData })
       setMeditationDraft(meditation === null ? '' : String(meditation))
     } catch (err) {
@@ -560,7 +594,7 @@ export default function AdminDashboard() {
       await setModeratorRole(promoteStudentId, 'MODERATEUR')
       setModeratorMsg('Étudiant promu modérateur.')
       setPromoteStudentId('')
-      await loadModerators()
+      await Promise.all([loadModerators(), refreshStudents()])
     } catch (err) {
       setModeratorMsg(err instanceof Error ? err.message : 'Erreur de promotion.')
     }
@@ -600,23 +634,26 @@ export default function AdminDashboard() {
   }
 
   async function toggleModeratorClass(moderatorId: string, classId: string) {
-    const current = moderatorClasses[moderatorId] ?? []
-    const next = current.includes(classId)
-      ? current.filter((id) => id !== classId)
-      : [...current, classId]
-    setModeratorClassesState((prev) => ({ ...prev, [moderatorId]: next }))
     setModeratorMsg(null)
+    let next: string[] = []
+    setModeratorClassesState((prev) => {
+      const current = prev[moderatorId] ?? []
+      next = current.includes(classId)
+        ? current.filter((id) => id !== classId)
+        : [...current, classId]
+      return { ...prev, [moderatorId]: next }
+    })
     try {
       await setModeratorClasses(moderatorId, next)
       setModeratorMsg('Attribution des classes mise à jour.')
     } catch (err) {
       setModeratorMsg(err instanceof Error ? err.message : 'Erreur d\u2019attribution.')
-      setModeratorClassesState((prev) => ({ ...prev, [moderatorId]: current }))
+      setModeratorClassesState((prev) => ({ ...prev, [moderatorId]: (prev[moderatorId] ?? []).filter((id) => id !== classId) || prev[moderatorId] }))
     }
   }
 
   async function addSlot(moderatorId: string) {
-    const draft = slotDrafts[moderatorId] ?? { day: '0', start: '09:00', end: '11:00', notes: '' }
+    const draft = slotDrafts[moderatorId] ?? { day: '0', start: '09:00', end: '11:00', notes: '', date: '' }
     if (!draft.start || !draft.end) return
     setSlotSavingId(moderatorId)
     setModeratorMsg(null)
@@ -627,10 +664,11 @@ export default function AdminDashboard() {
         startTime: draft.start,
         endTime: draft.end,
         notes: draft.notes.trim() || undefined,
+        specificDate: draft.date || undefined,
       })
       const sched = await getModeratorSchedules(moderatorId)
       setModeratorSchedulesState((prev) => ({ ...prev, [moderatorId]: sched }))
-      setSlotDrafts((prev) => ({ ...prev, [moderatorId]: { day: '0', start: '09:00', end: '11:00', notes: '' } }))
+      setSlotDrafts((prev) => ({ ...prev, [moderatorId]: { day: '0', start: '09:00', end: '11:00', notes: '', date: '' } }))
       setModeratorMsg('Créneau de modération ajouté.')
     } catch (err) {
       setModeratorMsg(err instanceof Error ? err.message : 'Erreur d\u2019ajout.')
@@ -679,9 +717,9 @@ export default function AdminDashboard() {
         tribe: newAccount.tribe.trim() || undefined,
         department: newAccount.department.trim() || undefined,
       })
-      if (newAccount.role === 'MODERATEUR' || newAccount.role === 'ADMIN_CLASSE') {
+      if (newAccount.role === 'MODERATEUR') {
         setCreatedPassword(pwd)
-        setAccountMsg(`Compte ${newAccount.role === 'ADMIN_CLASSE' ? 'administrateur de classe' : 'modérateur'} créé. Mot de passe temporaire à transmettre :`)
+        setAccountMsg('Compte modérateur créé. Mot de passe temporaire à transmettre :')
       } else {
         setAccountMsg('Compte créé avec succès.')
       }
@@ -728,9 +766,10 @@ export default function AdminDashboard() {
     setVerseSaving(true)
     setVerseMsg(null)
     try {
-      await addVerse(verseClassId, verseText.trim(), verseReference.trim())
+      await addVerse(verseClassId, verseText.trim(), verseReference.trim(), verseDay === '' ? null : verseDay)
       setVerseText('')
       setVerseReference('')
+      setVerseDayVal('')
       setVerseMsg('Verset ajouté avec succès.')
       await loadVerses(verseClassId)
     } catch (err) {
@@ -756,6 +795,16 @@ export default function AdminDashboard() {
     setVerseMsg(null)
     try {
       await toggleVerseActive(verseId)
+      if (verseClassId) await loadVerses(verseClassId)
+    } catch (err) {
+      setVerseMsg(err instanceof Error ? err.message : 'Erreur.')
+    }
+  }
+
+  async function handleSetVerseDay(verseId: string, dayOfWeek: number | null) {
+    setVerseMsg(null)
+    try {
+      await setVerseDay(verseId, dayOfWeek)
       if (verseClassId) await loadVerses(verseClassId)
     } catch (err) {
       setVerseMsg(err instanceof Error ? err.message : 'Erreur.')
@@ -836,7 +885,8 @@ export default function AdminDashboard() {
     ['etudiants', 'Élèves'],
     ['moderateurs', 'Modérateurs'],
     ['admin_classe', 'Admin Classe'],
-    ['versets', 'Versets'],
+    ['meditation', 'Méditation'],
+  ['quiz', 'Quiz'],
     ['messagerie', 'Messagerie'],
     ['annonces', 'Annonces'],
     ['demandes', 'Demandes'],
@@ -848,7 +898,7 @@ export default function AdminDashboard() {
     <SidebarLayout
       items={adminSections.map(([k, label]) => ({ key: k, label, icon: sectionIcons[k] }))}
       activeKey={section}
-      onSelect={(k) => setSection(k as Section)}
+      onSelect={(k) => { setSection(k as Section); setAccessMsg(null); setModeratorMsg(null); setAccountMsg(null) }}
     >
       <SectionWatermark kind="croix" />
       <div className="relative z-10 page-enter">
@@ -907,7 +957,7 @@ export default function AdminDashboard() {
                 <p className="font-display text-3xl text-bordeaux">{loading ? '—' : `${resumeRate}%`}</p>
               </Card>
               <Card>
-                <CardDescription>Méditation moyenne</CardDescription>
+                <CardDescription>Assiduité moyenne</CardDescription>
                 <p className="font-display text-3xl text-bordeaux">{loading ? '—' : avgStreak}</p>
               </Card>
               <Card>
@@ -1202,13 +1252,13 @@ export default function AdminDashboard() {
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <Input
               value={studentSearch}
-              onChange={(e) => setStudentSearch(e.target.value)}
+              onChange={(e) => { setStudentSearch(e.target.value); setStudentPage(1) }}
               placeholder="Rechercher un étudiant…"
               className="max-w-xs"
             />
             <select
               value={studentFilterClass}
-              onChange={(e) => setStudentFilterClass(e.target.value)}
+              onChange={(e) => { setStudentFilterClass(e.target.value); setStudentPage(1) }}
               className="rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or focus-visible:outline-none"
             >
               <option value="">Toutes les classes</option>
@@ -1218,21 +1268,22 @@ export default function AdminDashboard() {
             </select>
             <select
               value={studentSort}
-              onChange={(e) => setStudentSort(e.target.value as 'name' | 'class' | 'date')}
+              onChange={(e) => { setStudentSort(e.target.value as 'name' | 'class' | 'date'); setStudentPage(1) }}
               className="rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or focus-visible:outline-none"
             >
               <option value="name">Trier par nom</option>
               <option value="class">Trier par classe</option>
               <option value="date">Trier par date</option>
             </select>
-            <span className="text-xs text-pierre">{filteredStudents.length} étudiant{filteredStudents.length > 1 ? 's' : ''}</span>
+            <span className="text-xs text-pierre">{studentTotal} étudiant{studentTotal > 1 ? 's' : ''}</span>
           </div>
 
-          {filteredStudents.length === 0 ? (
+          {paginatedStudents.length === 0 ? (
             <p className="text-sm text-pierre">Aucun étudiant ne correspond aux filtres.</p>
           ) : (
+            <>
             <ul className="space-y-3">
-              {filteredStudents.map((s) => (
+              {paginatedStudents.map((s) => (
                 <li key={s.id} className="rounded-card border border-pierre/15 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
@@ -1319,15 +1370,43 @@ export default function AdminDashboard() {
                 </li>
               ))}
             </ul>
+            {studentTotal > STUDENT_PAGE_SIZE && (
+              <div className="mt-4 flex items-center justify-between text-sm">
+                <span className="text-pierre">
+                  Page {studentPage} / {Math.ceil(studentTotal / STUDENT_PAGE_SIZE)}
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="!px-3 !py-1 text-xs"
+                    disabled={studentPage <= 1}
+                    onClick={() => setStudentPage((p) => Math.max(1, p - 1))}
+                  >
+                    ← Précédent
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="!px-3 !py-1 text-xs"
+                    disabled={studentPage >= Math.ceil(studentTotal / STUDENT_PAGE_SIZE)}
+                    onClick={() => setStudentPage((p) => p + 1)}
+                  >
+                    Suivant →
+                  </Button>
+                </div>
+              </div>
+            )}
+            </>
           )}
         </Card>
       )}
 
       {section === 'etudiants' && profileStudentId && (
-        <StudentProfileCard
-          studentId={profileStudentId}
-          onClose={() => setProfileStudentId(null)}
-        />
+        <div ref={profileCardRef}>
+          <StudentProfileCard
+            studentId={profileStudentId}
+            onClose={() => setProfileStudentId(null)}
+          />
+        </div>
       )}
 
       {section === 'moderateurs' && (
@@ -1391,11 +1470,11 @@ export default function AdminDashboard() {
 
           <Card>
             <CardDescription className="mt-1 mb-4">
-              Crée directement un compte modérateur, administrateur ou étudiant. La personne pourra se
+              Crée directement un compte modérateur ou étudiant. La personne pourra se
               connecter aussitôt.
             </CardDescription>
             <form onSubmit={handleCreateAccount} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="acc-first">Prénom</Label>
                   <Input
@@ -1428,14 +1507,26 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <Label htmlFor="acc-password">Mot de passe</Label>
-                  <Input
-                    id="acc-password"
-                    type="password"
-                    required
-                    minLength={6}
-                    value={newAccount.password}
-                    onChange={(e) => setNewAccount((prev) => ({ ...prev, password: e.target.value }))}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="acc-password"
+                      type={showModPwd ? 'text' : 'password'}
+                      value={newAccount.password}
+                      onChange={(e) => setNewAccount((prev) => ({ ...prev, password: e.target.value }))}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowModPwd(v => !v)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-pierre hover:text-bordeaux"
+                    >
+                      {showModPwd ? (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      ) : (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
               <div className="grid gap-3 sm:grid-cols-3">
@@ -1449,7 +1540,7 @@ export default function AdminDashboard() {
                   >
                     <option value="MODERATEUR">Modérateur</option>
                     <option value="ADMINISTRATEUR">Administrateur</option>
-                    <option value="ADMIN_CLASSE">Administrateur de Classe</option>
+                    <option value="ADMIN_CLASSE">Admin de Classe</option>
                     <option value="ETUDIANT">Étudiant</option>
                   </select>
                 </div>
@@ -1526,7 +1617,7 @@ export default function AdminDashboard() {
                 {moderators.map((m) => {
                   const selectedClasses = moderatorClasses[m.id] ?? []
                   const slots = moderatorSchedules[m.id] ?? []
-                  const draft = slotDrafts[m.id] ?? { day: '0', start: '09:00', end: '11:00', notes: '' }
+                  const draft = slotDrafts[m.id] ?? { day: '0', start: '09:00', end: '11:00', notes: '', date: '' }
                   return (
                     <li key={m.id} className="rounded-card border border-pierre/15 p-4">
                       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1596,8 +1687,10 @@ export default function AdminDashboard() {
                                 }`}
                               >
                                 <span className="text-bordeaux">
-                                  {DAY_NAMES[slot.day_of_week] ?? slot.day_of_week}
-                                  {slot.day_of_week === 0 && (
+                                  {slot.specific_date
+                                    ? new Date(slot.specific_date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+                                    : DAY_NAMES[slot.day_of_week] ?? slot.day_of_week}
+                                  {slot.day_of_week === 0 && !slot.specific_date && (
                                     <span className="ml-2 rounded-full bg-or/25 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide">
                                       Jour du Seigneur
                                     </span>
@@ -1618,7 +1711,7 @@ export default function AdminDashboard() {
                             ))}
                           </ul>
                         )}
-                        <div className="grid gap-2 sm:grid-cols-[120px_100px_100px_1fr_auto]">
+                        <div className="grid gap-2 sm:grid-cols-[120px_130px_100px_100px_1fr_auto]">
                           <select
                             value={draft.day}
                             onChange={(e) =>
@@ -1635,6 +1728,18 @@ export default function AdminDashboard() {
                               </option>
                             ))}
                           </select>
+                          <input
+                            type="date"
+                            value={draft.date}
+                            placeholder="Date précise (optionnel)"
+                            onChange={(e) =>
+                              setSlotDrafts((prev) => ({
+                                ...prev,
+                                [m.id]: { ...draft, date: e.target.value },
+                              }))
+                            }
+                            className="rounded-md border border-pierre/30 bg-white px-2 py-1.5 text-sm text-bordeaux focus-visible:border-or"
+                          />
                           <input
                             type="time"
                             value={draft.start}
@@ -1692,7 +1797,7 @@ export default function AdminDashboard() {
         <AdminClasseSection classes={classes} />
       )}
 
-      {section === 'versets' && (
+      {section === 'meditation' && (
         <div className="space-y-4">
           <Card>
             <CardTitle>Versets à méditer</CardTitle>
@@ -1747,10 +1852,28 @@ export default function AdminDashboard() {
                       {verseSaving ? 'Ajout…' : 'Ajouter'}
                     </Button>
                   </div>
+                  <div>
+                    <Label htmlFor="verse-day">Jour de la semaine (optionnel)</Label>
+                    <select
+                      id="verse-day"
+                      value={verseDay}
+                      onChange={(e) => setVerseDayVal(e.target.value === '' ? '' : Number(e.target.value))}
+                      className="w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
+                    >
+                      <option value="">Chaque jour (rotation)</option>
+                      <option value={1}>Lundi</option>
+                      <option value={2}>Mardi</option>
+                      <option value={3}>Mercredi</option>
+                      <option value={4}>Jeudi</option>
+                      <option value={5}>Vendredi</option>
+                      <option value={6}>Samedi</option>
+                      <option value={7}>Dimanche</option>
+                    </select>
+                  </div>
                 </form>
 
                 {verseLoading ? (
-                  <p className="text-sm text-pierre">Chargement des versets…</p>
+                  <p className="text-sm text-pierre">Chargement des méditations…</p>
                 ) : verses.length === 0 ? (
                   <p className="text-sm text-pierre">Aucun verset pour cette classe.</p>
                 ) : (
@@ -1764,7 +1887,21 @@ export default function AdminDashboard() {
                         <p className="mt-1 font-mono text-xs uppercase tracking-wide text-pierre">
                           {v.verse_reference}
                         </p>
-                        <div className="mt-2 flex items-center gap-3">
+                        <div className="mt-2 flex flex-wrap items-center gap-3">
+                          <select
+                            value={v.day_of_week ?? ''}
+                            onChange={(e) => handleSetVerseDay(v.id, e.target.value === '' ? null : Number(e.target.value))}
+                            className="rounded border border-pierre/20 bg-white px-2 py-1 text-xs text-bordeaux"
+                          >
+                            <option value="">Chaque jour</option>
+                            <option value={1}>Lundi</option>
+                            <option value={2}>Mardi</option>
+                            <option value={3}>Mercredi</option>
+                            <option value={4}>Jeudi</option>
+                            <option value={5}>Vendredi</option>
+                            <option value={6}>Samedi</option>
+                            <option value={7}>Dimanche</option>
+                          </select>
                           <button
                             onClick={() => handleToggleVerse(v.id)}
                             className="text-xs text-or underline"
@@ -1922,7 +2059,7 @@ function CoursTab({
     setSuccess(null)
     try {
       if (editingId) {
-        const audioPath = audioFile ? await uploadCourseFile(audioFile) : undefined
+        const audioUploadedUrl = audioFile ? await uploadCourseAudio(audioFile, editingId) : undefined
         const videoPath = videoFile ? await uploadCourseFile(videoFile) : undefined
         await updateCourse(editingId, {
           classId,
@@ -1930,14 +2067,14 @@ function CoursTab({
           week: Number(week) || 1,
           sessionDate: sessionDate || undefined,
           description: description.trim() || undefined,
-          ...(audioPath !== undefined ? { audioPath } : {}),
           ...(videoPath !== undefined ? { videoPath } : {}),
+          audioUrl: audioUploadedUrl || audioUrl.trim() || undefined,
+          videoUrl: videoUrl.trim() || undefined,
         })
         await saveMiniTask(editingId, miniTask)
         setSuccess('Cours modifié.')
         toast('Cours modifié.')
       } else {
-        const audioPath = audioFile ? await uploadCourseFile(audioFile) : undefined
         const videoPath = videoFile ? await uploadCourseFile(videoFile) : undefined
         const created = await createCourse({
           classId,
@@ -1945,9 +2082,14 @@ function CoursTab({
           week: Number(week) || 1,
           sessionDate: sessionDate || undefined,
           description: description.trim() || undefined,
-          audioPath,
           videoPath,
+          videoUrl: videoUrl.trim() || undefined,
+          audioUrl: audioUrl.trim() || undefined,
         })
+        if (audioFile) {
+          const uploadedAudioUrl = await uploadCourseAudio(audioFile, created.id)
+          await updateCourse(created.id, { audioUrl: uploadedAudioUrl })
+        }
         await saveMiniTask(created.id, miniTask)
         setSuccess('Cours publié.')
         toast('Cours publié.')
@@ -2048,9 +2190,17 @@ function CoursTab({
               <p className="mt-1 text-[11px] text-pierre italic">Les fichiers uploadés consomment la bande passante Supabase. Préfère un lien YouTube.</p>
             </div>
             <div>
-              <Label>Audio</Label>
-              <Input value={audioUrl} onChange={(e) => { setAudioUrl(e.target.value); setAudioFile(null) }} placeholder="Lien externe (optionnel)" />
-              <input type="file" accept="audio/*" onChange={(e) => { setAudioFile(e.target.files?.[0] ?? null); setAudioUrl('') }} className="mt-2 block w-full text-sm text-pierre file:mr-3 file:rounded-md file:border-0 file:bg-bordeaux file:px-3 file:py-1.5 file:text-sm file:text-parchemin" />
+              <Label>Audio du cours</Label>
+              <p className="mb-1.5 text-xs text-pierre">Fichier MP3 ou lien Google Drive (optionnel).</p>
+              <input type="file" accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg" onChange={(e) => { setAudioFile(e.target.files?.[0] ?? null); setAudioUrl('') }} className="block w-full text-sm text-pierre file:mr-3 file:rounded-md file:border-0 file:bg-or file:px-4 file:py-2 file:text-sm file:font-medium file:text-bordeaux hover:file:bg-or/80" />
+              {audioFile && <p className="mt-1.5 text-xs text-olive">Fichier selectionne : {audioFile.name} ({(audioFile.size / 1024 / 1024).toFixed(1)} Mo)</p>}
+              <p className="mt-2 mb-1 text-[11px] text-pierre italic">— ou colle un lien —</p>
+              <Input value={audioUrl} onChange={(e) => { setAudioUrl(e.target.value); setAudioFile(null) }} placeholder="Lien Google Drive ou URL directe (optionnel)" />
+              {editingId && !audioFile && audioUrl && (
+                <p className="mt-1.5 flex items-center gap-1 text-xs text-olive">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-olive" /> Audio actuel charge
+                </p>
+              )}
             </div>
           </div>
 
@@ -2068,6 +2218,8 @@ function CoursTab({
           </div>
         </form>
       </Card>
+
+      <QuizTab courses={courses} />
     </div>
   )
 }
@@ -2176,6 +2328,19 @@ function NotationTab({ onGraded }: { onGraded: () => void }) {
                 <p className="text-sm font-medium text-bordeaux">{r.student?.first_name} {r.student?.last_name}</p>
                 <p className="text-xs text-pierre">Semaine {r.course?.week ?? '?'} — {r.course?.title ?? ''}</p>
                 <p className="mt-2 rounded-md bg-white/60 px-3 py-2 text-sm text-pierre">{r.content}</p>
+                {r.file_url && r.file_name && (
+                  <div className="mt-2">
+                    {/\.(png|jpe?g|gif|webp|bmp)$/i.test(r.file_name) ? (
+                      <a href={r.file_url} target="_blank" rel="noreferrer">
+                        <img src={r.file_url} alt="Résumé joint" className="h-24 w-32 rounded object-cover" />
+                      </a>
+                    ) : (
+                      <a href={r.file_url} target="_blank" rel="noreferrer" className="text-xs text-bordeaux underline break-all">
+                        Pièce jointe : {r.file_name}
+                      </a>
+                    )}
+                  </div>
+                )}
                 <div className="mt-3 grid gap-3 sm:grid-cols-[110px_1fr]">
                   <div><Label>Note /20</Label><Input type="number" min={0} max={20} value={rGrades[r.id] ?? ''} onChange={(e) => setRGrades((p) => ({ ...p, [r.id]: e.target.value }))} /></div>
                   <div><Label>Appréciation</Label><Input value={rFeedbacks[r.id] ?? ''} placeholder="Encouragement…" onChange={(e) => setRFeedbacks((p) => ({ ...p, [r.id]: e.target.value }))} /></div>
@@ -2244,7 +2409,7 @@ function AdminClassRequestsTab({ classes }: { classes: ClassRow[] }) {
       const result = data as { ok: boolean; msg: string }
       if (!result.ok) throw new Error(result.msg)
       toast(result.msg)
-      loadRequests()
+      await loadRequests()
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Erreur')
     } finally {
@@ -2536,64 +2701,239 @@ function AdminAnnoncesTab({ classes, allCourses }: { classes: ClassRow[]; allCou
 }
 
 function AdminClasseSection({ classes }: { classes: ClassRow[] }) {
-  const [admins, setAdmins] = useState<{ id: string; first_name: string; last_name: string; email: string }[]>([])
+  const [admins, setAdmins] = useState<{ id: string; first_name: string; last_name: string; email: string; active: boolean }[]>([])
   const [loading, setLoading] = useState(true)
+  const [assignedClasses, setAssignedClasses] = useState<Record<string, string[]>>({})
+  const [newAc, setNewAc] = useState({ firstName: '', lastName: '', email: '', password: '' })
+  const [acMsg, setAcMsg] = useState<string | null>(null)
+  const [acSaving, setAcSaving] = useState(false)
+  const [createdPwd, setCreatedPwd] = useState<string | null>(null)
+  const [showAcPwd, setShowAcPwd] = useState(false)
 
-  useEffect(() => {
-    ;(async () => {
-      try {
-        const { data } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name, email')
-          .eq('role', 'ADMIN_CLASSE')
-        setAdmins((data ?? []) as { id: string; first_name: string; last_name: string; email: string }[])
-      } finally {
-        setLoading(false)
+  async function loadAdmins() {
+    setLoading(true)
+    try {
+      const { data, error } = await supabase.rpc('get_admin_classe_list')
+      if (error) {
+        console.error('[AdminClasse] loadAdmins error:', JSON.stringify({ message: error.message, code: error.code, details: error.details, hint: error.hint }))
+        throw error
       }
-    })()
-  }, [])
+      const list = (data ?? []) as { id: string; first_name: string; last_name: string; email: string; active: boolean; assigned_classes: string[] }[]
+      console.log('[AdminClasse] loadAdmins result:', list.length, 'admins')
+      setAdmins(list.map(({ assigned_classes, ...rest }) => rest))
+
+      const assigned: Record<string, string[]> = {}
+      for (const ac of list) {
+        assigned[ac.id] = ac.assigned_classes ?? []
+      }
+      setAssignedClasses(assigned)
+    } catch (err) {
+      console.error('[AdminClasse] loadAdmins failed:', err)
+      setAcMsg('Erreur de chargement des admins de classe.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { loadAdmins() }, [])
+
+  async function handleCreateAc(e: FormEvent) {
+    e.preventDefault()
+    if (!newAc.email.trim() || !newAc.firstName.trim() || !newAc.lastName.trim() || !newAc.password) {
+      setAcMsg('Remplis tous les champs.')
+      return
+    }
+    setAcSaving(true)
+    setAcMsg(null)
+    setCreatedPwd(null)
+    try {
+      await adminCreateUser({
+        email: newAc.email.trim(),
+        password: newAc.password,
+        firstName: newAc.firstName.trim(),
+        lastName: newAc.lastName.trim(),
+        role: 'ADMIN_CLASSE',
+      })
+      setAcMsg('Compte créé. Mot de passe temporaire à transmettre :')
+      setCreatedPwd(newAc.password)
+      toast('Compte admin de classe créé.')
+      playSuccess()
+      setNewAc({ firstName: '', lastName: '', email: '', password: '' })
+      await loadAdmins()
+    } catch (err) {
+      setAcMsg(err instanceof Error ? err.message : 'Erreur de création.')
+      toastError('Erreur.')
+    } finally {
+      setAcSaving(false)
+    }
+  }
+
+  async function toggleAssign(adminId: string, classId: string) {
+    const current = assignedClasses[adminId] ?? []
+    const isAssigned = current.includes(classId)
+    try {
+      const { error } = await supabase.rpc('admin_toggle_class', {
+        p_admin_id: adminId,
+        p_class_id: classId,
+        p_assign: !isAssigned,
+      })
+      if (error) throw error
+      toast(isAssigned ? 'Classe retirée.' : 'Classe assignée.')
+      await loadAdmins()
+    } catch (err) {
+      console.error('[AdminClasse] toggleAssign failed:', err)
+      toastError('Erreur.')
+    }
+  }
+
+  async function toggleActive(adminId: string, currentActive: boolean) {
+    try {
+      const { error } = await supabase.rpc('admin_toggle_active', { p_user_id: adminId })
+      if (error) throw error
+      toast(currentActive ? 'Accès révoqué.' : 'Accès restauré.')
+      await loadAdmins()
+    } catch (err) {
+      console.error('[AdminClasse] toggleActive failed:', err)
+      toastError('Erreur.')
+    }
+  }
+
+  async function deleteAc(adminId: string) {
+    if (!window.confirm('Supprimer cet admin de classe et toutes ses assignations ?')) return
+    try {
+      const { error } = await supabase.rpc('admin_delete_ac', { p_admin_id: adminId })
+      if (error) throw error
+      toast('Admin de classe supprimé.')
+      await loadAdmins()
+    } catch (err) {
+      console.error('[AdminClasse] deleteAc failed:', err)
+      toastError('Erreur.')
+    }
+  }
+
+  const classeClasses = classes.filter(c => c.level <= 3)
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <Card>
-        <CardTitle>Administrateurs de Classe</CardTitle>
+        <CardTitle>Créer un admin de classe</CardTitle>
         <CardDescription className="mt-1 mb-3">
-          Gère les administrateurs de classe — chacun gère les étudiants d'une classe spécifique.
+          Crée un compte admin de classe. Il pourra gérer les notes, présences et assiduités de SA classe.
+        </CardDescription>
+        <form onSubmit={handleCreateAc} className="space-y-3 max-w-md">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <Label>Prénom *</Label>
+              <Input value={newAc.firstName} onChange={(e) => setNewAc(p => ({ ...p, firstName: e.target.value }))} className="mt-1" />
+            </div>
+            <div>
+              <Label>Nom *</Label>
+              <Input value={newAc.lastName} onChange={(e) => setNewAc(p => ({ ...p, lastName: e.target.value }))} className="mt-1" />
+            </div>
+          </div>
+          <div>
+            <Label>Email *</Label>
+            <Input type="email" value={newAc.email} onChange={(e) => setNewAc(p => ({ ...p, email: e.target.value }))} className="mt-1" />
+          </div>
+          <div>
+            <Label>Mot de passe *</Label>
+            <div className="relative">
+              <Input
+                type={showAcPwd ? 'text' : 'password'}
+                value={newAc.password}
+                onChange={(e) => setNewAc(p => ({ ...p, password: e.target.value }))}
+                className="mt-1 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowAcPwd(v => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-pierre hover:text-bordeaux"
+              >
+                {showAcPwd ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                )}
+              </button>
+            </div>
+          </div>
+          {acMsg && <p className="text-sm text-olive">{acMsg}</p>}
+          {createdPwd && (
+            <div className="rounded-lg border border-or/40 bg-or/5 p-3">
+              <p className="text-xs text-pierre">Mot de passe temporaire à transmettre :</p>
+              <p className="mt-1 font-mono text-sm font-bold text-bordeaux break-all">{createdPwd}</p>
+              <p className="mt-1 text-[11px] text-pierre/60">Il devra le changer à sa première connexion.</p>
+              <button type="button" onClick={() => { navigator.clipboard.writeText(createdPwd); toast('Copié !') }} className="mt-2 rounded-md bg-bordeaux px-3 py-1 text-xs text-parchemin hover:bg-[#4a2234]">
+                Copier le mot de passe
+              </button>
+            </div>
+          )}
+          <Button type="submit" disabled={acSaving}>
+            {acSaving ? 'Création…' : 'Créer le compte'}
+          </Button>
+        </form>
+      </Card>
+
+      <Card>
+        <CardTitle>Admins de classe existants</CardTitle>
+        <CardDescription className="mt-1 mb-3">
+          {admins.length} admin{admins.length > 1 ? 's' : ''} de classe · Clique sur une classe pour assigner/désassigner
         </CardDescription>
         {loading ? (
           <p className="text-sm text-pierre">Chargement…</p>
         ) : admins.length === 0 ? (
-          <p className="text-sm text-pierre">Aucun administrateur de classe créé. Utilise l'onglet "Modérateurs" pour en créer un avec le rôle "Administrateur de Classe".</p>
+          <p className="text-sm text-pierre">Aucun admin de classe créé.</p>
         ) : (
-          <ul className="space-y-3">
-            {admins.map(ac => (
-              <li key={ac.id} className="rounded-card border border-pierre/15 p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-medium text-bordeaux">{ac.first_name} {ac.last_name}</p>
-                    <p className="text-xs text-pierre">{ac.email}</p>
+          <ul className="space-y-4">
+            {admins.map(ac => {
+              const myClasses = assignedClasses[ac.id] ?? []
+              return (
+                <li key={ac.id} className="rounded-card border border-pierre/15 p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="font-medium text-bordeaux">{ac.first_name} {ac.last_name}</p>
+                      <p className="text-xs text-pierre">
+                        {ac.email} · {ac.active ? 'accès actif' : 'accès révoqué'}
+                      </p>
+                      {myClasses.length > 0 && (
+                        <p className="mt-1 text-xs text-or">
+                          Classe{myClasses.length > 1 ? 's' : ''} : {myClasses.map(id => classes.find(c => c.id === id)?.name?.split(' : ')[0]).filter(Boolean).join(', ')}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant={ac.active ? 'ghost' : 'primary'} className="!px-3 !py-1 text-xs" onClick={() => toggleActive(ac.id, ac.active)}>
+                        {ac.active ? 'Révoquer' : 'Restaurer'}
+                      </Button>
+                      <Button variant="outline" className="!px-3 !py-1 text-xs text-red-700" onClick={() => deleteAc(ac.id)}>
+                        Supprimer
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    {classes.filter(c => c.level <= 3).map(c => (
-                      <button
-                        key={c.id}
-                        onClick={async () => {
-                          try {
-                            await assignAdminClassClass(ac.id, c.id)
-                            toast('Classe assignée.')
-                          } catch {
-                            toastError('Erreur.')
-                          }
-                        }}
-                        className="rounded-md border border-pierre/30 px-2 py-1 text-xs text-bordeaux hover:bg-or/10"
-                      >
-                        {c.name.split(' : ')[0]}
-                      </button>
-                    ))}
+                  <div className="mt-3 border-t border-sable/60 pt-3">
+                    <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-bordeaux">Assigner une classe</p>
+                    <div className="flex flex-wrap gap-2">
+                      {classeClasses.map(c => {
+                        const assigned = myClasses.includes(c.id)
+                        return (
+                          <button
+                            key={c.id}
+                            onClick={() => toggleAssign(ac.id, c.id)}
+                            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                              assigned
+                                ? 'bg-bordeaux text-parchemin'
+                                : 'border border-bordeaux/30 text-bordeaux hover:bg-bordeaux/5'
+                            }`}
+                          >
+                            {c.name.split(' : ')[0]}{assigned ? ' ✓' : ''}
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
-                </div>
-              </li>
-            ))}
+                </li>
+              )
+            })}
           </ul>
         )}
       </Card>

@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app'
-import { getMessaging } from 'firebase/messaging'
+import { getMessaging, isSupported } from 'firebase/messaging'
 
 const firebaseConfig = {
   apiKey: "AIzaSyAeSiYt1qNVkxQxVxQ4-mB_YTk7c4GJQSU",
@@ -12,10 +12,21 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig)
 
-let messaging: ReturnType<typeof getMessaging> | null = null
+let messagingInstance: ReturnType<typeof getMessaging> | null = null
+let messagingPromise: Promise<ReturnType<typeof getMessaging> | null> | null = null
 
-if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-  messaging = getMessaging(app)
+export function getMessagingInstance(): Promise<ReturnType<typeof getMessaging> | null> {
+  if (messagingInstance !== null) return Promise.resolve(messagingInstance)
+  if (!messagingPromise) {
+    messagingPromise = isSupported()
+      .then((supported) => {
+        if (!supported) return null
+        messagingInstance = getMessaging(app)
+        return messagingInstance
+      })
+      .catch(() => null)
+  }
+  return messagingPromise
 }
 
-export { app, messaging }
+export { app }

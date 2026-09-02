@@ -20,14 +20,14 @@ const BASE_PATHS: Record<UserRole, string> = {
   ETUDIANT: '/etudiant',
   ADMINISTRATEUR: '/admin',
   MODERATEUR: '/moderateur',
-  ADMIN_CLASSE: '/moderateur',
+  ADMIN_CLASSE: '/admin-classe',
 }
 
 const DASHBOARDS: Record<UserRole, string> = {
   ETUDIANT: '/etudiant/tableau-de-bord',
   ADMINISTRATEUR: '/admin/tableau-de-bord',
   MODERATEUR: '/moderateur/tableau-de-bord',
-  ADMIN_CLASSE: '/moderateur/tableau-de-bord',
+  ADMIN_CLASSE: '/admin-classe/tableau-de-bord',
 }
 
 export function AuthPage({ mode, role, title, redirectTo }: AuthPageProps) {
@@ -122,6 +122,10 @@ export const AdminLogin = () => (
 export const ModeratorSignup = () => (
   <AuthPage mode="signup" role="MODERATEUR" title="Inscription modérateur" redirectTo="/moderateur/tableau-de-bord" />
 )
-export const ModeratorLogin = () => (
-  <AuthPage mode="signin" role="MODERATEUR" title="Connexion modérateur" redirectTo="/moderateur/tableau-de-bord" />
+export const ModeratorLogin = ({ loginTitle, redirectTo }: { loginTitle?: string; redirectTo?: string } = {}) => (
+  <AuthPage mode="signin" role="MODERATEUR" title={loginTitle ? `Connexion ${loginTitle}` : "Connexion modérateur"} redirectTo={redirectTo ?? "/moderateur/tableau-de-bord"} />
+)
+
+export const AdminClasseLogin = () => (
+  <AuthPage mode="signin" role="ADMIN_CLASSE" title="Connexion Admin de Classe" redirectTo="/admin-classe/tableau-de-bord" />
 )

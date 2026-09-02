@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Badge } from '@/components/Badge'
-import { BADGES, BADGE_ORDER, isBadgeKey } from '@/lib/badges'
+import { BADGES, BADGE_ORDER } from '@/lib/badges'
 import type { BadgeProgress } from '@/lib/courses'
 
 interface BadgeDrawerProps {

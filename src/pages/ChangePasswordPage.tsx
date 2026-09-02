@@ -6,6 +6,7 @@ import { Input, Label } from '@/components/ui/Input'
 import { Logo } from '@/components/Logo'
 import { SectionWatermark } from '@/components/SectionWatermark'
 import { supabase } from '@/lib/supabase'
+import { getSafeSession } from '@/lib/auth'
 import { toast } from '@/components/ui/Toast'
 
 export function ChangePasswordPage() {
@@ -38,11 +39,21 @@ export function ChangePasswordPage() {
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ must_change_password: false })
-        .eq('id', (await supabase.auth.getUser()).data.user?.id ?? '')
+        .eq('id', getSafeSession()?.user?.id ?? '')
       if (profileError) throw profileError
 
+      // Determine redirect based on role
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', getSafeSession()?.user?.id ?? '')
+        .single()
+      
       toast('Mot de passe mis à jour !')
-      navigate('/moderateur/tableau-de-bord')
+      if (profile?.role === 'ADMIN_CLASSE') navigate('/admin-classe/tableau-de-bord')
+      else if (profile?.role === 'ADMINISTRATEUR') navigate('/admin/tableau-de-bord')
+      else if (profile?.role === 'ETUDIANT') navigate('/etudiant/tableau-de-bord')
+      else navigate('/moderateur/tableau-de-bord')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur lors de la mise à jour.')
     } finally {

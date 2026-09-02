@@ -1,12 +1,15 @@
-// Service Worker for Push Notifications
-// Académie Vases d'Honneur
+// Service Worker — Académie Vases d'Honneur
+// Push notifications + cache cleanup only. No forced reloads.
 
-self.addEventListener('install', (event) => {
+self.addEventListener('install', () => {
   self.skipWaiting()
 })
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim())
+  event.waitUntil(
+    caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
+  )
 })
 
 self.addEventListener('push', (event) => {

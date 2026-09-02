@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { getSafeSession } from './auth'
 
 export interface Conversation {
   id: string
@@ -38,9 +39,9 @@ function generateClientId(): string {
 }
 
 export async function getConversations(): Promise<Conversation[]> {
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) return []
-  const userId = userData.user.id
+  const session = getSafeSession()
+  if (!session) return []
+  const userId = session.user.id
 
   const { data: me } = await supabase
     .from('profiles')
@@ -79,17 +80,17 @@ export async function getConversations(): Promise<Conversation[]> {
   const conversationIds = convos.map(c => c.id)
 
   const profileIds = [...otherIds]
-  const [{ data: profiles }, { data: allMessages }, { data: unreadMessages }] = await Promise.all([
+  const [{ data: profiles, error: profilesError }, { data: allMessages, error: allMessagesError }, { data: unreadMessages, error: unreadMessagesError }] = await Promise.all([
     profileIds.length > 0
-      ? supabase.from('profiles').select('id, first_name, last_name, avatar_url').in('id', profileIds)
-      : Promise.resolve({ data: [] }),
+      ? supabase.rpc('get_profile_names', { p_ids: profileIds })
+      : Promise.resolve({ data: [], error: null }),
     conversationIds.length > 0
       ? supabase
           .from('messages')
           .select('conversation_id, content, sent_at, sender_id')
           .in('conversation_id', conversationIds)
           .order('sent_at', { ascending: false })
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [], error: null }),
     conversationIds.length > 0
       ? supabase
           .from('messages')
@@ -97,8 +98,11 @@ export async function getConversations(): Promise<Conversation[]> {
           .in('conversation_id', conversationIds)
           .neq('sender_id', userId)
           .is('read_at', null)
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [], error: null }),
   ])
+  if (profilesError) console.error('[getConversations] profiles RPC error:', JSON.stringify({ message: profilesError.message, code: profilesError.code, details: profilesError.details, hint: profilesError.hint }))
+  if (allMessagesError) console.error('[getConversations] allMessages error:', JSON.stringify({ message: allMessagesError.message, code: allMessagesError.code, details: allMessagesError.details, hint: allMessagesError.hint }))
+  if (unreadMessagesError) console.error('[getConversations] unreadMessages error:', JSON.stringify({ message: unreadMessagesError.message, code: unreadMessagesError.code, details: unreadMessagesError.details, hint: unreadMessagesError.hint }))
 
   const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p]))
 
@@ -157,8 +161,8 @@ export async function sendMessage(
   replyToId?: string,
   optimisticClientId?: string
 ): Promise<Message> {
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) throw new Error('Non authentifie')
+  const session = getSafeSession()
+  if (!session) throw new Error('Non authentifie')
 
   if (!canSend(conversationId)) {
     throw new Error('Envoi trop rapide. Attends un instant.')
@@ -168,7 +172,7 @@ export async function sendMessage(
 
   const insertData: Record<string, unknown> = {
     conversation_id: conversationId,
-    sender_id: userData.user.id,
+    sender_id: session.user.id,
     content: content.trim(),
     client_id: clientId,
   }
@@ -185,13 +189,13 @@ export async function sendMessage(
 }
 
 export async function markAsRead(conversationId: string): Promise<void> {
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) return
+  const session = getSafeSession()
+  if (!session) return
   const { error } = await supabase
     .from('messages')
     .update({ read_at: new Date().toISOString() })
     .eq('conversation_id', conversationId)
-    .neq('sender_id', userData.user.id)
+    .neq('sender_id', session.user.id)
     .is('read_at', null)
   if (error) throw error
 }
@@ -200,14 +204,14 @@ export async function createConversation(
   participantId: string,
   _type?: string
 ): Promise<Conversation> {
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) throw new Error('Non authentifie')
+  const session = getSafeSession()
+  if (!session) throw new Error('Non authentifie')
 
   // Check for existing conversation first
   const { data: existing } = await supabase
     .from('conversations')
     .select('*')
-    .or(`and(participant_1.eq.${userData.user.id},participant_2.eq.${participantId}),and(participant_1.eq.${participantId},participant_2.eq.${userData.user.id})`)
+    .or(`and(participant_1.eq.${session.user.id},participant_2.eq.${participantId}),and(participant_1.eq.${participantId},participant_2.eq.${session.user.id})`)
     .maybeSingle()
 
   if (existing) return existing as Conversation
@@ -216,7 +220,7 @@ export async function createConversation(
     .from('conversations')
     .insert({
       type: 'DIRECT',
-      participant_1: userData.user.id,
+      participant_1: session.user.id,
       participant_2: participantId,
     })
     .select()
@@ -226,8 +230,8 @@ export async function createConversation(
 }
 
 export async function getOrCreateServiceGroupConversation(classId: string, department: string): Promise<Conversation> {
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) throw new Error('Non authentifié')
+  const session = getSafeSession()
+  if (!session) throw new Error('Non authentifié')
   const groupKey = `${classId}:${department}`
   const { data: existing } = await supabase
     .from('conversations')
@@ -240,8 +244,8 @@ export async function getOrCreateServiceGroupConversation(classId: string, depar
     .from('conversations')
     .insert({
       type: 'SERVICE_GROUP',
-      participant_1: userData.user.id,
-      participant_2: userData.user.id,
+      participant_1: session.user.id,
+      participant_2: session.user.id,
       service_group_key: groupKey,
     })
     .select()
@@ -294,86 +298,124 @@ export interface Contact {
 }
 
 export async function updateMyStatus(): Promise<void> {
-  await supabase.rpc('update_user_status')
+  try { await supabase.rpc('update_user_status') } catch (e) { console.error('[updateMyStatus] fire-and-forget error:', e) }
 }
 
 export async function getUserOnlineStatus(userId: string): Promise<{ is_online: boolean; last_seen: string } | null> {
-  const { data } = await supabase.rpc('get_user_status', { p_user_id: userId })
+  const { data, error } = await supabase.rpc('get_user_status', { p_user_id: userId })
+  if (error) {
+    console.error('[getUserOnlineStatus] RPC error:', JSON.stringify({ message: error.message, code: error.code, details: error.details, hint: error.hint }))
+    return null
+  }
   if (!data || data.length === 0) return null
   return { is_online: data[0].is_online, last_seen: data[0].last_seen }
 }
 
 export async function getAvailableContacts(): Promise<Contact[]> {
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) return []
-  const userId = userData.user.id
+  const session = getSafeSession()
+  if (!session) return []
+  const userId = session.user.id
 
-  const { data: me } = await supabase
+  const { data: me, error: meError } = await supabase
     .from('profiles')
     .select('role, class_id')
     .eq('id', userId)
     .single()
+  if (meError) console.error('[getAvailableContacts] profiles error:', JSON.stringify({ message: meError.message, code: meError.code, details: meError.details, hint: meError.hint }))
   if (!me) return []
 
   if (me.role === 'ETUDIANT') {
-    const { data } = await supabase
+    const contacts: Contact[] = []
+
+    // 1. Moderators of student's class
+    const { data: mods } = await supabase
       .from('moderator_classes')
       .select('moderator_id, profiles:moderator_id(id, first_name, last_name, avatar_url, role)')
       .eq('class_id', me.class_id)
-    return (data ?? [])
-      .map((r: any) => r.profiles)
-      .filter(Boolean) as Contact[]
+    if (mods) {
+      for (const r of mods) {
+        if (r.profiles) contacts.push(r.profiles as unknown as Contact)
+      }
+    }
+
+    // 2. Admin de classe of student's class
+    const { data: acs } = await supabase
+      .from('admin_class_classes')
+      .select('admin_id, profiles:admin_id(id, first_name, last_name, avatar_url, role)')
+      .eq('class_id', me.class_id)
+    if (acs) {
+      for (const r of acs) {
+        if (r.profiles) contacts.push(r.profiles as unknown as Contact)
+      }
+    }
+
+    // 3. Admin principal (all ADMINISTRATEUR)
+    const { data: admins } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, avatar_url, role')
+      .eq('role', 'ADMINISTRATEUR')
+      .eq('active', true)
+    if (admins) {
+      for (const a of admins) contacts.push(a as Contact)
+    }
+
+    return contacts
   }
 
   if (me.role === 'MODERATEUR') {
-    const { data: myClasses } = await supabase
+    const { data: myClasses, error: myClassesError } = await supabase
       .from('moderator_classes')
       .select('class_id')
       .eq('moderator_id', userId)
+    if (myClassesError) console.error('[getAvailableContacts] moderator_classes error:', JSON.stringify({ message: myClassesError.message, code: myClassesError.code, details: myClassesError.details, hint: myClassesError.hint }))
     const classIds = (myClasses ?? []).map((r: any) => r.class_id)
     if (classIds.length === 0) return []
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('id, first_name, last_name, avatar_url, role')
       .in('class_id', classIds)
       .eq('role', 'ETUDIANT')
       .eq('active', true)
+    if (error) console.error('[getAvailableContacts] profiles error:', JSON.stringify({ message: error.message, code: error.code, details: error.details, hint: error.hint }))
     return (data ?? []) as Contact[]
   }
 
   if (me.role === 'ADMIN_CLASSE') {
-    const { data: myClasses } = await supabase
+    const { data: myClasses, error: myClassesError } = await supabase
       .from('admin_class_classes')
       .select('class_id')
       .eq('admin_id', userId)
+    if (myClassesError) console.error('[getAvailableContacts] admin_class_classes error:', JSON.stringify({ message: myClassesError.message, code: myClassesError.code, details: myClassesError.details, hint: myClassesError.hint }))
     const classIds = (myClasses ?? []).map((r: any) => r.class_id)
     if (classIds.length === 0) return []
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('id, first_name, last_name, avatar_url, role')
       .in('class_id', classIds)
       .eq('role', 'ETUDIANT')
       .eq('active', true)
+    if (error) console.error('[getAvailableContacts] profiles error:', JSON.stringify({ message: error.message, code: error.code, details: error.details, hint: error.hint }))
     return (data ?? []) as Contact[]
   }
 
   // Admin: all active users except self
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('profiles')
     .select('id, first_name, last_name, avatar_url, role')
     .neq('id', userId)
     .eq('active', true)
+  if (error) console.error('[getAvailableContacts] profiles error:', JSON.stringify({ message: error.message, code: error.code, details: error.details, hint: error.hint }))
   return (data ?? []) as Contact[]
 }
 
 export async function sendBroadcastMessage(content: string): Promise<{ sent: number }> {
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) throw new Error('Non authentifié')
+  const session = getSafeSession()
+  if (!session) throw new Error('Non authentifié')
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
-    .eq('id', userData.user.id)
+    .eq('id', session.user.id)
     .single()
 
   if (profile?.role !== 'ADMINISTRATEUR') throw new Error('Non autorisé')
@@ -381,28 +423,144 @@ export async function sendBroadcastMessage(content: string): Promise<{ sent: num
   const { data: recipients } = await supabase
     .from('profiles')
     .select('id')
-    .neq('id', userData.user.id)
+    .neq('id', session.user.id)
     .eq('active', true)
 
   if (!recipients || recipients.length === 0) return { sent: 0 }
 
-  let sent = 0
-  for (const r of recipients) {
-    try {
-      await createConversation(r.id, 'DIRECT')
-      const convs = await getConversations()
-      const conv = convs.find(
-        (c) =>
-          (c.participant_1 === userData.user!.id && c.participant_2 === r.id) ||
-          (c.participant_1 === r.id && c.participant_2 === userData.user!.id)
-      )
-      if (conv) {
-        await sendMessage(conv.id, content)
-        sent++
+  const convoResults = await Promise.allSettled(
+    recipients.map(async (r) => {
+      const { data: existing } = await supabase
+        .from('conversations')
+        .select('id')
+        .or(`and(participant_1.eq.${session!.user.id},participant_2.eq.${r.id}),and(participant_1.eq.${r.id},participant_2.eq.${session!.user.id})`)
+        .maybeSingle()
+      if (existing) return existing.id as string
+      const { data: created } = await supabase
+        .from('conversations')
+        .insert({ type: 'DIRECT', participant_1: session!.user.id, participant_2: r.id })
+        .select('id')
+        .single()
+      return created!.id as string
+    })
+  )
+
+  const convoIds = convoResults
+    .filter((r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled')
+    .map((r) => r.value)
+
+  const sendResults = await Promise.allSettled(
+    convoIds.map((id) => sendMessage(id, content))
+  )
+
+  return { sent: sendResults.filter((r) => r.status === 'fulfilled').length }
+}
+
+// =====================================================
+// Real-time : abonnement global aux messages
+// =====================================================
+
+export function subscribeToAllMessages(
+  callback: (msg: Message) => void
+): () => void {
+  const channel = supabase
+    .channel('all-messages-realtime')
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'messages' },
+      (payload) => {
+        callback({ ...payload.new as Message, status: 'delivered' })
       }
-    } catch {
-      // skip failed recipients
-    }
+    )
+    .subscribe((status) => {
+      if (status === 'CHANNEL_ERROR') {
+        console.warn('[Messaging] all-messages realtime unavailable, relying on polling fallback')
+      }
+    })
+
+  return () => { supabase.removeChannel(channel) }
+}
+
+// =====================================================
+// Real-time : indicateur de frappe (Presence)
+// =====================================================
+
+const typingChannels = new Map<string, ReturnType<typeof supabase.channel>>()
+
+function getTypingChannel(conversationId: string) {
+  if (!typingChannels.has(conversationId)) {
+    typingChannels.set(conversationId, supabase.channel(`typing:${conversationId}`))
   }
-  return { sent }
+  return typingChannels.get(conversationId)!
+}
+
+export function sendTypingIndicator(conversationId: string, isTyping: boolean): void {
+  const channel = getTypingChannel(conversationId)
+  channel.track({ is_typing: isTyping })
+}
+
+export function subscribeToTypingIndicator(
+  conversationId: string,
+  currentUserId: string,
+  callback: (typingUsers: string[]) => void
+): () => void {
+  const channel = getTypingChannel(conversationId)
+
+  channel.on('presence', { event: 'sync' }, () => {
+    const state = channel.presenceState()
+    const typingUsers: string[] = []
+    for (const presences of Object.values(state)) {
+      for (const p of presences as Record<string, unknown>[]) {
+        if (p.user_id !== currentUserId && p.is_typing) {
+          typingUsers.push(p.user_id as string)
+        }
+      }
+    }
+    callback(typingUsers)
+  })
+
+  channel.subscribe(async (status) => {
+    if (status === 'SUBSCRIBED') {
+      await channel.track({ user_id: currentUserId, is_typing: false })
+    }
+  })
+
+  return () => {
+    channel.untrack()
+    supabase.removeChannel(channel)
+    typingChannels.delete(conversationId)
+  }
+}
+
+// =====================================================
+// Real-time : statut en ligne (Presence)
+// =====================================================
+
+export function subscribeToOnlineUsers(
+  currentUserId: string,
+  callback: (onlineUserIds: string[]) => void
+): () => void {
+  const channel = supabase.channel('online-users')
+
+  channel.on('presence', { event: 'sync' }, () => {
+    const state = channel.presenceState()
+    const ids: string[] = []
+    for (const presences of Object.values(state)) {
+      for (const p of presences as Record<string, unknown>[]) {
+        if (p.user_id) ids.push(p.user_id as string)
+      }
+    }
+    callback(ids)
+  })
+
+  channel.subscribe(async (status) => {
+    if (status === 'SUBSCRIBED') {
+      await channel.track({ user_id: currentUserId })
+    }
+  })
+
+  return () => {
+    channel.untrack()
+    supabase.removeChannel(channel)
+  }
 }

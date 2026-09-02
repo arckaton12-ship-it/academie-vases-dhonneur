@@ -6,6 +6,7 @@ export interface SidebarItem {
   key: string
   label: string
   icon: React.ReactNode
+  unread?: boolean
 }
 
 interface SidebarProps {
@@ -59,6 +60,7 @@ export function Sidebar({ items, activeKey, onSelect, header, footer }: SidebarP
             {expanded && (
               <span className="truncate whitespace-nowrap">{item.label}</span>
             )}
+            {item.unread && <span className="ml-auto h-2 w-2 flex-shrink-0 rounded-full bg-bordeaux" />}
           </button>
         ))}
       </nav>
@@ -115,6 +117,7 @@ export function Sidebar({ items, activeKey, onSelect, header, footer }: SidebarP
                 >
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center">{item.icon}</span>
                   <span className="truncate whitespace-nowrap">{item.label}</span>
+                  {item.unread && <span className="ml-auto h-2 w-2 flex-shrink-0 rounded-full bg-bordeaux" />}
                 </button>
               ))}
             </nav>

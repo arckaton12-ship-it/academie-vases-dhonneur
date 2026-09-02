@@ -34,9 +34,10 @@ const TYPE_COLORS: Record<string, string> = {
 interface NotificationsBellProps {
   notifications: NotificationRow[]
   onMarkRead: () => void
+  onNavigate?: (type: string | null) => void
 }
 
-export function NotificationsBell({ notifications, onMarkRead }: NotificationsBellProps) {
+export function NotificationsBell({ notifications, onMarkRead, onNavigate }: NotificationsBellProps) {
   const [open, setOpen] = useState(false)
   const unread = notifications.filter((n) => !n.read).length
   const prevUnread = useRef(unread)
@@ -97,7 +98,8 @@ export function NotificationsBell({ notifications, onMarkRead }: NotificationsBe
                 notifications.map((n) => (
                   <div
                     key={n.id}
-                    className={`flex items-start gap-3 border-b border-pierre/5 px-4 py-3 last:border-b-0 transition-colors hover:bg-sable/20 dark:hover:bg-white/5 ${
+                    onClick={() => { onNavigate?.(n.type); setOpen(false) }}
+                    className={`flex items-start gap-3 border-b border-pierre/5 px-4 py-3 last:border-b-0 transition-colors hover:bg-sable/20 dark:hover:bg-white/5 cursor-pointer ${
                       !n.read ? 'bg-or/5' : ''
                     }`}
                   >

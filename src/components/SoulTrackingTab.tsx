@@ -63,7 +63,11 @@ export function SoulTrackingTab({ studentId, studentName }: Props) {
         social_context: socialContext || null,
       })
       setTracking(updated)
-      setMsg('Fiche enregistrée.')
+      setAttendanceNotes('')
+      setAttendanceRating(3)
+      setMeditationObs('')
+      setSocialContext('')
+      setMsg('Fiche enregistrée et champs réinitialisés.')
     } catch (e: unknown) {
       setMsg(e instanceof Error ? e.message : 'Erreur')
     } finally {

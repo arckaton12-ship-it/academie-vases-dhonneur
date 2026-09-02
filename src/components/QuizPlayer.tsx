@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getQuizWithQuestions, submitQuiz, Quiz, QuizQuestion, QuizAttempt } from '@/lib/courses'
+import { startQuiz, submitQuiz, awardXp, Quiz, QuizQuestion, QuizAttempt } from '@/lib/courses'
+import { getSafeSession } from '@/lib/auth'
 
 interface QuizPlayerProps {
   quizId: string
@@ -16,19 +17,31 @@ export function QuizPlayer({ quizId, onClose }: QuizPlayerProps) {
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<QuizAttempt | null>(null)
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [xpGained, setXpGained] = useState(0)
 
   useEffect(() => {
-    getQuizWithQuestions(quizId)
+    startQuiz(quizId)
       .then((data) => {
         setQuiz(data.quiz)
         setQuestions(data.questions)
-        setAttempted(data.attempted)
-        if (data.quiz.time_limit_minutes) {
-          setTimeLeft(data.quiz.time_limit_minutes * 60)
+      })
+      .catch((e: unknown) => {
+        const msg = e instanceof Error ? e.message : ''
+        if (msg.includes('déjà passé') || msg.includes('already')) {
+          setAttempted(true)
+        } else {
+          setError(msg || 'Erreur lors du chargement du quiz')
         }
       })
       .finally(() => setLoading(false))
   }, [quizId])
+
+  useEffect(() => {
+    if (quiz?.time_limit_minutes && !attempted && !result) {
+      setTimeLeft(quiz.time_limit_minutes * 60)
+    }
+  }, [quiz, attempted, result])
 
   // Timer
   useEffect(() => {
@@ -56,6 +69,19 @@ export function QuizPlayer({ quizId, onClose }: QuizPlayerProps) {
     try {
       const res = await submitQuiz(quizId, answers)
       setResult(res)
+      // XP — fire and forget
+      const session = getSafeSession()
+      if (session) {
+        let xp = 10
+        awardXp(session.user.id, 'quiz_participation', quizId, 'quiz')
+        awardXp(session.user.id, 'quiz_passed', quizId, 'quiz')
+        xp += 20
+        if (res.is_passed && res.score === 20) {
+          awardXp(session.user.id, 'quiz_perfect', quizId, 'quiz')
+          xp += 40
+        }
+        setXpGained(xp)
+      }
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : 'Erreur lors de la soumission')
     } finally {
@@ -76,6 +102,20 @@ export function QuizPlayer({ quizId, onClose }: QuizPlayerProps) {
 
   if (!quiz) return null
 
+  if (error) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="glass-card w-full max-w-md p-6 text-center">
+          <h2 className="font-display text-xl text-bordeaux">Erreur</h2>
+          <p className="mt-2 text-sm text-pierre">{error}</p>
+          <button onClick={onClose} className="mt-4 rounded-card bg-bordeaux px-4 py-2.5 text-sm font-medium text-parchemin hover:bg-olive">
+            Fermer
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`
   const current = questions[currentIdx]
   const progress = questions.length > 0 ? ((currentIdx + 1) / questions.length) * 100 : 0
@@ -90,6 +130,9 @@ export function QuizPlayer({ quizId, onClose }: QuizPlayerProps) {
             <div className={`mt-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-lg font-bold ${result.is_passed ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
               {result.score} / 20
             </div>
+            {xpGained > 0 && (
+              <div className="xp-float text-or font-bold text-lg">+{xpGained} XP</div>
+            )}
             <p className="mt-2 text-sm text-pierre">
               {result.total_points}/{result.max_points} points • Seuil : {result.passing_score}/20
             </p>

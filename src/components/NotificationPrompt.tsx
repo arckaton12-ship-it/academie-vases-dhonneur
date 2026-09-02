@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { isPushSupported, getAndSavePushToken } from '@/lib/pushNotifications'
-import { supabase } from '@/lib/supabase'
+import { isPushSupported, registerPushAfterConsent } from '@/lib/pushNotifications'
+import { getSafeSession } from '@/lib/auth'
 
 const DISMISSED_KEY = 'notif_prompt_dismissed'
 const SHOWN_KEY = 'notif_prompt_shown'
@@ -10,27 +10,31 @@ export function NotificationPrompt() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (!isPushSupported()) return
-    if (localStorage.getItem(DISMISSED_KEY)) return
-    if (Notification.permission !== 'default') return
+    let cancelled = false
+    ;(async () => {
+      if (!(await isPushSupported())) return
+      if (cancelled || localStorage.getItem(DISMISSED_KEY)) return
+      if (Notification.permission !== 'default') return
+      if (sessionStorage.getItem(SHOWN_KEY)) return
 
-    const hasShown = sessionStorage.getItem(SHOWN_KEY)
-    if (hasShown) return
+      const timer = setTimeout(() => {
+        if (!cancelled) {
+          setShow(true)
+          sessionStorage.setItem(SHOWN_KEY, '1')
+        }
+      }, 5000)
 
-    const timer = setTimeout(() => {
-      setShow(true)
-      sessionStorage.setItem(SHOWN_KEY, '1')
-    }, 5000)
-
-    return () => clearTimeout(timer)
+      return () => clearTimeout(timer)
+    })()
+    return () => { cancelled = true }
   }, [])
 
   const handleActivate = async () => {
     setLoading(true)
     try {
-      const { data } = await supabase.auth.getUser()
-      if (data.user) {
-        await getAndSavePushToken(data.user.id)
+      const session = getSafeSession()
+      if (session) {
+        await registerPushAfterConsent(session.user.id)
       }
     } catch {
       // silent fail

@@ -89,11 +89,11 @@ export function DevoirsTab({ assignments, submissions, courseName, onSubmit }: D
 
   async function handleSubmit(assignmentId: string) {
     const draft = drafts[assignmentId]
-    if (!draft?.content?.trim()) return
+    if (!draft?.content?.trim() && !draft?.file) return
     setSubmitting((prev) => ({ ...prev, [assignmentId]: true }))
     try {
       await onSubmit(assignmentId, draft.content, draft.file)
-      setSubmitMsg((prev) => ({ ...prev, [assignmentId]: 'Envoye !' }))
+      setSubmitMsg((prev) => ({ ...prev, [assignmentId]: 'Envoyé !' }))
       toast('Devoir envoyé avec succès !')
       playSuccess()
       setDrafts((prev) => ({ ...prev, [assignmentId]: { content: '', file: null } }))
@@ -114,11 +114,11 @@ export function DevoirsTab({ assignments, submissions, courseName, onSubmit }: D
         </div>
         <div className="rounded-lg border border-olive/20 bg-olive/5 p-3 text-center">
           <p className="text-lg font-bold text-olive">{gradedCount}</p>
-          <p className="text-[10px] text-pierre dark:text-slate-500">Corriges</p>
+          <p className="text-[10px] text-pierre dark:text-slate-500">Corrigés</p>
         </div>
         <div className="rounded-lg border border-or/20 bg-or/5 p-3 text-center">
           <p className="text-lg font-bold text-or">{pendingCount}</p>
-          <p className="text-[10px] text-pierre dark:text-slate-500">A faire</p>
+          <p className="text-[10px] text-pierre dark:text-slate-500">À faire</p>
         </div>
       </div>
 
@@ -128,7 +128,7 @@ export function DevoirsTab({ assignments, submissions, courseName, onSubmit }: D
           { key: 'all' as const, label: 'Tous', count: items.length },
           { key: 'pending' as const, label: 'A rendre', count: pendingCount },
           { key: 'graded' as const, label: 'Notes', count: gradedCount },
-          { key: 'submitted' as const, label: 'Envoyes', count: submittedCount },
+          { key: 'submitted' as const, label: 'Envoyés', count: submittedCount },
         ].map((f) => (
           <button
             key={f.key}
@@ -147,7 +147,7 @@ export function DevoirsTab({ assignments, submissions, courseName, onSubmit }: D
       {/* Assignment cards */}
       {filtered.length === 0 ? (
         <div className="py-8 text-center">
-          <p className="text-sm text-pierre dark:text-slate-500">Aucun devoir dans cette categorie.</p>
+          <p className="text-sm text-pierre dark:text-slate-500">Aucun devoir dans cette catégorie.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -226,7 +226,7 @@ export function DevoirsTab({ assignments, submissions, courseName, onSubmit }: D
                       <div className="mb-3 rounded-lg border border-pierre/10 bg-white/50 p-2.5 dark:bg-white/5">
                         <div className="flex items-center justify-between">
                           <p className="text-[11px] text-pierre dark:text-slate-400">
-                            Envoye le {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString('fr-FR') : '—'}
+                            Envoyé le {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString('fr-FR') : '—'}
                           </p>
                           {isGraded && (
                             <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${getGradeColor(grade)}`}>
@@ -254,7 +254,7 @@ export function DevoirsTab({ assignments, submissions, courseName, onSubmit }: D
                       <Button
                         variant="outline"
                         className="!px-3 !py-1.5 text-xs"
-                        disabled={submitting[a.id] || !drafts[a.id]?.content?.trim()}
+                        disabled={submitting[a.id] || (!drafts[a.id]?.content?.trim() && !drafts[a.id]?.file)}
                         onClick={() => handleSubmit(a.id)}
                       >
                         {submitting[a.id] ? 'Envoi...' : submission ? 'Renvoyer' : 'Soumettre'}

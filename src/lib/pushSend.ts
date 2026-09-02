@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { getSafeSession } from './auth'
 
 interface SendPushParams {
   userId: string
@@ -10,8 +11,8 @@ interface SendPushParams {
 
 export async function sendPushNotification({ userId, title, body, tag, url }: SendPushParams): Promise<void> {
   try {
-    const { data: session } = await supabase.auth.getSession()
-    if (!session.session) return
+    const session = getSafeSession()
+    if (!session) return
 
     await supabase.functions.invoke('send-push-notification', {
       body: { user_id: userId, title, body, tag, url },
@@ -28,7 +29,7 @@ const ROLE_MAP: Record<string, string> = {
 }
 
 export async function sendPushToRole(
-  role: 'student' | 'moderator' | 'admin',
+  role: 'student' | 'moderator' | 'admin' | 'ETUDIANT' | 'MODERATEUR' | 'ADMINISTRATEUR',
   title: string,
   body: string,
   tag?: string,

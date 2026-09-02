@@ -13,9 +13,12 @@ import {
   markAsRead,
   createConversation,
   subscribeToMessages,
+  subscribeToAllMessages,
+  sendTypingIndicator,
+  subscribeToTypingIndicator,
+  subscribeToOnlineUsers,
   getAvailableContacts,
   updateMyStatus,
-  getUserOnlineStatus,
   getOrCreateServiceGroupConversation,
   Conversation,
   Message,
@@ -24,7 +27,7 @@ import {
 
 interface MessagingPanelProps {
   currentUserId: string
-  userRole: 'ADMINISTRATEUR' | 'MODERATEUR' | 'ETUDIANT'
+  userRole: 'ADMINISTRATEUR' | 'MODERATEUR' | 'ETUDIANT' | 'ADMIN_CLASSE'
 }
 
 function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
@@ -46,52 +49,29 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
   const [searchConvos, setSearchConvos] = useState('')
   const [replyTo, setReplyTo] = useState<Message | null>(null)
   const [contextMenu, setContextMenu] = useState<{ msg: Message; x: number; y: number } | null>(null)
-  const [otherOnline, setOtherOnline] = useState<boolean | null>(null)
-  const [studentProfile, setStudentProfile] = useState<{ class_id: string | null; department: string | null } | null>(null)
+  const [typingUsers, setTypingUsers] = useState<string[]>([])
+  const [onlineUserIds, setOnlineUserIds] = useState<string[]>([])
+  const [studentProfile, setStudentProfile] = useState<{ class_id: string; department: string } | null>(null)
   const [serviceGroupLoading, setServiceGroupLoading] = useState(false)
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const conversationsRef = useRef(conversations)
   conversationsRef.current = conversations
 
-  // Load student profile for service group
+  // Load student profile for service group button
   useEffect(() => {
-    if (userRole !== 'ETUDIANT') return
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) return
-      supabase.from('profiles').select('class_id, department').eq('id', data.user.id).single().then(({ data: profile }) => {
-        if (profile) setStudentProfile({ class_id: profile.class_id, department: profile.department })
-      })
-    }).catch(() => {})
-  }, [userRole])
-
-  async function openServiceGroup() {
-    if (!studentProfile?.class_id || !studentProfile?.department) {
-      toastError('Ta tribu ou département n\'est pas renseigné. Va dans les paramètres.')
-      return
+    if (userRole === 'ETUDIANT') {
+      supabase
+        .from('profiles')
+        .select('class_id, department')
+        .eq('id', currentUserId)
+        .single()
+        .then(({ data, error }) => {
+          if (!error && data?.class_id && data?.department) {
+            setStudentProfile({ class_id: data.class_id, department: data.department })
+          }
+        })
     }
-    setServiceGroupLoading(true)
-    try {
-      const convo = await getOrCreateServiceGroupConversation(studentProfile.class_id, studentProfile.department)
-      // Check if already in list
-      const existing = conversations.find((c) => c.id === convo.id)
-      if (!existing) {
-        const dept = studentProfile.department || 'Service'
-        const enriched: Conversation = {
-          ...convo,
-          other_user: { id: 'service-group', first_name: dept, last_name: '(Service)', avatar_url: null },
-          last_message: null,
-          unread_count: 0,
-        }
-        setConversations((prev) => [enriched, ...prev])
-      }
-      setActiveId(convo.id)
-      setMobileShowChat(true)
-    } catch (e: any) {
-      console.error('[Messaging] openServiceGroup:', e)
-      toastError(e?.message || 'Impossible d\'ouvrir le groupe de service.')
-    } finally {
-      setServiceGroupLoading(false)
-    }
-  }
+  }, [currentUserId, userRole])
 
   // Load conversations
   useEffect(() => {
@@ -118,27 +98,16 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
   useEffect(() => {
     setNewMsg('')
     setReplyTo(null)
+    setTypingUsers([])
   }, [activeId])
 
-  // Check online status of other user
-  useEffect(() => {
-    if (!activeId) { setOtherOnline(null); return }
-    const convo = conversations.find((c) => c.id === activeId)
-    const otherId = convo?.other_user?.id
-    if (!otherId) { setOtherOnline(null); return }
-    let cancelled = false
-    getUserOnlineStatus(otherId).then((status) => {
-      if (!cancelled) setOtherOnline(status?.is_online ?? null)
-    }).catch(() => { if (!cancelled) setOtherOnline(null) })
-    return () => { cancelled = true }
-  }, [activeId, conversations])
-
-  // Update own status every 30s
+  // Track online presence via Presence + periodic RPC fallback
   useEffect(() => {
     updateMyStatus().catch(() => {})
     const interval = setInterval(() => { updateMyStatus().catch(() => {}) }, 30000)
-    return () => clearInterval(interval)
-  }, [])
+
+    return () => { clearInterval(interval) }
+  }, [currentUserId])
 
   // Load messages + subscribe to realtime
   useEffect(() => {
@@ -154,10 +123,8 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
 
     const unsub = subscribeToMessages(activeId, (msg) => {
       if (cancelled) return
-      // Dedup: skip if message already exists (from optimistic insert or duplicate realtime)
       setMessages((prev) => {
         if (prev.some((m) => m.id === msg.id || (msg.client_id && m.client_id === msg.client_id))) {
-          // If we have an optimistic version with status 'sending', replace it
           if (msg.client_id) {
             const idx = prev.findIndex((m) => m.client_id === msg.client_id)
             if (idx !== -1) {
@@ -170,17 +137,62 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
         }
         return [...prev, { ...msg, status: 'delivered' }]
       })
-
-      setConversations((prev) =>
-        prev.map((c) =>
-          c.id === activeId
-            ? { ...c, last_message: { content: msg.content, sent_at: msg.sent_at, sender_id: msg.sender_id } }
-            : c
-        )
-      )
     })
 
     return () => { cancelled = true; unsub() }
+  }, [activeId])
+
+  // Global subscription: update sidebar (unread + last_message) for ALL conversations
+  useEffect(() => {
+    const unsub = subscribeToAllMessages((msg) => {
+      if (msg.sender_id === currentUserId) return
+      setConversations((prev) => {
+        const idx = prev.findIndex((c) => c.id === msg.conversation_id)
+        if (idx === -1) return prev
+        const updated = [...prev]
+        updated[idx] = {
+          ...updated[idx],
+          last_message: { content: msg.content, sent_at: msg.sent_at, sender_id: msg.sender_id },
+          unread_count: msg.conversation_id !== activeId
+            ? (updated[idx].unread_count ?? 0) + 1
+            : updated[idx].unread_count,
+        }
+        const [moved] = updated.splice(idx, 1)
+        return [moved, ...updated]
+      })
+    })
+    return unsub
+  }, [currentUserId, activeId])
+
+  // Polling fallback: re-fetch conversations every 15s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      getConversations().then(setConversations).catch(() => {})
+    }, 15000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Online presence tracking
+  useEffect(() => {
+    const unsub = subscribeToOnlineUsers(currentUserId, setOnlineUserIds)
+    return unsub
+  }, [currentUserId])
+
+  // Typing indicator for active conversation
+  useEffect(() => {
+    if (!activeId) { setTypingUsers([]); return }
+    const unsub = subscribeToTypingIndicator(activeId, currentUserId, setTypingUsers)
+    return unsub
+  }, [activeId, currentUserId, conversations])
+
+  // Send typing indicator on input change (debounced 3s)
+  const handleTyping = useCallback(() => {
+    if (!activeId) return
+    sendTypingIndicator(activeId, true)
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+    typingTimeoutRef.current = setTimeout(() => {
+      sendTypingIndicator(activeId, false)
+    }, 3000)
   }, [activeId])
 
   // Auto-scroll only when user is at bottom
@@ -216,6 +228,31 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
         console.error('[Messaging] getAvailableContacts:', e)
         toastError('Impossible de charger les contacts.')
       })
+    }
+  }
+
+  async function openServiceGroup() {
+    if (!studentProfile) return
+    setServiceGroupLoading(true)
+    try {
+      const convo = await getOrCreateServiceGroupConversation(studentProfile.class_id, studentProfile.department)
+      const dept = studentProfile.department || 'Groupe'
+      const enriched: Conversation = {
+        ...convo,
+        other_user: { id: 'service-group', first_name: dept, last_name: '(Service)', avatar_url: null },
+        last_message: null,
+        unread_count: 0,
+      }
+      if (!conversations.find(c => c.id === convo.id)) {
+        setConversations((prev) => [enriched, ...prev])
+      }
+      setActiveId(convo.id)
+      setMobileShowChat(true)
+    } catch (e: any) {
+      console.error('[Messaging] openServiceGroup:', e)
+      toastError(e?.message || 'Impossible d\'ouvrir le groupe de service.')
+    } finally {
+      setServiceGroupLoading(false)
     }
   }
 
@@ -462,14 +499,10 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
             <button
               onClick={openServiceGroup}
               disabled={serviceGroupLoading}
-              className="flex w-full items-center gap-2 rounded-lg bg-or/10 px-3 py-2 text-left text-xs font-medium text-or transition-colors hover:bg-or/20 dark:bg-or/10 dark:hover:bg-or/20 disabled:opacity-50"
+              className="flex w-full items-center gap-2 rounded-lg bg-or/10 px-3 py-2 text-left text-xs font-medium text-or transition-colors hover:bg-or/20 dark:bg-or/15 dark:hover:bg-or/25 disabled:opacity-50"
             >
-              {serviceGroupLoading ? (
-                <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-              ) : (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              )}
-              Parler à mon Groupe de Service
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              {serviceGroupLoading ? 'Ouverture...' : `Parler à mon Groupe de Service`}
             </button>
           </div>
         )}
@@ -492,19 +525,13 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
                     className={`flex w-full items-center gap-3 px-3 py-3 text-left transition-colors ${activeId === c.id ? 'bg-bordeaux/10 dark:bg-or/10' : 'hover:bg-sable/30 dark:hover:bg-white/5'}`}
                   >
                     <div className="relative">
-                      {c.type === 'SERVICE_GROUP' ? (
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-or/15 text-or">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                        </div>
-                      ) : (
                         <Avatar url={c.other_user?.avatar_url} firstName={c.other_user?.first_name} lastName={c.other_user?.last_name} size={36} />
-                      )}
                       {unread && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-or ring-2 ring-white dark:ring-slate-900" />}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between">
                         <p className={`truncate text-xs ${unread ? 'font-bold text-bordeaux dark:text-slate-100' : 'font-medium text-bordeaux dark:text-slate-200'}`}>
-                          {c.type === 'SERVICE_GROUP' ? `${c.other_user?.first_name} — Groupe` : `${c.other_user?.first_name} ${c.other_user?.last_name}`}
+                          {c.other_user?.first_name} {c.other_user?.last_name}
                         </p>
                         {c.last_message && (
                           <span className="ml-2 shrink-0 text-[10px] text-pierre dark:text-slate-500">{formatLastMsgTime(c.last_message.sent_at)}</span>
@@ -543,25 +570,22 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
               <button onClick={() => setMobileShowChat(false)} className="md:hidden text-bordeaux hover:text-bordeaux/80 dark:text-or">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
               </button>
-              {activeConvo?.type === 'SERVICE_GROUP' ? (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-or/15 text-or">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                </div>
-              ) : (
-                <Avatar url={activeConvo?.other_user?.avatar_url} firstName={activeConvo?.other_user?.first_name} lastName={activeConvo?.other_user?.last_name} size={32} />
-              )}
+              <Avatar url={activeConvo?.other_user?.avatar_url} firstName={activeConvo?.other_user?.first_name} lastName={activeConvo?.other_user?.last_name} size={32} />
               <div>
                 <p className="text-sm font-semibold text-bordeaux dark:text-slate-100">
                   {activeConvo?.type === 'SERVICE_GROUP'
-                    ? `${activeConvo?.other_user?.first_name} — Groupe`
+                    ? `Groupe de Service — ${activeConvo?.other_user?.first_name}`
                     : `${activeConvo?.other_user?.first_name} ${activeConvo?.other_user?.last_name}`}
                 </p>
-                {activeConvo?.type !== 'SERVICE_GROUP' && (
-                  <p className="text-[10px] text-olive">{otherOnline === true ? 'En ligne' : otherOnline === false ? 'Hors ligne' : ''}</p>
-                )}
-                {activeConvo?.type === 'SERVICE_GROUP' && (
-                  <p className="text-[10px] text-olive">Discussion de groupe</p>
-                )}
+                <p className="text-[10px] text-olive">
+                  {activeConvo?.type === 'SERVICE_GROUP'
+                    ? 'Discussion de groupe'
+                    : typingUsers.length > 0
+                      ? <span className="italic">est en train d'écrit...</span>
+                      : onlineUserIds.includes(activeConvo?.other_user?.id ?? '')
+                        ? 'En ligne'
+                        : 'Hors ligne'}
+                </p>
               </div>
             </div>
 
@@ -649,7 +673,7 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
               <input
                 ref={inputRef}
                 value={newMsg}
-                onChange={(e) => setNewMsg(e.target.value)}
+                onChange={(e) => { setNewMsg(e.target.value); handleTyping() }}
                 placeholder={replyTo ? 'Ecrire une reponse...' : 'Ecrire un message...'}
                 className="flex-1 rounded-full bg-sable/30 px-4 py-2.5 text-sm outline-none transition-colors placeholder:text-pierre/40 focus:bg-sable/50 dark:bg-white/5 dark:text-slate-200 dark:placeholder:text-slate-600"
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e) } }}
@@ -677,7 +701,7 @@ export function MessagingPanel(props: MessagingPanelProps) {
   return (
     <ErrorBoundary sectionName="Messagerie" fallback={
       <div className="flex h-[600px] items-center justify-center rounded-card border border-red-200 bg-red-50 dark:border-red-900/30 dark:bg-red-950/20">
-        <p className="text-sm text-red-600 dark:text-red-400">La messagerie a encounters une erreur.</p>
+        <p className="text-sm text-red-600 dark:text-red-400">La messagerie a rencontré une erreur.</p>
       </div>
     }>
       <MessagingPanelInner {...props} />

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { getSafeSession } from '../lib/auth'
 
 const CLASSES = ['Classe 1', 'Classe 2', 'Classe 3']
 const SEXES = ['Homme', 'Femme']
@@ -81,9 +82,8 @@ export default function RegistrationStep2({ profile, onComplete }: Props) {
   const [showCodeOfConduct, setShowCodeOfConduct] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user?.email) setForm(p => ({ ...p, email: data.user!.email! }))
-    })
+    const session = getSafeSession()
+    if (session?.user) setForm(p => ({ ...p, email: session.user.email ?? '' }))
   }, [])
 
   const set = (k: keyof RegistrationData, v: unknown) => setForm(p => ({ ...p, [k]: v }))

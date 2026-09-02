@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useRef, useEffect } from 'react'
 import { Course } from '@/lib/courses'
 import { MascotCompanion, MascotMood } from './MascotCompanion'
 
@@ -23,6 +23,8 @@ function getStatus(course: Course, currentWeek: number, completedIds: Set<string
 }
 
 export function CoursePath({ courses, currentWeek, completedCourseIds, onSelectCourse, mascotMood = 'happy' }: CoursePathProps) {
+  const currentNodeRef = useRef<HTMLDivElement>(null)
+
   const nodes = useMemo(() => {
     return courses
       .sort((a, b) => a.week - b.week)
@@ -36,8 +38,23 @@ export function CoursePath({ courses, currentWeek, completedCourseIds, onSelectC
   const currentIdx = nodes.findIndex((n) => n.status === 'available' || n.status === 'completed')
   const mascotIdx = currentIdx >= 0 ? currentIdx : 0
 
+  useEffect(() => {
+    if (currentNodeRef.current) {
+      currentNodeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [nodes.length, currentWeek])
+
+  const totalCourses = nodes.length
+  const completedCount = nodes.filter((n) => n.status === 'completed').length
+  const completionPct = totalCourses > 0 ? Math.round((completedCount / totalCourses) * 100) : 0
+
   return (
     <div className="relative flex flex-col items-center py-4">
+      <div className="mb-4 w-full text-center">
+        <p className="text-sm font-semibold text-bordeaux">
+          Semaine {currentWeek}/{totalCourses} — {completionPct}% complété
+        </p>
+      </div>
       {/* SVG path connector */}
       <svg
         className="absolute inset-0 pointer-events-none"
@@ -67,6 +84,7 @@ export function CoursePath({ courses, currentWeek, completedCourseIds, onSelectC
         return (
           <div
             key={node.course.id}
+            ref={i === currentIdx ? currentNodeRef : undefined}
             className={`path-node relative flex items-center gap-3 ${
               isLeft ? 'flex-row' : 'flex-row-reverse'
             } mb-6 w-full max-w-xs`}

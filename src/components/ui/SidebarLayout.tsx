@@ -19,7 +19,7 @@ export function SidebarLayout({ items, activeKey, onSelect, children, header }: 
         onSelect={onSelect}
         header={header ?? <Logo showText={false} size={28} />}
       />
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+      <div className="mx-auto max-w-4xl px-3 py-6 sm:px-6 sm:py-8">
         {children}
       </div>
     </div>

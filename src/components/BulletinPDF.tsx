@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { Button } from '@/components/ui/Button'
+import { sanitizeForPdf } from '@/lib/pdfFonts'
 import { supabase } from '@/lib/supabase'
 
 interface BulletinData {
@@ -59,11 +60,11 @@ export function BulletinPDF({ studentId, studentName }: BulletinPDFProps) {
       // ─── Header ───
       doc.setFontSize(20)
       doc.setTextColor(27, 107, 99)
-      doc.text('ACADEMIE VASES D\'HONNEUR', w / 2, 25, { align: 'center' })
+      doc.text(sanitizeForPdf('ACADEMIE VASES D\'HONNEUR'), w / 2, 25, { align: 'center' })
 
       doc.setFontSize(12)
       doc.setTextColor(100, 100, 100)
-      doc.text('Bulletin de Notes', w / 2, 33, { align: 'center' })
+      doc.text(sanitizeForPdf('Bulletin de Notes'), w / 2, 33, { align: 'center' })
 
       // Line
       doc.setDrawColor(212, 160, 23)
@@ -75,11 +76,11 @@ export function BulletinPDF({ studentId, studentName }: BulletinPDFProps) {
       doc.setFontSize(11)
       doc.setTextColor(60, 60, 60)
 
-      doc.text(`Nom : ${d.student.last_name} ${d.student.first_name}`, margin, y)
-      doc.text(`Classe : ${d.student.class_name}`, w / 2, y)
+      doc.text(sanitizeForPdf(`Nom : ${d.student.last_name} ${d.student.first_name}`), margin, y)
+      doc.text(sanitizeForPdf(`Classe : ${d.student.class_name}`), w / 2, y)
       y += 7
-      doc.text(`Email : ${d.student.email}`, margin, y)
-      doc.text(`Date : ${new Date().toLocaleDateString('fr-FR')}`, w / 2, y)
+      doc.text(sanitizeForPdf(`Email : ${d.student.email}`), margin, y)
+      doc.text(sanitizeForPdf(`Date : ${new Date().toLocaleDateString('fr-FR')}`), w / 2, y)
 
       y += 10
       doc.setDrawColor(200, 200, 200)
@@ -91,7 +92,7 @@ export function BulletinPDF({ studentId, studentName }: BulletinPDFProps) {
       doc.setFontSize(14)
       doc.setTextColor(27, 107, 99)
       const avg = d.general_average ?? 0
-      doc.text(`Moyenne Generale : ${avg.toFixed(2)} / 20`, w / 2, y, { align: 'center' })
+      doc.text(sanitizeForPdf(`Moyenne Generale : ${avg.toFixed(2)} / 20`), w / 2, y, { align: 'center' })
       y += 4
 
       // Grade indicator
@@ -100,22 +101,22 @@ export function BulletinPDF({ studentId, studentName }: BulletinPDFProps) {
       doc.roundedRect(w / 2 - 25, y, 50, 10, 3, 3, 'F')
       doc.setFontSize(12)
       doc.setTextColor(255, 255, 255)
-      doc.text(avg >= 10 ? 'ADMISSIBLE' : 'NON ADMISSIBLE', w / 2, y + 7, { align: 'center' })
+      doc.text(sanitizeForPdf(avg >= 10 ? 'ADMISSIBLE' : 'NON ADMISSIBLE'), w / 2, y + 7, { align: 'center' })
       y += 16
 
       // ─── Grades Table ───
       doc.setFontSize(11)
       doc.setTextColor(27, 107, 99)
-      doc.text('RECAPITULATIF DES NOTES', margin, y)
+      doc.text(sanitizeForPdf('RECAPITULATIF DES NOTES'), margin, y)
       y += 3
 
       doc.setFillColor(27, 107, 99)
       doc.rect(margin, y, w - 2 * margin, 8, 'F')
       doc.setFontSize(9)
       doc.setTextColor(255, 255, 255)
-      doc.text('Matiere', margin + 3, y + 5.5)
-      doc.text('Note', w - margin - 20, y + 5.5, { align: 'right' })
-      doc.text('Appreciation', w / 2, y + 5.5, { align: 'center' })
+      doc.text(sanitizeForPdf('Matiere'), margin + 3, y + 5.5)
+      doc.text(sanitizeForPdf('Note'), w - margin - 20, y + 5.5, { align: 'right' })
+      doc.text(sanitizeForPdf('Appreciation'), w / 2, y + 5.5, { align: 'center' })
       y += 10
 
       const addRow = (label: string, grade: number | null, feedback?: string | null) => {
@@ -124,12 +125,12 @@ export function BulletinPDF({ studentId, studentName }: BulletinPDFProps) {
         doc.rect(margin, y - 4, w - 2 * margin, 8, 'F')
         doc.setFontSize(9)
         doc.setTextColor(60, 60, 60)
-        doc.text(label, margin + 3, y + 1)
+        doc.text(sanitizeForPdf(label), margin + 3, y + 1)
         doc.setTextColor(27, 107, 99)
-        doc.text(grade !== null ? `${grade.toFixed(1)}/20` : '—', w - margin - 15, y + 1, { align: 'right' })
+        doc.text(sanitizeForPdf(grade !== null ? `${grade.toFixed(1)}/20` : '—'), w - margin - 15, y + 1, { align: 'right' })
         if (feedback) {
           doc.setTextColor(100, 100, 100)
-          doc.text(feedback.substring(0, 50), w / 2, y + 1, { align: 'center' })
+          doc.text(sanitizeForPdf(feedback.substring(0, 50)), w / 2, y + 1, { align: 'center' })
         }
         y += 8
       }
@@ -168,7 +169,7 @@ export function BulletinPDF({ studentId, studentName }: BulletinPDFProps) {
 
       doc.setFontSize(11)
       doc.setTextColor(27, 107, 99)
-      doc.text('STATISTIQUES', margin, y)
+      doc.text(sanitizeForPdf('STATISTIQUES'), margin, y)
       y += 8
 
       doc.setFontSize(9)
@@ -182,8 +183,8 @@ export function BulletinPDF({ studentId, studentName }: BulletinPDFProps) {
       ]
 
       stats.forEach(([label, value]) => {
-        doc.text(label, margin + 3, y)
-        doc.text(value, w - margin - 15, y, { align: 'right' })
+        doc.text(sanitizeForPdf(label), margin + 3, y)
+        doc.text(sanitizeForPdf(value), w - margin - 15, y, { align: 'right' })
         y += 6
       })
 
@@ -193,8 +194,8 @@ export function BulletinPDF({ studentId, studentName }: BulletinPDFProps) {
 
       doc.setFontSize(8)
       doc.setTextColor(150, 150, 150)
-      doc.text('Academie Vases d\'Honneur - Yaounde', w / 2, 280, { align: 'center' })
-      doc.text(`Document genere le ${new Date().toLocaleDateString('fr-FR')}`, w / 2, 285, { align: 'center' })
+      doc.text(sanitizeForPdf('Academie Vases d\'Honneur - Yaounde'), w / 2, 280, { align: 'center' })
+      doc.text(sanitizeForPdf(`Document genere le ${new Date().toLocaleDateString('fr-FR')}`), w / 2, 285, { align: 'center' })
 
       // Save
       const fileName = `Bulletin_${d.student.last_name}_${d.student.first_name}.pdf`

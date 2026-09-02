@@ -46,9 +46,17 @@ export function RankingsTab({ currentUserId }: { currentUserId: string }) {
       if (!profiles) { setLoading(false); return }
 
       // Get badge counts
-      const { data: badgeData } = await supabase
+      let badgeQuery = supabase
         .from('student_badges')
-        .select('student_id')
+        .select('student_id, earned_at')
+      if (period === 'month') {
+        const since = new Date(Date.now() - 30 * 86400000).toISOString()
+        badgeQuery = badgeQuery.gte('earned_at', since)
+      } else if (period === 'week') {
+        const since = new Date(Date.now() - 7 * 86400000).toISOString()
+        badgeQuery = badgeQuery.gte('earned_at', since)
+      }
+      const { data: badgeData } = await badgeQuery
 
       const badgeCounts = new Map<string, number>()
       for (const b of badgeData ?? []) {

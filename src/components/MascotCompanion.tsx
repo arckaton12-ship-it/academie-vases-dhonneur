@@ -16,7 +16,7 @@ const MESSAGES: Record<MascotMood, string[]> = {
     "Continue comme ça, tu progresses bien !",
     "La Parole t'attend avec joie.",
     "Chaque jour est une nouvelle grâce.",
-    "Tu es exactly là où Dieu veut que tu sois.",
+    "Tu es exactement là où Dieu veut que tu sois.",
   ],
   proud: [
     "Bien joué, tu as tenu ta méditation !",

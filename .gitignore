@@ -25,3 +25,44 @@ npm-debug.log*
 
 # Firebase Admin SDK (NEVER commit — server-side only)
 *firebase-adminsdk*.json
+
+# Secrets / outils d'administration locaux (NEVER commit)
+run-sql.cjs
+run_sql.cjs
+
+# Artefacts de travail / diagnostic (ne pas versionner)
+_tmp_*.cjs
+_*.cjs
+test-*.cjs
+diagnose-*.cjs
+fix-*.cjs
+playwright.config.ts
+test-results/
+tmp_*.sql
+temp_*.sql
+*.bin
+CONSIGNE/
+tests/admin-create-audit.cjs
+tests/audit-total.cjs
+tests/audit-total-v2.cjs
+tests/db-state.cjs
+tests/full-audit.cjs
+tests/perf-audit.cjs
+tests/verify-verse.cjs
+tests/week-audit.cjs
+tests/api.test.ts
+
+# Rapports de diagnostic (ne pas versionner)
+ARCHITECTURE.md
+AUDIT_REPORT.md
+BASELINE.md
+INCIDENTS.md
+SECURITY_DEFINER_AUDIT.md
+STABILISATION_RAPPORT.md
+.tmp-audio/
+
+# Scripts de diagnostic/migration ponctuels (contiennent des credentials)
+scripts/
+
+# Artefacts de build TS
+*.tsbuildinfo

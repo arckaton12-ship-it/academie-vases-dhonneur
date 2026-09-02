@@ -1,9 +1,11 @@
-import { FormEvent } from 'react'
+import { FormEvent, useState } from 'react'
 import { Card, CardTitle, CardDescription } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input, Label, FieldError } from '@/components/ui/Input'
 import { AvatarUpload } from '@/components/AvatarUpload'
 import { SoundToggle } from '@/components/SoundToggle'
+import { supabase } from '@/lib/supabase'
+import { toast, toastError } from '@/components/ui/Toast'
 
 interface AdminProfile {
   id: string
@@ -117,6 +119,9 @@ export function AdminSettingsTab({
         </div>
       </Card>
 
+      {/* Section: Mot de passe */}
+      <AdminPasswordChangeCard />
+
       {/* Section: Compte */}
       <Card>
         <CardTitle>Compte</CardTitle>
@@ -128,5 +133,57 @@ export function AdminSettingsTab({
         </Button>
       </Card>
     </div>
+  )
+}
+
+function AdminPasswordChangeCard() {
+  const [newPwd, setNewPwd] = useState('')
+  const [confirmPwd, setConfirmPwd] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
+  const [isError, setIsError] = useState(false)
+  const [showNew, setShowNew] = useState(false)
+
+  async function handleChangePassword(e: FormEvent) {
+    e.preventDefault()
+    setMsg(null)
+    if (newPwd.length < 6) { setMsg('Minimum 6 caractères.'); setIsError(true); return }
+    if (newPwd !== confirmPwd) { setMsg('Les mots de passe ne correspondent pas.'); setIsError(true); return }
+    setSaving(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPwd })
+      if (error) throw error
+      setMsg('Mot de passe modifié.')
+      setIsError(false)
+      setNewPwd('')
+      setConfirmPwd('')
+      toast('Mot de passe modifié.')
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'Erreur.')
+      setIsError(true)
+      toastError('Erreur.')
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <Card>
+      <CardTitle>Mot de passe</CardTitle>
+      <CardDescription className="mt-2 mb-3">Modifie ton mot de passe.</CardDescription>
+      <form onSubmit={handleChangePassword} className="space-y-3">
+        <div>
+          <Label htmlFor="admin-new-pwd">Nouveau mot de passe</Label>
+          <div className="relative">
+            <Input id="admin-new-pwd" type={showNew ? 'text' : 'password'} required minLength={6} value={newPwd} onChange={(e) => setNewPwd(e.target.value)} placeholder="Minimum 6 caractères" />
+            <button type="button" onClick={() => setShowNew(!showNew)} className="absolute right-2 top-1/2 -translate-y-1/2 text-pierre hover:text-bordeaux" tabIndex={-1}>{showNew ? '🙈' : '👁'}</button>
+          </div>
+        </div>
+        <div>
+          <Label htmlFor="admin-confirm-pwd">Confirmer</Label>
+          <Input id="admin-confirm-pwd" type={showNew ? 'text' : 'password'} required minLength={6} value={confirmPwd} onChange={(e) => setConfirmPwd(e.target.value)} placeholder="Retape" />
+        </div>
+        {msg && <p className={`text-sm ${isError ? 'text-red-600' : 'text-olive'}`}>{msg}</p>}
+        <Button type="submit" disabled={saving}>{saving ? 'Modification…' : 'Modifier'}</Button>
+      </form>
+    </Card>
   )
 }

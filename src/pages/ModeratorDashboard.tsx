@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Card, CardTitle, CardDescription } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input, Label } from '@/components/ui/Input'
+import { CoursePlayer } from '@/components/CoursePlayer'
 import { SidebarLayout } from '@/components/ui/SidebarLayout'
 import { Logo } from '@/components/Logo'
 import { Avatar } from '@/components/Avatar'
@@ -12,7 +13,7 @@ import { VerseReference } from '@/components/VerseReference'
 import { DayAccentBand } from '@/components/DayAccentBand'
 import { SoulTrackingTab } from '@/components/SoulTrackingTab'
 import { ModeratorSettingsTab } from '@/components/ModeratorSettingsTab'
-import { playSuccess } from '@/lib/sound'
+import { playSuccess, playClick } from '@/lib/sound'
 import { supabase } from '@/lib/supabase'
 import { sendPushToRole } from '@/lib/pushSend'
 import { sendSaturdayReminders } from '@/lib/courses'
@@ -48,19 +49,23 @@ import {
   ModerationSupport,
   ModerationReport,
   Announcement,
+  adminCreateUser,
+  getModNotes,
+  saveModNotes,
 } from '@/lib/courses'
 import { getCurrentProfile, signOut } from '@/lib/auth'
 import { exportToCSV, exportToPDF, ExportRow } from '@/lib/export'
 import { MessagingPanel } from '@/components/MessagingPanel'
 import { StudentProfileCard } from '@/components/StudentProfileCard'
-import { adminCreateUser } from '@/lib/courses'
-import { playClick } from '@/lib/sound'
 import { toast, toastError } from '@/components/ui/Toast'
 import { createConversation } from '@/lib/messaging'
+import { Leaderboard } from '@/components/Leaderboard'
 
-type Tab = 'programme' | 'eleves' | 'rapport' | 'annonces' | 'messagerie' | 'binomage' | 'parametres'
+type Tab = 'programme' | 'eleves' | 'rapport' | 'annonces' | 'messagerie' | 'binomage' | 'classement' | 'parametres'
 
 const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
+
+let modSaturdayRemindersSent = false
 
 const tabIcons: Record<Tab, React.ReactNode> = {
   programme: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
@@ -69,6 +74,7 @@ const tabIcons: Record<Tab, React.ReactNode> = {
   annonces: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
   messagerie: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
   binomage: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>,
+  classement: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
   parametres: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
 }
 
@@ -105,8 +111,8 @@ export default function ModeratorDashboard() {
   const [profileDone, setProfileDone] = useState<string | null>(null)
 
   const loadAll = useCallback(async () => {
-    const [classesData, coursesData, studentsData, submissionsData, streaksData, miniTasksData, supportsData] =
-      await Promise.all([
+    const [classesRes, coursesRes, studentsRes, submissionsRes, streaksRes, miniTasksRes, supportsRes] =
+      await Promise.allSettled([
         getClasses(),
         getCourses(),
         getStudents(),
@@ -115,13 +121,13 @@ export default function ModeratorDashboard() {
         getMiniTasksAll(),
         getSupportsAll(),
       ])
-    setClasses(classesData)
-    setCourses(coursesData)
-    setStudents(studentsData)
-    setSubmissions(submissionsData)
-    setStreaks(streaksData)
-    setMiniTasks(miniTasksData)
-    setSupports(supportsData)
+    if (classesRes.status === 'fulfilled') setClasses(classesRes.value)
+    if (coursesRes.status === 'fulfilled') setCourses(coursesRes.value)
+    if (studentsRes.status === 'fulfilled') setStudents(studentsRes.value)
+    if (submissionsRes.status === 'fulfilled') setSubmissions(submissionsRes.value)
+    if (streaksRes.status === 'fulfilled') setStreaks(streaksRes.value)
+    if (miniTasksRes.status === 'fulfilled') setMiniTasks(miniTasksRes.value)
+    if (supportsRes.status === 'fulfilled') setSupports(supportsRes.value)
   }, [])
 
   const loadScope = useCallback(async (profileId: string) => {
@@ -163,7 +169,10 @@ export default function ModeratorDashboard() {
     loadAll().catch((err) =>
       setPageError(err instanceof Error ? err.message : 'Erreur de chargement des données.')
     )
-    sendSaturdayReminders().catch(() => {})
+    if (!modSaturdayRemindersSent) {
+      modSaturdayRemindersSent = true
+      sendSaturdayReminders().catch(() => {})
+    }
   }, [loadAll, loadScope])
 
   const classById = useMemo(
@@ -209,6 +218,7 @@ export default function ModeratorDashboard() {
     ['binomage', 'Binômage'],
     ['annonces', 'Annonces'],
     ['messagerie', 'Messagerie'],
+    ['classement', 'Classement'],
     ['parametres', 'Paramètres'],
   ]
 
@@ -284,6 +294,12 @@ export default function ModeratorDashboard() {
       {tab === 'binomage' && (
         <BinomageTab students={ownClassIds.length > 0 ? students.filter(s => ownClassIds.includes(s.class_id ?? '')) : students} classes={classes} classById={classById} onAdvanced={() => loadAll()} />
       )}
+      {tab === 'classement' && (
+        <div className="space-y-4">
+          <h2 className="font-display text-xl text-bordeaux">Classement</h2>
+          <Leaderboard currentUserId={moderatorProfile?.id ?? ''} />
+        </div>
+      )}
       {tab === 'parametres' && (
         <ModeratorSettingsTab
           profile={moderatorProfile ?? { id: '', first_name: '', last_name: '', avatar_url: null }}
@@ -328,8 +344,68 @@ function ProgrammeTab({
   const miniTaskByCourse = useMemo(() => new Map(miniTasks.map((t) => [t.course_id, t])), [miniTasks])
   const supportByCourse = useMemo(() => new Map(supports.map((s) => [s.course_id, s])), [supports])
 
+  const [prepCourseId, setPrepCourseId] = useState('')
+  const [prepQuery, setPrepQuery] = useState('')
+  const [modNotes, setModNotes] = useState('')
+  const [prepFullscreen, setPrepFullscreen] = useState(false)
+
+  const allClassCourses = useMemo(() =>
+    courses
+      .filter((c) => c.class_id && ownClassIds.includes(c.class_id))
+      .sort((a, b) => (a.week - b.week) || (a.session_date ?? '').localeCompare(b.session_date ?? '')),
+    [courses, ownClassIds]
+  )
+  const filteredPrepCourses = useMemo(() =>
+    prepQuery
+      ? allClassCourses.filter(c =>
+          c.title.toLowerCase().includes(prepQuery.toLowerCase()) ||
+          `semaine ${c.week}`.toLowerCase().includes(prepQuery.toLowerCase()))
+      : allClassCourses,
+    [allClassCourses, prepQuery]
+  )
+  const prepCourse = allClassCourses.find(c => c.id === prepCourseId) || null
+
+  useEffect(() => {
+    if (prepCourseId) {
+      getModNotes(prepCourseId).then(r => setModNotes(r.notes)).catch(() => setModNotes(''))
+    }
+  }, [prepCourseId])
+
+  const savePrepNotes = useCallback(() => {
+    if (prepCourseId) saveModNotes(prepCourseId, modNotes).catch(() => {})
+  }, [prepCourseId, modNotes])
+
   return (
     <div className="space-y-5">
+      {/* Prochaines sessions à modérer */}
+      {allClassCourses.length > 0 && (() => {
+        const now = new Date()
+        const upcoming = allClassCourses
+          .filter(c => c.session_date && new Date(c.session_date) >= new Date(now.getFullYear(), now.getMonth(), now.getDate()))
+          .slice(0, 4)
+        if (upcoming.length === 0) return null
+        return (
+          <Card className="border-or/30 bg-or/5">
+            <CardTitle>Prochaines sessions</CardTitle>
+            <CardDescription className="mt-1 mb-3">Dates de tes prochaines modérations.</CardDescription>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {upcoming.map(c => {
+                const d = new Date(c.session_date + 'T00:00:00')
+                const label = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+                const isSunday = d.getDay() === 0
+                return (
+                  <div key={c.id} className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${isSunday ? 'border-or/50 bg-or/10' : 'border-pierre/15'}`}>
+                    <span className="font-mono text-xs text-or font-semibold">S{c.week}</span>
+                    <span className="flex-1 truncate text-bordeaux font-medium">{c.title}</span>
+                    <span className="text-xs text-pierre capitalize">{label}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </Card>
+        )
+      })()}
+
       <Card>
         <CardTitle>Mon planning de modération</CardTitle>
         <CardDescription className="mt-1 mb-3">
@@ -345,13 +421,16 @@ function ProgrammeTab({
               <li
                 key={s.id}
                 className={`flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 ${
-                  s.day_of_week === 0 ? 'border-or/60 bg-or/10' : 'border-pierre/15'
+                  s.specific_date ? 'border-or/60 bg-or/10' : s.day_of_week === 0 ? 'border-or/60 bg-or/10' : 'border-pierre/15'
                 }`}
               >
                 <span className="font-medium text-bordeaux">
-                  {DAY_NAMES[s.day_of_week] ?? s.day_of_week}
+                  {s.specific_date
+                    ? new Date(s.specific_date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+                    : DAY_NAMES[s.day_of_week] ?? s.day_of_week
+                  }
                 </span>
-                {s.day_of_week === 0 && (
+                {!s.specific_date && s.day_of_week === 0 && (
                   <span className="rounded-full bg-or/25 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-bordeaux">
                     Jour du Seigneur
                   </span>
@@ -365,6 +444,81 @@ function ProgrammeTab({
           </ul>
         )}
       </Card>
+
+      {ownClasses.length > 0 && (
+        <Card>
+          <CardTitle>Préparer ma Modération</CardTitle>
+          <CardDescription className="mt-1 mb-3">
+            Recherche et sélectionne un cours. Regarde la vidéo et prends tes notes de préparation.
+          </CardDescription>
+          <Input placeholder="Rechercher un cours..." value={prepQuery} onChange={(e) => { setPrepQuery(e.target.value); setPrepCourseId(''); setModNotes('') }} className="mb-3" />
+          <div className="flex flex-wrap gap-2 mb-4">
+            {filteredPrepCourses.map(c => (
+              <button key={c.id} onClick={() => setPrepCourseId(c.id)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${prepCourseId === c.id ? 'bg-bordeaux text-parchemin' : 'border border-bordeaux/30 text-bordeaux hover:bg-bordeaux/5'}`}>
+                S{c.week} — {c.title}
+              </button>
+            ))}
+          </div>
+          {prepCourse ? (
+            <div className="space-y-4">
+              <div className="rounded-md border border-pierre/15 p-3">
+                <p className="text-sm font-medium text-bordeaux">Semaine {prepCourse.week} — {prepCourse.title}</p>
+                {prepCourse.session_date && <p className="mt-0.5 text-xs text-pierre">Session : {formatShortDate(prepCourse.session_date)}</p>}
+                {prepCourse.video_url || prepCourse.audio_url ? (
+                  <div className="mt-2">
+                    <CoursePlayer
+                      audioUrl={prepCourse.audio_url}
+                      audioParts={prepCourse.audio_parts}
+                      videoUrl={prepCourse.video_url}
+                      week={prepCourse.week}
+                      title={prepCourse.title}
+                    />
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs text-or italic">Aucun média disponible pour ce cours.</p>
+                )}
+              </div>
+              <div>
+                <div className="flex items-center justify-between">
+                  <Label>Mes Notes pour la Modération</Label>
+                  <button type="button" onClick={() => setPrepFullscreen(true)} className="text-xs text-or underline hover:text-bordeaux">Plein écran</button>
+                </div>
+                <textarea value={modNotes} onChange={(e) => setModNotes(e.target.value)} onBlur={savePrepNotes}
+                  placeholder="Prends tes notes de préparation ici..." rows={6}
+                  className="mt-1 w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux placeholder:text-pierre/40 focus-visible:border-or" />
+                <p className="mt-1 text-[11px] text-pierre/50">Notes sauvegardées dans Supabase.</p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-pierre italic">{filteredPrepCourses.length === 0 ? 'Aucun cours trouvé.' : 'Sélectionne un cours ci-dessus pour commencer ta préparation.'}</p>
+          )}
+        </Card>
+      )}
+
+      {prepFullscreen && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-white md:bg-parchemin">
+          <div className="flex shrink-0 items-center justify-between border-b border-pierre/15 px-4 py-3 sm:px-6">
+            <div className="min-w-0">
+              <p className="text-sm font-display font-semibold text-bordeaux sm:text-base">Notes de modération</p>
+              {prepCourse && <p className="truncate text-[11px] text-pierre sm:text-xs">S{prepCourse.week} — {prepCourse.title}</p>}
+            </div>
+            <button onClick={() => { savePrepNotes(); setPrepFullscreen(false) }} className="shrink-0 rounded-md bg-bordeaux px-3 py-1.5 text-xs font-medium text-parchemin hover:bg-[#4a2233] sm:px-4 sm:text-sm">
+              Fermer
+            </button>
+          </div>
+          <textarea
+            value={modNotes}
+            onChange={(e) => setModNotes(e.target.value)}
+            placeholder="Prends tes notes de préparation ici..."
+            autoFocus
+            className="flex-1 resize-none border-none bg-transparent p-4 text-sm leading-relaxed text-bordeaux placeholder:text-pierre/40 focus:outline-none sm:p-6 sm:text-base"
+          />
+          <div className="shrink-0 border-t border-pierre/10 px-4 py-2 text-center text-[10px] text-pierre/40 sm:text-xs">
+            Notes sauvegardées localement • Ferme pour enregistrer
+          </div>
+        </div>
+      )}
 
       {ownClasses.length === 0 ? (
         <Card>
@@ -488,7 +642,10 @@ function formatShortDate(value: string): string {
 }
 
 function formatDateLong(value: string): string {
-  return new Date(value).toLocaleDateString('fr-FR', {
+  if (!value) return '—'
+  const d = new Date(value)
+  if (isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString('fr-FR', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -812,7 +969,7 @@ function RapportTab({
     ])
   }
 
-  const headers = ['Étudiant', 'Email', 'Classe', 'Soumissions', 'Moyenne', 'Streak (sem.)']
+  const headers = ['Étudiant', 'Email', 'Classe', 'Soumissions', 'Moyenne', 'Méditation (sem.)']
 
   return (
     <div className="space-y-4">
@@ -1108,15 +1265,25 @@ function BinomageTab({
                   value={s.binome_id ?? ''}
                   onChange={async (e) => {
                     const newBinomeId = e.target.value || null
+                    if (s.binome_id && s.binome_id !== newBinomeId) {
+                      await supabase.from('profiles').update({ binome_id: null }).eq('id', s.binome_id)
+                    }
+                    if (newBinomeId) {
+                      const newPartner = students.find(b => b.id === newBinomeId)
+                      if (newPartner?.binome_id && newPartner.binome_id !== s.id) {
+                        await supabase.from('profiles').update({ binome_id: null }).eq('id', newBinomeId)
+                      }
+                    }
                     await supabase.from('profiles').update({ binome_id: newBinomeId }).eq('id', s.id)
                     if (newBinomeId) {
                       await supabase.from('profiles').update({ binome_id: s.id }).eq('id', newBinomeId)
                     }
+                    onAdvanced()
                   }}
                   className="rounded-md border border-pierre/30 bg-white px-2 py-1 text-xs text-bordeaux"
                 >
                   <option value="">Aucun binôme</option>
-                  {students.filter(b => b.id !== s.id).map(b => (
+                  {students.filter(b => b.id !== s.id && b.class_id === s.class_id).map(b => (
                     <option key={b.id} value={b.id}>{b.first_name} {b.last_name}</option>
                   ))}
                 </select>
@@ -1426,7 +1593,7 @@ function InscriptionTab({
             ))}
           </select>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <Label>Prénom *</Label>
             <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Jean" className="mt-1" />
@@ -1440,7 +1607,7 @@ function InscriptionTab({
           <Label>Email *</Label>
           <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jean@email.com" className="mt-1" />
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <Label>Téléphone</Label>
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+237…" className="mt-1" />

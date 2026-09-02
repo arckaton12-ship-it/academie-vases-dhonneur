@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf'
 import { Button } from '@/components/ui/Button'
 import { Logo } from '@/components/Logo'
+import { sanitizeForPdf } from '@/lib/pdfFonts'
 import type { Certificate } from '@/lib/courses'
 
 interface CertificateViewProps {
@@ -64,7 +65,7 @@ export function CertificateView({ certificate, firstName, lastName, className = 
     doc.setFont('times', 'italic')
     doc.setFontSize(14)
     doc.setTextColor(93, 42, 65)
-    doc.text('Académie Vases d\u2019Honneur — Yaoundé', pageWidth / 2, 84, { align: 'center' })
+    doc.text(sanitizeForPdf('Académie Vases d\u2019Honneur — Yaoundé'), pageWidth / 2, 84, { align: 'center' })
 
     // Couronne
     const cx = pageWidth / 2
@@ -78,7 +79,7 @@ export function CertificateView({ certificate, firstName, lastName, className = 
     doc.setFont('times', 'bold')
     doc.setFontSize(26)
     doc.setTextColor(93, 42, 65)
-    doc.text('Certificat de fin de cycle', pageWidth / 2, 160, { align: 'center' })
+    doc.text(sanitizeForPdf('Certificat de fin de cycle'), pageWidth / 2, 160, { align: 'center' })
 
     doc.setDrawColor(207, 175, 91)
     doc.setLineWidth(1)
@@ -87,18 +88,18 @@ export function CertificateView({ certificate, firstName, lastName, className = 
     doc.setFont('times', 'normal')
     doc.setFontSize(13)
     doc.setTextColor(107, 107, 107)
-    doc.text('est décerné à', pageWidth / 2, 206, { align: 'center' })
+    doc.text(sanitizeForPdf('est décerné à'), pageWidth / 2, 206, { align: 'center' })
 
     doc.setFont('times', 'bold')
     doc.setFontSize(30)
     doc.setTextColor(93, 42, 65)
-    doc.text(`${firstName} ${lastName}`, pageWidth / 2, 244, { align: 'center' })
+    doc.text(sanitizeForPdf(`${firstName} ${lastName}`), pageWidth / 2, 244, { align: 'center' })
 
     doc.setFont('times', 'normal')
     doc.setFontSize(13)
     doc.setTextColor(107, 107, 107)
     const body = doc.splitTextToSize(
-      `pour avoir mené à son terme le cycle de formation ${label}, avec assiduité, fidélité et honneur.`,
+      sanitizeForPdf(`pour avoir mené à son terme le cycle de formation ${label}, avec assiduité, fidélité et honneur.`),
       pageWidth - 240
     )
     doc.text(body, pageWidth / 2, 286, { align: 'center' })
@@ -109,31 +110,31 @@ export function CertificateView({ certificate, firstName, lastName, className = 
     doc.setFont('times', 'italic')
     doc.setFontSize(13)
     doc.setTextColor(93, 42, 65)
-    doc.text(`« ${verset} »`, pageWidth / 2, versetY, { align: 'center' })
+    doc.text(sanitizeForPdf(`« ${verset} »`), pageWidth / 2, versetY, { align: 'center' })
     if (reference) {
       doc.setFontSize(11)
       doc.setTextColor(107, 107, 107)
-      doc.text(reference, pageWidth / 2, versetY + 16, { align: 'center' })
+      doc.text(sanitizeForPdf(reference), pageWidth / 2, versetY + 16, { align: 'center' })
     }
 
     if (certificate.number) {
       doc.setFont('times', 'normal')
       doc.setFontSize(10)
       doc.setTextColor(107, 107, 107)
-      doc.text(`N° ${certificate.number}`, pageWidth - 64, 60, { align: 'right' })
+      doc.text(sanitizeForPdf(`N° ${certificate.number}`), pageWidth - 64, 60, { align: 'right' })
     }
 
     doc.setFont('times', 'italic')
     doc.setFontSize(12)
     doc.setTextColor(93, 42, 65)
-    doc.text(date, pageWidth / 2, pageHeight - 110, { align: 'center' })
+    doc.text(sanitizeForPdf(date), pageWidth / 2, pageHeight - 110, { align: 'center' })
 
     doc.setDrawColor(93, 42, 65)
     doc.setLineWidth(0.8)
     doc.line(pageWidth / 2 - 90, pageHeight - 100, pageWidth / 2 + 90, pageHeight - 100)
     doc.setFont('times', 'normal')
     doc.setFontSize(10)
-    doc.text('La direction de l\u2019Académie', pageWidth / 2, pageHeight - 88, { align: 'center' })
+    doc.text(sanitizeForPdf('La direction de l\u2019Académie'), pageWidth / 2, pageHeight - 88, { align: 'center' })
 
     doc.save(`certificat-${label.replace(/\s/g, '-').toLowerCase()}.pdf`)
   }

@@ -3,13 +3,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/Logo'
 import { DarkModeToggle } from '@/components/DarkModeToggle'
 import { getLandingAvatars } from '@/lib/courses'
+import { getSafeSession } from '@/lib/auth'
 import { Marquee } from '@/components/ui/Marquee'
 import { supabase } from '@/lib/supabase'
 
 const STATS = [
   { value: '3', label: 'Niveaux de formation' },
   { value: '28', label: 'Cours dispensés' },
-  { value: '12', label: 'Badges à débloquer' },
+  { value: '18', label: 'Badges à débloquer' },
   { value: '100%', label: 'Gratuit' },
 ]
 
@@ -82,14 +83,15 @@ export default function Landing() {
     let cancelled = false
     ;(async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        const session = getSafeSession()
         if (cancelled || !session) return
         // Check role from JWT user metadata (no DB query needed)
         const userMeta = session.user.user_metadata || {}
         const rawRole = userMeta.role as string | undefined
         if (cancelled) return
         if (rawRole === 'ADMINISTRATEUR') navigate('/admin/tableau-de-bord', { replace: true })
-        else if (rawRole === 'MODERATEUR' || rawRole === 'ADMIN_CLASSE') navigate('/moderateur/tableau-de-bord', { replace: true })
+        else if (rawRole === 'ADMIN_CLASSE') navigate('/admin-classe/tableau-de-bord', { replace: true })
+        else if (rawRole === 'MODERATEUR') navigate('/moderateur/tableau-de-bord', { replace: true })
         else if (rawRole === 'ETUDIANT') navigate('/etudiant/tableau-de-bord', { replace: true })
         else {
           // Role not in JWT metadata — try DB lookup
@@ -97,7 +99,8 @@ export default function Landing() {
           if (cancelled || !data) return
           const role = data.role as string
           if (role === 'ADMINISTRATEUR') navigate('/admin/tableau-de-bord', { replace: true })
-          else if (role === 'MODERATEUR' || role === 'ADMIN_CLASSE') navigate('/moderateur/tableau-de-bord', { replace: true })
+          else if (role === 'ADMIN_CLASSE') navigate('/admin-classe/tableau-de-bord', { replace: true })
+          else if (role === 'MODERATEUR') navigate('/moderateur/tableau-de-bord', { replace: true })
           else navigate('/etudiant/tableau-de-bord', { replace: true })
         }
       } catch {
@@ -218,6 +221,28 @@ export default function Landing() {
               <p className="mt-2 text-sm text-pierre dark:text-slate-400">{p.desc}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ─── PREVIEW VIDEO ─── */}
+      <section className="relative z-10 px-6 py-20">
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="font-display text-2xl font-bold text-bordeaux sm:text-3xl dark:text-slate-100">
+            Découvre un aperçu
+          </h2>
+          <p className="mt-3 text-sm text-pierre dark:text-slate-400">
+            Regarde un extrait de nos cours pour découvrir l'Académie.
+          </p>
+          <div className="relative mt-8 mx-auto w-full overflow-hidden rounded-2xl border border-pierre/15 shadow-lg dark:border-white/10" style={{ paddingBottom: '56.25%' }}>
+            <iframe
+              src="https://www.youtube.com/embed/plSLMiajkTg"
+              title="Aperçu — La Vision Vases d'Honneur"
+              className="absolute inset-0 h-full w-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+          <p className="mt-3 text-xs text-pierre dark:text-slate-500">La Vision Vases d'Honneur — Semaine 2</p>
         </div>
       </section>
 

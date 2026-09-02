@@ -38,15 +38,28 @@
         }
       })();
     </script>
+    <script>
+      (function() {
+        var STORED = localStorage.getItem('app_version');
+        fetch('/version.json?t=' + Date.now(), { cache: 'no-store' })
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.version && STORED && d.version !== STORED) {
+              localStorage.setItem('app_version', d.version);
+              window.location.reload(true);
+              return;
+            }
+            if (d.version) localStorage.setItem('app_version', d.version);
+          })
+          .catch(function() {});
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js').then(function(reg) {
-            // Check for SW updates every hour
-            setInterval(function() { reg.update(); }, 3600000);
-          }).catch(function() {});
+          navigator.serviceWorker.register('/sw.js').catch(function() {});
         });
       }
     </script>

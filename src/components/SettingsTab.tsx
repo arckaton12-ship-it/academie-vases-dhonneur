@@ -1,4 +1,4 @@
-import { FormEvent } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { Card, CardTitle, CardDescription } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input, Label, FieldError } from '@/components/ui/Input'
@@ -6,7 +6,12 @@ import { AvatarUpload } from '@/components/AvatarUpload'
 import { Badge } from '@/components/Badge'
 import { SoundToggle } from '@/components/SoundToggle'
 import { BulletinPDF } from '@/components/BulletinPDF'
-import { isBadgeKey, BADGES } from '@/lib/badges'
+import { supabase } from '@/lib/supabase'
+import { toast, toastError } from '@/components/ui/Toast'
+import { getBilanPreferences, saveBilanPreferences } from '@/lib/gamification'
+
+const BILAN_DAY_LABELS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
+const MAX_BILAN_DAYS = 3
 
 interface Profile {
   id: string
@@ -37,6 +42,7 @@ interface SettingsTabProps {
   onSaveProfile: (e: FormEvent) => void
   onSelectBadge: (type: string) => void
   onSignOut: () => void
+  onAvatarSaved?: (url: string | null) => void
 }
 
 export function SettingsTab({
@@ -59,6 +65,7 @@ export function SettingsTab({
   onSaveProfile,
   onSelectBadge,
   onSignOut,
+  onAvatarSaved,
 }: SettingsTabProps) {
   return (
     <div className="space-y-6">
@@ -74,7 +81,7 @@ export function SettingsTab({
           lastName={profile.last_name ?? undefined}
           userId={profile.id}
           badgeType={profile.active_badge ?? null}
-          onSaved={() => {}}
+          onSaved={(url) => onAvatarSaved?.(url)}
         />
       </Card>
 
@@ -187,6 +194,12 @@ export function SettingsTab({
         )}
       </Card>
 
+      {/* Section: Mes jours de bilan */}
+      <BilanDayPicker studentId={profile.id} />
+
+      {/* Section: Mot de passe */}
+      <PasswordChangeCard />
+
       {/* Section: Apparence */}
       <Card>
         <CardTitle>Apparence</CardTitle>
@@ -216,5 +229,173 @@ export function SettingsTab({
         </div>
       </Card>
     </div>
+  )
+}
+
+function PasswordChangeCard() {
+  const [currentPwd, setCurrentPwd] = useState('')
+  const [newPwd, setNewPwd] = useState('')
+  const [confirmPwd, setConfirmPwd] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
+  const [isError, setIsError] = useState(false)
+  const [showCurrent, setShowCurrent] = useState(false)
+  const [showNew, setShowNew] = useState(false)
+
+  async function handleChangePassword(e: FormEvent) {
+    e.preventDefault()
+    setMsg(null)
+    setIsError(false)
+
+    if (newPwd.length < 6) {
+      setMsg('Le mot de passe doit contenir au moins 6 caractères.')
+      setIsError(true)
+      return
+    }
+    if (newPwd !== confirmPwd) {
+      setMsg('Les mots de passe ne correspondent pas.')
+      setIsError(true)
+      return
+    }
+
+    setSaving(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPwd })
+      if (error) throw error
+      setMsg('Mot de passe modifié avec succès.')
+      setIsError(false)
+      setCurrentPwd('')
+      setNewPwd('')
+      setConfirmPwd('')
+      toast('Mot de passe modifié.')
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'Erreur lors de la modification du mot de passe.')
+      setIsError(true)
+      toastError('Erreur.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardTitle>Mot de passe</CardTitle>
+      <CardDescription className="mt-2 mb-3">
+        Modifie ton mot de passe de connexion.
+      </CardDescription>
+      <form onSubmit={handleChangePassword} className="space-y-3">
+        <div>
+          <Label htmlFor="new-pwd">Nouveau mot de passe</Label>
+          <div className="relative">
+            <Input
+              id="new-pwd"
+              type={showNew ? 'text' : 'password'}
+              required
+              minLength={6}
+              value={newPwd}
+              onChange={(e) => setNewPwd(e.target.value)}
+              placeholder="Minimum 6 caractères"
+            />
+            <button
+              type="button"
+              onClick={() => setShowNew(!showNew)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-pierre hover:text-bordeaux"
+              tabIndex={-1}
+            >
+              {showNew ? '🙈' : '👁'}
+            </button>
+          </div>
+        </div>
+        <div>
+          <Label htmlFor="confirm-pwd">Confirmer le mot de passe</Label>
+          <Input
+            id="confirm-pwd"
+            type={showNew ? 'text' : 'password'}
+            required
+            minLength={6}
+            value={confirmPwd}
+            onChange={(e) => setConfirmPwd(e.target.value)}
+            placeholder="Retape le mot de passe"
+          />
+        </div>
+        {msg && <p className={`text-sm ${isError ? 'text-red-600' : 'text-olive'}`}>{msg}</p>}
+        <Button type="submit" disabled={saving}>
+          {saving ? 'Modification…' : 'Modifier le mot de passe'}
+        </Button>
+      </form>
+    </Card>
+  )
+}
+
+function BilanDayPicker({ studentId }: { studentId: string }) {
+  const [selectedDays, setSelectedDays] = useState<number[]>([2, 4, 6])
+  const [saving, setSaving] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    getBilanPreferences(studentId)
+      .then((prefs) => {
+        if (!cancelled && prefs?.bilan_days) {
+          setSelectedDays(prefs.bilan_days as number[])
+        }
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoaded(true) })
+    return () => { cancelled = true }
+  }, [studentId])
+
+  function toggleDay(day: number) {
+    setSelectedDays((prev) => {
+      if (prev.includes(day)) return prev.filter((d) => d !== day)
+      if (prev.length >= MAX_BILAN_DAYS) return prev
+      return [...prev, day].sort((a, b) => a - b)
+    })
+  }
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await saveBilanPreferences(studentId, selectedDays)
+      toast('Jours de bilan enregistrés.')
+    } catch {
+      toastError('Erreur lors de la sauvegarde.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (!loaded) return null
+
+  return (
+    <Card>
+      <CardTitle>Mes jours de bilan</CardTitle>
+      <CardDescription className="mt-1 mb-3">
+        Choisis jusqu'à {MAX_BILAN_DAYS} jours de la semaine pour remplir ton bilan.
+      </CardDescription>
+      <div className="flex flex-wrap gap-2 mb-3">
+        {BILAN_DAY_LABELS.map((label, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => toggleDay(i)}
+            disabled={!selectedDays.includes(i) && selectedDays.length >= MAX_BILAN_DAYS}
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-40 ${
+              selectedDays.includes(i)
+                ? 'bg-bordeaux text-parchemin'
+                : 'border border-pierre/20 text-pierre hover:border-or/50'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <p className="mb-3 text-xs text-pierre">
+        {selectedDays.length}/{MAX_BILAN_DAYS} jours sélectionnés
+      </p>
+      <Button variant="outline" size="sm" onClick={handleSave} disabled={saving}>
+        {saving ? 'Enregistrement…' : 'Enregistrer'}
+      </Button>
+    </Card>
   )
 }
