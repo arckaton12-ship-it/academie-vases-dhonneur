@@ -45,8 +45,7 @@ test.describe('Student auth', () => {
     const url = page.url();
     // Should be on either dashboard or welcome redirect
     expect(url).toMatch(/etudiant/);
-    const text = await page.locator('body').textContent();
-    expect(text).toMatch(/Semaine|Mon Parcours|Cours|Connexion/i);
+    await expect(page.locator('body')).toContainText(/Semaine|Mon Parcours|Cours|Connexion/i, { timeout: 15_000 });
   });
 
   test('student can see Mon Parcours after login', async ({ page }) => {
