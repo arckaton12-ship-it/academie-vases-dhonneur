@@ -1277,9 +1277,13 @@ export default function StudentDashboard() {
 
                 <div className="mt-4 rounded-card border border-olive/30 bg-olive/5 p-3">
                   <p className="text-xs font-medium uppercase tracking-wide text-olive">Mise en pratique</p>
-                  <p className="mt-1 text-sm text-bordeaux">
-                    Cette semaine, identifie une situation où tu as dû agir par la foi. Reviens raconter
-                    comment cela s'est passé — ce témoignage fait partie de ta formation.
+                  <p className="mt-1 text-sm whitespace-pre-line text-bordeaux">
+                    {course?.mise_en_pratique || course?.description || (
+                      <>
+                        Cette semaine, identifie une situation où tu as dû agir par la foi. Reviens raconter
+                        comment cela s'est passé — ce témoignage fait partie de ta formation.
+                      </>
+                    )}
                   </p>
                 </div>
               </>
@@ -2096,15 +2100,12 @@ function AllQuizzesSection({ courses, studentId, onOpenQuiz }: { courses: Course
                 {quizzes.map((q) => (
                   <button
                     key={q.id}
-                    onClick={() => !q.attempted && onOpenQuiz(q.id)}
-                    disabled={q.attempted}
-                    className={`flex w-full items-center justify-between rounded px-3 py-2 text-sm transition-colors ${
-                      q.attempted ? 'cursor-default text-pierre/60' : 'hover:bg-or/10 text-bordeaux'
-                    }`}
+                    onClick={() => onOpenQuiz(q.id)}
+                    className="flex w-full items-center justify-between rounded px-3 py-2 text-sm transition-colors hover:bg-or/10 text-bordeaux"
                   >
                     <span>{q.title}</span>
                     <span className={`text-xs ${q.attempted ? 'text-olive' : 'text-or font-medium'}`}>
-                      {q.attempted ? '✓ Passé' : 'Passer →'}
+                      {q.attempted ? 'Repasser →' : 'Passer →'}
                     </span>
                   </button>
                 ))}

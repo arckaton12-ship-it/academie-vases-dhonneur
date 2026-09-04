@@ -123,3 +123,16 @@ test.describe('Admin auth', () => {
     await expect(page.locator('body')).toContainText(/connecte-toi|compte.*cr[eé]|r[eé]serv[eé]/i, { timeout: 10_000 });
   });
 });
+
+// ─── QUIZ MANAGEMENT (moderateur) ───────────────────────────
+test.describe('Quiz management (moderator)', () => {
+  test('moderator sees quiz management and mise en pratique in Programme', async ({ page }) => {
+    await login(page, '/moderateur/connexion', MOD_EMAIL, MOD_PASS);
+    await page.waitForURL(/\/moderateur\//, { timeout: 30_000 });
+    await page.waitForTimeout(6000);
+    // QuizTab heading rendered in Programme tab
+    await expect(page.locator('body')).toContainText(/Gestion des Quiz/i, { timeout: 15_000 });
+    // mise en pratique editor rendered (if own classes have courses)
+    await expect(page.locator('body')).toContainText(/Mise en pratique du cours/i, { timeout: 15_000 });
+  });
+});

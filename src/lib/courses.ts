@@ -59,6 +59,7 @@ export {
   createCourse,
   updateCourse,
   deleteCourse,
+  saveCourseMiseEnPratique,
   getClassCourses,
   getFollowedCourses,
   getLandingAvatars,
@@ -185,8 +186,13 @@ export {
   startQuiz,
   submitQuiz,
   createQuiz,
+  updateQuiz,
+  duplicateQuiz,
   deleteQuiz,
+  getAllQuizzes,
+  getAdminQuizQuestions,
 } from './quizzes'
+export type { AdminQuizListItem, AdminQuizQuestion } from './quizzes'
 
 // Notifications
 export {

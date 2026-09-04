@@ -10,7 +10,6 @@ interface QuizPlayerProps {
 export function QuizPlayer({ quizId, onClose }: QuizPlayerProps) {
   const [quiz, setQuiz] = useState<Quiz | null>(null)
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
-  const [attempted, setAttempted] = useState(false)
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [currentIdx, setCurrentIdx] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -28,24 +27,39 @@ export function QuizPlayer({ quizId, onClose }: QuizPlayerProps) {
       })
       .catch((e: unknown) => {
         const msg = e instanceof Error ? e.message : ''
-        if (msg.includes('déjà passé') || msg.includes('already')) {
-          setAttempted(true)
-        } else {
-          setError(msg || 'Erreur lors du chargement du quiz')
-        }
+        setError(msg || 'Erreur lors du chargement du quiz')
       })
       .finally(() => setLoading(false))
   }, [quizId])
 
+  const restart = useCallback(() => {
+    setAnswers({})
+    setCurrentIdx(0)
+    setResult(null)
+    setXpGained(0)
+    setTimeLeft(quiz?.time_limit_minutes ? quiz.time_limit_minutes * 60 : null)
+    setError(null)
+    setLoading(true)
+    startQuiz(quizId)
+      .then((data) => {
+        setQuiz(data.quiz)
+        setQuestions(data.questions)
+      })
+      .catch((e: unknown) => {
+        setError(e instanceof Error ? e.message : 'Erreur lors du chargement du quiz')
+      })
+      .finally(() => setLoading(false))
+  }, [quizId, quiz?.time_limit_minutes])
+
   useEffect(() => {
-    if (quiz?.time_limit_minutes && !attempted && !result) {
+    if (quiz?.time_limit_minutes && !result) {
       setTimeLeft(quiz.time_limit_minutes * 60)
     }
-  }, [quiz, attempted, result])
+  }, [quiz, result])
 
   // Timer
   useEffect(() => {
-    if (timeLeft === null || timeLeft <= 0 || attempted || result) return
+    if (timeLeft === null || timeLeft <= 0 || result) return
     const interval = setInterval(() => {
       setTimeLeft((t) => {
         if (t !== null && t <= 1) {
@@ -57,7 +71,7 @@ export function QuizPlayer({ quizId, onClose }: QuizPlayerProps) {
       })
     }, 1000)
     return () => clearInterval(interval)
-  }, [timeLeft, attempted, result])
+  }, [timeLeft, result])
 
   const handleSelect = useCallback((questionId: string, optionIndex: number) => {
     setAnswers((prev) => ({ ...prev, [questionId]: optionIndex }))
@@ -156,24 +170,17 @@ export function QuizPlayer({ quizId, onClose }: QuizPlayerProps) {
             ))}
           </div>
 
-          <button onClick={onClose} className="mt-6 w-full rounded-card bg-bordeaux px-4 py-2.5 text-sm font-medium text-parchemin hover:bg-olive">
-            Fermer
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  // Already attempted
-  if (attempted) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-        <div className="glass-card w-full max-w-md p-6 text-center">
-          <h2 className="font-display text-xl text-bordeaux">Quiz déjà passé</h2>
-          <p className="mt-2 text-sm text-pierre">Vous avez déjà tenté ce quiz. Une seule tentative est autorisée.</p>
-          <button onClick={onClose} className="mt-4 rounded-card bg-bordeaux px-4 py-2.5 text-sm font-medium text-parchemin hover:bg-olive">
-            Fermer
-          </button>
+          <div className="mt-6 flex gap-2">
+            <button onClick={onClose} className="flex-1 rounded-card bg-bordeaux px-4 py-2.5 text-sm font-medium text-parchemin hover:bg-olive">
+              Fermer
+            </button>
+            <button
+              onClick={restart}
+              className="flex-1 rounded-card border border-or bg-or/10 px-4 py-2.5 text-sm font-medium text-bordeaux hover:bg-or/20"
+            >
+              Repasser ce quiz
+            </button>
+          </div>
         </div>
       </div>
     )

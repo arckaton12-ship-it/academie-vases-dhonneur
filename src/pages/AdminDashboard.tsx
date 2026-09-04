@@ -59,6 +59,7 @@ import {
   createCourse,
   updateCourse,
   deleteCourse,
+  saveCourseMiseEnPratique,
   uploadCourseFile,
   uploadCourseAudio,
   uploadSupportFile,
@@ -2008,6 +2009,7 @@ function CoursTab({
   const [audioUrl, setAudioUrl] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
   const [miniTask, setMiniTask] = useState('')
+  const [miseEnPratique, setMiseEnPratique] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -2029,6 +2031,7 @@ function CoursTab({
     setVideoFile(null)
     setAudioUrl(course.audio_url ?? '')
     setVideoUrl(course.video_url ?? '')
+    setMiseEnPratique(course.mise_en_pratique ?? '')
     getMiniTask(editingId).then((t) => setMiniTask(t?.instruction ?? '')).catch(() => setMiniTask(''))
   }, [editingId, courses])
 
@@ -2044,8 +2047,8 @@ function CoursTab({
     setAudioUrl('')
     setVideoUrl('')
     setMiniTask('')
+    setMiseEnPratique('')
   }
-
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     console.log('[CoursTab] submit', { classId, title, week, audioFile, videoFile })
@@ -2071,6 +2074,7 @@ function CoursTab({
           audioUrl: audioUploadedUrl || audioUrl.trim() || undefined,
           videoUrl: videoUrl.trim() || undefined,
         })
+        await saveCourseMiseEnPratique(editingId, miseEnPratique.trim())
         await saveMiniTask(editingId, miniTask)
         setSuccess('Cours modifié.')
         toast('Cours modifié.')
@@ -2090,7 +2094,7 @@ function CoursTab({
           const uploadedAudioUrl = await uploadCourseAudio(audioFile, created.id)
           await updateCourse(created.id, { audioUrl: uploadedAudioUrl })
         }
-        await saveMiniTask(created.id, miniTask)
+        await saveCourseMiseEnPratique(created.id, miseEnPratique.trim())
         setSuccess('Cours publié.')
         toast('Cours publié.')
         sendPushToRole('student', 'Nouveau cours disponible', title.trim(), 'new-course').catch(() => {})
@@ -2207,6 +2211,11 @@ function CoursTab({
           <div className="rounded-md border border-or/40 bg-parchemin p-3">
             <Label htmlFor="admin-course-mt">Mini-tâche pratique</Label>
             <textarea id="admin-course-mt" rows={2} value={miniTask} onChange={(e) => setMiniTask(e.target.value)} placeholder="La tâche que l'étudiant devra réaliser…" className="mt-1 w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or" />
+          </div>
+
+          <div className="rounded-md border border-or/40 bg-parchemin p-3">
+            <Label htmlFor="admin-course-mep">Mise en pratique du cours</Label>
+            <textarea id="admin-course-mep" rows={3} value={miseEnPratique} onChange={(e) => setMiseEnPratique(e.target.value)} placeholder="Exercice / application concrète que l'étudiant verra sur la page du cours…" className="mt-1 w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or" />
           </div>
 
           <FieldError>{error ?? undefined}</FieldError>

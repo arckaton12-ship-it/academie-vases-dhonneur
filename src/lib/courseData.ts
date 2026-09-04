@@ -135,6 +135,7 @@ export async function createCourse(input: {
   week: number
   sessionDate?: string
   description?: string
+  miseEnPratique?: string
   audioPath?: string
   videoPath?: string
   audioUrl?: string
@@ -148,6 +149,7 @@ export async function createCourse(input: {
       week: input.week,
       session_date: input.sessionDate || null,
       description: input.description ?? null,
+      mise_en_pratique: input.miseEnPratique ?? null,
       audio_url: input.audioUrl || (input.audioPath ? courseFileUrl(input.audioPath) : null),
       video_url: input.videoUrl || (input.videoPath ? courseFileUrl(input.videoPath) : null),
     })
@@ -165,6 +167,7 @@ export async function updateCourse(
     week?: number
     sessionDate?: string
     description?: string
+    miseEnPratique?: string
     audioPath?: string
     videoPath?: string
     audioUrl?: string
@@ -177,6 +180,7 @@ export async function updateCourse(
     week?: number
     session_date?: string | null
     description?: string | null
+    mise_en_pratique?: string | null
     audio_url?: string | null
     video_url?: string | null
   } = {}
@@ -185,6 +189,7 @@ export async function updateCourse(
   if (input.week !== undefined) payload.week = input.week
   if (input.sessionDate !== undefined) payload.session_date = input.sessionDate || null
   if (input.description !== undefined) payload.description = input.description || null
+  if (input.miseEnPratique !== undefined) payload.mise_en_pratique = input.miseEnPratique || null
   if (input.audioUrl !== undefined) payload.audio_url = input.audioUrl || null
   else if (input.audioPath !== undefined) payload.audio_url = input.audioPath ? courseFileUrl(input.audioPath) : null
   if (input.videoUrl !== undefined) payload.video_url = input.videoUrl || null
@@ -195,6 +200,14 @@ export async function updateCourse(
 
 export async function deleteCourse(courseId: string) {
   const { error } = await supabase.from('courses').delete().eq('id', courseId)
+  if (error) throw error
+}
+
+export async function saveCourseMiseEnPratique(courseId: string, text: string) {
+  const { error } = await supabase.rpc('save_course_mise_en_pratique', {
+    p_course_id: courseId,
+    p_text: text || '',
+  })
   if (error) throw error
 }
 

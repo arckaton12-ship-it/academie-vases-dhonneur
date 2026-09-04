@@ -16,6 +16,7 @@ export interface Course {
   video_url: string | null
   audio_parts: AudioPart[] | null
   description: string | null
+  mise_en_pratique: string | null
   created_at: string | null
   class?: Pick<ClassRow, 'name' | 'level'> | null
 }
