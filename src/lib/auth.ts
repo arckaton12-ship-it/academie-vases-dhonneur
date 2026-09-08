@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { uploadAvatar } from './avatars'
+import { Sentry } from './sentry'
 
 export type UserRole = 'ETUDIANT' | 'MODERATEUR' | 'ADMINISTRATEUR' | 'ADMIN_CLASSE'
 
@@ -83,12 +84,22 @@ export async function signIn(email: string, password: string) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) {
     console.error('[signIn] Supabase error:', JSON.stringify({ message: error.message, status: error.status }))
+    Sentry.setTag('auth.email', email)
+    Sentry.captureMessage(`Échec de connexion: ${error.message}`, 'warning')
     throw error
+  }
+  if (data.user?.id) {
+    Sentry.setUser({
+      id: data.user.id,
+      email: email.toLowerCase(),
+      username: data.user.user_metadata?.role ? String(data.user.user_metadata.role) : undefined,
+    })
   }
   return data
 }
 
 export async function signOut() {
+  Sentry.setUser(null)
   const { error } = await supabase.auth.signOut()
   if (error) throw error
 }

@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { UserRole } from '@/lib/auth'
 import { FullResetButton } from '@/components/FullResetButton'
 
@@ -44,6 +44,8 @@ function fetchJson(url: string, token: string, signal?: AbortSignal): Promise<an
 
 export function RequireRole({ roles, children }: RequireRoleProps) {
   const navigate = useNavigate()
+  const location = useLocation()
+  const isChangePasswordPage = /\/changer-mot-de-passe$/.test(location.pathname)
   const [allowed, setAllowed] = useState<boolean | null>(null)
   const [timedOut, setTimedOut] = useState(false)
 
@@ -88,7 +90,7 @@ export function RequireRole({ roles, children }: RequireRoleProps) {
           navigate('/', { replace: true })
           return
         }
-        if (profile.must_change_password) {
+        if (profile.must_change_password && !isChangePasswordPage) {
           const role = profile.role as UserRole
           if (role === 'ADMIN_CLASSE') navigate('/admin-classe/changer-mot-de-passe', { replace: true })
           else navigate('/moderateur/changer-mot-de-passe', { replace: true })
@@ -110,7 +112,7 @@ export function RequireRole({ roles, children }: RequireRoleProps) {
       clearTimeout(timeoutTimer)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [isChangePasswordPage])
 
   if (allowed === null) {
     if (timedOut) {

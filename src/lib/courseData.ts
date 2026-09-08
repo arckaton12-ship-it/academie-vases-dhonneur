@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import { sniffMime } from './fileValidation'
-import type { ClassRow, Course, WebhookConfig } from './types'
+import type { AudioPart, ClassRow, Course, WebhookConfig } from './types'
 
 const COURSE_BUCKET = 'cours'
 const DEVOIRS_BUCKET = 'devoirs'
@@ -172,6 +172,7 @@ export async function updateCourse(
     videoPath?: string
     audioUrl?: string
     videoUrl?: string
+    audioParts?: AudioPart[]
   }
 ) {
   const payload: {
@@ -196,6 +197,9 @@ export async function updateCourse(
   else if (input.videoPath !== undefined) payload.video_url = input.videoPath ? courseFileUrl(input.videoPath) : null
   const { error } = await supabase.from('courses').update(payload).eq('id', courseId)
   if (error) throw error
+  if (input.audioParts !== undefined) {
+    await saveCourseAudioParts(courseId, input.audioParts)
+  }
 }
 
 export async function deleteCourse(courseId: string) {
@@ -207,6 +211,17 @@ export async function saveCourseMiseEnPratique(courseId: string, text: string) {
   const { error } = await supabase.rpc('save_course_mise_en_pratique', {
     p_course_id: courseId,
     p_text: text || '',
+  })
+  if (error) throw error
+}
+
+export async function saveCourseAudioParts(
+  courseId: string,
+  audioParts: AudioPart[]
+) {
+  const { error } = await supabase.rpc('save_course_audio_parts', {
+    p_course_id: courseId,
+    p_audio_parts: JSON.parse(JSON.stringify(audioParts)),
   })
   if (error) throw error
 }

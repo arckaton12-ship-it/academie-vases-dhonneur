@@ -13,6 +13,7 @@ import { sendPushNotification, sendPushToRole } from '@/lib/pushSend'
 import { playSuccess } from '@/lib/sound'
 import { generateSecurePassword } from '@/lib/rateLimit'
 import { SectionWatermark } from '@/components/SectionWatermark'
+import type { AudioPart } from '@/lib/types'
 import { sendSaturdayReminders } from '@/lib/courses'
 import { VerseReference } from '@/components/VerseReference'
 import { DayAccentBand } from '@/components/DayAccentBand'
@@ -60,6 +61,7 @@ import {
   updateCourse,
   deleteCourse,
   saveCourseMiseEnPratique,
+  saveCourseAudioParts,
   uploadCourseFile,
   uploadCourseAudio,
   uploadSupportFile,
@@ -2008,6 +2010,7 @@ function CoursTab({
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [audioUrl, setAudioUrl] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
+  const [audioParts, setAudioParts] = useState<AudioPart[]>([])
   const [miniTask, setMiniTask] = useState('')
   const [miseEnPratique, setMiseEnPratique] = useState('')
   const [loading, setLoading] = useState(false)
@@ -2031,6 +2034,11 @@ function CoursTab({
     setVideoFile(null)
     setAudioUrl(course.audio_url ?? '')
     setVideoUrl(course.video_url ?? '')
+    setAudioParts(
+      Array.isArray(course.audio_parts) && (course.audio_parts as unknown[]).length > 0
+        ? (course.audio_parts as AudioPart[])
+        : []
+    )
     setMiseEnPratique(course.mise_en_pratique ?? '')
     getMiniTask(editingId).then((t) => setMiniTask(t?.instruction ?? '')).catch(() => setMiniTask(''))
   }, [editingId, courses])
@@ -2046,6 +2054,7 @@ function CoursTab({
     setVideoFile(null)
     setAudioUrl('')
     setVideoUrl('')
+    setAudioParts([])
     setMiniTask('')
     setMiseEnPratique('')
   }
@@ -2073,6 +2082,7 @@ function CoursTab({
           ...(videoPath !== undefined ? { videoPath } : {}),
           audioUrl: audioUploadedUrl || audioUrl.trim() || undefined,
           videoUrl: videoUrl.trim() || undefined,
+          audioParts: audioParts.map((p) => ({ nom: p.nom, audio: p.audio, video: p.video ?? null })),
         })
         await saveCourseMiseEnPratique(editingId, miseEnPratique.trim())
         await saveMiniTask(editingId, miniTask)
@@ -2093,6 +2103,9 @@ function CoursTab({
         if (audioFile) {
           const uploadedAudioUrl = await uploadCourseAudio(audioFile, created.id)
           await updateCourse(created.id, { audioUrl: uploadedAudioUrl })
+        }
+        if (audioParts.length > 0) {
+          await saveCourseAudioParts(created.id, audioParts.map((p) => ({ nom: p.nom, audio: p.audio, video: p.video ?? null })))
         }
         await saveCourseMiseEnPratique(created.id, miseEnPratique.trim())
         setSuccess('Cours publié.')
@@ -2206,6 +2219,59 @@ function CoursTab({
                 </p>
               )}
             </div>
+          </div>
+
+          <div className="rounded-md border border-or/40 bg-parchemin p-3">
+            <Label>Parties audio du cours</Label>
+            <p className="mb-2 text-xs text-pierre">
+              Si le cours a plusieurs fichiers audio (ex. « Partie 1 », « Partie 2 »…), renseigne-les ici. C'est ce que les étudiants écoutent réellement sur la page du cours.
+            </p>
+            {audioParts.map((part, i) => (
+              <div key={`part-${i}`} className="mb-2 grid grid-cols-1 gap-1.5 rounded-md border border-pierre/20 bg-white p-2 sm:grid-cols-[1fr_1.4fr_1.4fr_auto] sm:gap-2">
+                <Input
+                  value={part.nom}
+                  placeholder="Nom (ex. Partie 1)"
+                  onChange={(e) => {
+                    const next = [...audioParts]
+                    next[i] = { ...part, nom: e.target.value }
+                    setAudioParts(next)
+                  }}
+                />
+                <Input
+                  value={part.audio ?? ''}
+                  placeholder="Lien audio (Drive / URL)"
+                  onChange={(e) => {
+                    const next = [...audioParts]
+                    next[i] = { ...part, audio: e.target.value }
+                    setAudioParts(next)
+                  }}
+                />
+                <Input
+                  value={part.video ?? ''}
+                  placeholder="Lien vidéo (optionnel)"
+                  onChange={(e) => {
+                    const next = [...audioParts]
+                    next[i] = { ...part, video: e.target.value }
+                    setAudioParts(next)
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setAudioParts(audioParts.filter((_, j) => j !== i))}
+                  className="self-center rounded-md border border-red-300 px-2 py-1 text-xs text-red-700 hover:bg-red-50"
+                >
+                  Retirer
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => setAudioParts([...audioParts, { nom: '', audio: '', video: null }])}
+              className="rounded-md border border-or/60 px-3 py-1.5 text-xs font-medium text-bordeaux hover:bg-or/10"
+            >
+              + Ajouter une partie
+            </button>
+            <p className="mt-1.5 text-[11px] text-pierre italic">Laisse vide pour ne pas écraser les parties existantes.</p>
           </div>
 
           <div className="rounded-md border border-or/40 bg-parchemin p-3">

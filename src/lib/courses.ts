@@ -60,6 +60,7 @@ export {
   updateCourse,
   deleteCourse,
   saveCourseMiseEnPratique,
+  saveCourseAudioParts,
   getClassCourses,
   getFollowedCourses,
   getLandingAvatars,
