@@ -139,7 +139,7 @@ export function RankingsTab({ currentUserId }: { currentUserId: string }) {
       {myRank && (
         <div className="rounded-xl border border-or/40 bg-gradient-to-r from-or/10 to-transparent p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-or text-lg font-bold text-bordeaux">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-or text-lg font-bold text-encre">
               #{myRank.rank}
             </div>
             <div>
@@ -164,7 +164,7 @@ export function RankingsTab({ currentUserId }: { currentUserId: string }) {
             onClick={() => setPeriod(p.key)}
             className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               period === p.key
-                ? 'bg-bordeaux text-white dark:bg-or dark:text-bordeaux'
+                ? 'bg-bordeaux text-white dark:bg-or dark:text-encre'
                 : 'text-pierre hover:text-bordeaux dark:text-slate-400'
             }`}
           >
@@ -204,7 +204,7 @@ export function RankingsTab({ currentUserId }: { currentUserId: string }) {
 
               {/* Info */}
               <div className="min-w-0 flex-1">
-                <p className={`truncate text-sm font-medium ${isMe ? 'text-or' : 'text-bordeaux dark:text-slate-200'}`}>
+                <p className={`truncate text-sm font-medium ${isMe ? 'text-or-texte dark:text-or' : 'text-bordeaux dark:text-slate-200'}`}>
                   {s.first_name} {s.last_name}
                   {isMe && <span className="ml-1 text-[10px]">(toi)</span>}
                 </p>
@@ -217,7 +217,7 @@ export function RankingsTab({ currentUserId }: { currentUserId: string }) {
 
               {/* Active badge */}
               {s.active_badge && BADGES[s.active_badge as keyof typeof BADGES] && (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-or/10 text-[10px] font-bold text-or" title={BADGES[s.active_badge as keyof typeof BADGES].label}>
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-or/10 text-[10px] font-bold text-or-texte dark:text-or" title={BADGES[s.active_badge as keyof typeof BADGES].label}>
                   ★
                 </div>
               )}

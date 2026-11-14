@@ -40,7 +40,7 @@ function AudioStrip({ parts, onSelect, activeIndex }: { parts: AudioPart[]; onSe
           onClick={() => onSelect(i)}
           className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition whitespace-nowrap ${
             activeIndex === i
-              ? 'bg-or text-white shadow-sm'
+              ? 'bg-or text-encre shadow-sm'
               : 'border border-or/30 bg-or/5 text-terre hover:bg-or/15'
           }`}
         >
@@ -151,7 +151,7 @@ export function CoursePlayer({ audioUrl, audioParts, videoUrl, week, title }: Co
               <p className="text-sm font-medium text-terre">{activePart.nom || `Partie ${(selectedPart as number) + 1}`}</p>
               <AudioPlayer url={activePart.audio} name={activePart.nom} />
               <button onClick={handleDownload}
-                className="flex items-center gap-1.5 text-xs font-medium text-or hover:underline">
+                className="flex items-center gap-1.5 text-xs font-medium text-or-texte dark:text-or hover:underline">
                 <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
                 </svg>

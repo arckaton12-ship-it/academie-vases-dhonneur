@@ -224,8 +224,8 @@ export function QuizTab({ courses }: QuizTabProps) {
                     <p className="text-xs text-pierre">{q.question_count} questions • {q.attempt_count} tentative{Number(q.attempt_count) !== 1 ? 's' : ''} • Moy: {q.avg_score ?? '—'}/20</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <button onClick={() => editQuiz(q.id)} className="text-xs text-or hover:underline">Modifier</button>
-                    <button onClick={() => duplicateToCurrentCourse(q.id)} className="text-xs text-or hover:underline">Dupliquer ici</button>
+                    <button onClick={() => editQuiz(q.id)} className="text-xs text-or-texte dark:text-or hover:underline">Modifier</button>
+                    <button onClick={() => duplicateToCurrentCourse(q.id)} className="text-xs text-or-texte dark:text-or hover:underline">Dupliquer ici</button>
                     <button onClick={() => handleDelete(q.id)} className="text-xs text-rouge hover:underline">Supprimer</button>
                   </div>
                 </div>
@@ -261,7 +261,7 @@ export function QuizTab({ courses }: QuizTabProps) {
                       className="flex w-full items-center justify-between rounded border border-pierre/10 px-3 py-2 text-sm hover:bg-or/10"
                     >
                       <span className="text-bordeaux">{q.title}</span>
-                      <span className="text-xs text-or font-medium">Copier ici →</span>
+                      <span className="text-xs text-or-texte dark:text-or font-medium">Copier ici →</span>
                     </button>
                   ))}
                 </div>

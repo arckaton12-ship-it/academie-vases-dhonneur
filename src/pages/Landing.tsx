@@ -150,7 +150,7 @@ export default function Landing() {
           </Link>
           <a
             href="#apropos"
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-bordeaux/20 px-7 py-3 text-sm font-medium text-bordeaux transition-all hover:bg-bordeaux/5 dark:border-or/30 dark:text-or"
+            className="glass-pill inline-flex items-center justify-center gap-2 px-7 py-3 text-sm font-medium text-bordeaux transition-all hover:scale-[1.02] dark:text-or"
           >
             En savoir plus
           </a>
@@ -187,8 +187,8 @@ export default function Landing() {
       </section>
 
       {/* ─── STATS ─── */}
-      <section className="relative z-10 border-y border-pierre/10 bg-white/60 py-12 backdrop-blur-sm dark:bg-slate-800/40">
-        <div className="mx-auto grid max-w-3xl grid-cols-2 gap-6 sm:grid-cols-4">
+      <section className="glass-band relative z-10 py-12">
+        <div className="mx-auto grid max-w-3xl grid-cols-2 gap-6 px-6 sm:grid-cols-4">
           {STATS.map((s) => (
             <div key={s.label} className="text-center">
               <p className="font-display text-3xl font-bold text-or">{s.value}</p>
@@ -210,11 +210,8 @@ export default function Landing() {
         </div>
         <div className="mx-auto mt-12 grid max-w-4xl gap-6 sm:grid-cols-3">
           {PILLARS.map((p) => (
-            <div
-              key={p.title}
-              className="group rounded-2xl border border-pierre/10 bg-white/70 p-6 text-center shadow-sm backdrop-blur-sm transition-all hover:shadow-md hover:border-or/30 dark:bg-slate-800/50 dark:border-white/5"
-            >
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-or/10 text-or transition-colors group-hover:bg-or group-hover:text-white">
+            <div key={p.title} className="glass-card group p-6 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-or/10 text-or transition-colors group-hover:bg-or group-hover:text-encre">
                 {p.icon}
               </div>
               <h3 className="font-display text-base font-semibold text-bordeaux dark:text-slate-100">{p.title}</h3>
@@ -233,14 +230,16 @@ export default function Landing() {
           <p className="mt-3 text-sm text-pierre dark:text-slate-400">
             Regarde un extrait de nos cours pour découvrir l'Académie.
           </p>
-          <div className="relative mt-8 mx-auto w-full overflow-hidden rounded-2xl border border-pierre/15 shadow-lg dark:border-white/10" style={{ paddingBottom: '56.25%' }}>
-            <iframe
-              src="https://www.youtube.com/embed/plSLMiajkTg"
-              title="Aperçu — La Vision Vases d'Honneur"
-              className="absolute inset-0 h-full w-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
+          <div className="glass-panel mx-auto mt-8 w-full overflow-hidden p-2">
+            <div className="relative overflow-hidden rounded-[1.15rem]" style={{ paddingBottom: '56.25%' }}>
+              <iframe
+                src="https://www.youtube.com/embed/plSLMiajkTg"
+                title="Aperçu — La Vision Vases d'Honneur"
+                className="absolute inset-0 h-full w-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
           </div>
           <p className="mt-3 text-xs text-pierre dark:text-slate-500">La Vision Vases d'Honneur — Semaine 2</p>
         </div>
@@ -257,7 +256,7 @@ export default function Landing() {
           {TESTIMONIALS.map((t) => (
             <div
               key={t.name}
-              className="rounded-2xl border border-pierre/10 bg-white/80 p-6 shadow-sm backdrop-blur-sm dark:bg-slate-800/60 dark:border-white/5"
+              className="glass-card p-6"
             >
               <div className="mb-3 flex gap-1 text-or">
                 {[...Array(5)].map((_, i) => (
@@ -284,7 +283,7 @@ export default function Landing() {
             {FAQ.map((f, i) => (
               <div
                 key={i}
-                className="rounded-xl border border-pierre/10 bg-white/70 backdrop-blur-sm dark:bg-slate-800/50 dark:border-white/5"
+                className="glass-panel overflow-hidden"
               >
                 <button
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
@@ -325,7 +324,7 @@ export default function Landing() {
           </p>
           <Link
             to="/etudiant/connexion"
-            className="mt-6 inline-flex items-center gap-2 rounded-full bg-or px-8 py-3 text-sm font-bold text-bordeaux shadow-lg transition-all hover:bg-or/90 hover:shadow-xl hover:scale-105 active:scale-95"
+            className="mt-6 inline-flex items-center gap-2 rounded-full bg-or px-8 py-3 text-sm font-bold text-encre shadow-lg transition-all hover:bg-or/90 hover:shadow-xl hover:scale-105 active:scale-95"
           >
             Je m'inscris maintenant
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>

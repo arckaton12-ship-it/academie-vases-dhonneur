@@ -86,7 +86,7 @@ export function NotificationsBell({ notifications, onMarkRead, onNavigate }: Not
             <div className="flex items-center justify-between border-b border-pierre/10 px-4 py-2.5 dark:border-white/10">
               <p className="font-display text-sm font-semibold text-bordeaux dark:text-slate-100">Notifications</p>
               {unread > 0 && (
-                <span className="rounded-full bg-or/10 px-2 py-0.5 text-[10px] font-bold text-or">{unread} non lu{unread > 1 ? 'es' : ''}</span>
+                <span className="rounded-full bg-or/10 px-2 py-0.5 text-[10px] font-bold text-or-texte dark:text-or">{unread} non lu{unread > 1 ? 'es' : ''}</span>
               )}
             </div>
             <div className="max-h-80 overflow-y-auto">

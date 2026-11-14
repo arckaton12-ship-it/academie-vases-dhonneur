@@ -115,7 +115,7 @@ export function MessageBubble({ message: m, isMine, showSenderName, senderName, 
       )}
       <div className={`max-w-[75%] ${isMine ? 'items-end' : 'items-start'}`}>
         {showSenderName && !isMine && (
-          <p className="mb-0.5 ml-1 text-[10px] font-semibold text-or">{senderName}</p>
+          <p className="mb-0.5 ml-1 text-[10px] font-semibold text-or-texte dark:text-or">{senderName}</p>
         )}
 
         {isReply && (

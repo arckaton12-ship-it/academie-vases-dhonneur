@@ -135,7 +135,7 @@ export function DevoirsTab({ assignments, submissions, courseName, onSubmit }: D
             onClick={() => setFilter(f.key)}
             className={`flex-1 rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors ${
               filter === f.key
-                ? 'bg-bordeaux text-white dark:bg-or dark:text-bordeaux'
+                ? 'bg-bordeaux text-white dark:bg-or dark:text-encre'
                 : 'text-pierre hover:text-bordeaux dark:text-slate-400'
             }`}
           >

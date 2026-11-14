@@ -105,7 +105,7 @@ export function QuizPlayer({ quizId, onClose }: QuizPlayerProps) {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center glass-scrim p-4">
         <div className="glass-card w-full max-w-lg p-6 text-center">
           <div className="skeleton h-6 w-1/2 mx-auto rounded mb-4" />
           <div className="skeleton h-4 w-3/4 mx-auto rounded" />
@@ -118,7 +118,7 @@ export function QuizPlayer({ quizId, onClose }: QuizPlayerProps) {
 
   if (error) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center glass-scrim p-4">
         <div className="glass-card w-full max-w-md p-6 text-center">
           <h2 className="font-display text-xl text-bordeaux">Erreur</h2>
           <p className="mt-2 text-sm text-pierre">{error}</p>
@@ -137,7 +137,7 @@ export function QuizPlayer({ quizId, onClose }: QuizPlayerProps) {
   // Result view
   if (result) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center glass-scrim p-4">
         <div className="glass-card w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
           <div className="text-center mb-6">
             <h2 className="font-display text-2xl text-bordeaux">{result.is_passed ? 'Réussi !' : 'Non atteint'}</h2>
@@ -187,7 +187,7 @@ export function QuizPlayer({ quizId, onClose }: QuizPlayerProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center glass-scrim p-4">
       <div className="glass-card w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">

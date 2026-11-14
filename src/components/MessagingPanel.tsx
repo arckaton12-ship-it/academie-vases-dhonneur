@@ -435,10 +435,10 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
   }
 
   return (
-    <div className="relative flex h-[600px] overflow-hidden rounded-card border border-pierre/15 bg-white/80 backdrop-blur-sm dark:bg-slate-900/80 dark:border-white/5">
+    <div className="relative flex h-[600px] overflow-hidden glass-panel">
       {/* NEW CONVERSATION OVERLAY */}
       {showNewConvo && (
-        <div className="absolute inset-0 z-20 flex flex-col rounded-card bg-white dark:bg-slate-900">
+        <div className="glass-sheet absolute inset-0 z-20 flex flex-col">
           <div className="flex items-center gap-3 border-b border-pierre/15 px-4 py-3 dark:border-white/10">
             <button onClick={() => setShowNewConvo(false)} className="text-pierre hover:text-bordeaux dark:text-slate-400 dark:hover:text-or">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
@@ -478,7 +478,7 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
             <div className="flex items-center gap-2">
               <h3 className="font-display text-sm font-semibold text-bordeaux dark:text-slate-100">Messages</h3>
               {totalUnread > 0 && (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-or px-1.5 text-[10px] font-bold text-bordeaux">
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-or px-1.5 text-[10px] font-bold text-encre">
                   {totalUnread}
                 </span>
               )}
@@ -499,7 +499,7 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
             <button
               onClick={openServiceGroup}
               disabled={serviceGroupLoading}
-              className="flex w-full items-center gap-2 rounded-lg bg-or/10 px-3 py-2 text-left text-xs font-medium text-or transition-colors hover:bg-or/20 dark:bg-or/15 dark:hover:bg-or/25 disabled:opacity-50"
+              className="flex w-full items-center gap-2 rounded-lg bg-or/10 px-3 py-2 text-left text-xs font-medium text-or-texte dark:text-or transition-colors hover:bg-or/20 dark:bg-or/15 dark:hover:bg-or/25 disabled:opacity-50"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               {serviceGroupLoading ? 'Ouverture...' : `Parler à mon Groupe de Service`}
@@ -659,7 +659,7 @@ function MessagingPanelInner({ currentUserId, userRole }: MessagingPanelProps) {
             {replyTo && (
               <div className="flex items-center gap-2 border-t border-pierre/10 bg-sable/20 px-4 py-2 dark:bg-white/5 dark:border-white/5">
                 <div className="min-w-0 flex-1 border-l-2 border-or pl-2">
-                  <p className="text-[10px] font-medium text-or">Reponse a {replyTo.sender_id === currentUserId ? 'vous-meme' : activeConvo?.other_user?.first_name}</p>
+                  <p className="text-[10px] font-medium text-or-texte dark:text-or">Reponse a {replyTo.sender_id === currentUserId ? 'vous-meme' : activeConvo?.other_user?.first_name}</p>
                   <p className="truncate text-[11px] text-pierre dark:text-slate-400">{replyTo.content.split('\n')[0].replace('> ', '')}</p>
                 </div>
                 <button onClick={() => setReplyTo(null)} className="text-pierre hover:text-bordeaux dark:text-slate-400 dark:hover:text-or">

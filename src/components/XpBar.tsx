@@ -49,7 +49,7 @@ export function XpBar({ xp, level, levelLabel, nextLevelLabel, xpInLevel, xpForN
         )}
         {isMaxLevel && (
           <div className="rounded-full bg-or/20 px-2 py-0.5">
-            <p className="text-[10px] font-bold text-or">NIVEAU MAX</p>
+            <p className="text-[10px] font-bold text-or-texte dark:text-or">NIVEAU MAX</p>
           </div>
         )}
       </div>

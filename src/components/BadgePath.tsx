@@ -41,7 +41,7 @@ export function BadgePath({ earnedBadgeTypes, badgeProgress, onSelectBadge }: Ba
         const progress = badgeProgress.find(p => p.badge_type === nextUnearnedKey)
         return (
           <div className="mb-5 rounded-xl border-2 border-or/40 bg-gradient-to-br from-or/5 to-or/10 p-4">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-or mb-1.5">Prochain badge</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-or-texte dark:text-or mb-1.5">Prochain badge</p>
             <div className="flex items-start gap-3">
               <div className="relative flex-shrink-0">
                 <BadgeCoin type={nextUnearnedKey} size={48} locked />
@@ -57,7 +57,7 @@ export function BadgePath({ earnedBadgeTypes, badgeProgress, onSelectBadge }: Ba
                         style={{ width: `${Math.min((progress.current / progress.target) * 100, 100)}%` }}
                       />
                     </div>
-                    <span className="text-[10px] font-medium text-or">
+                    <span className="text-[10px] font-medium text-or-texte dark:text-or">
                       {progress.current}/{progress.target}
                     </span>
                   </div>

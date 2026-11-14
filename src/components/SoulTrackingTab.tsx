@@ -93,7 +93,7 @@ export function SoulTrackingTab({ studentId, studentName }: Props) {
     return <div className="animate-pulse space-y-3"><div className="h-20 rounded-card bg-pierre/10" /><div className="h-32 rounded-card bg-pierre/10" /></div>
   }
 
-  const input = "w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or focus-visible:outline-none"
+  const input = "glass-input w-full px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
   const label = "mb-1 block text-sm font-medium text-bordeaux"
 
   return (
@@ -104,7 +104,7 @@ export function SoulTrackingTab({ studentId, studentName }: Props) {
       </div>
 
       {/* Assiduité */}
-      <div className="rounded-card border border-pierre/15 bg-white p-4">
+      <div className="glass-card p-4">
         <h4 className="font-display text-base text-bordeaux">Assiduité</h4>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <div>
@@ -112,7 +112,7 @@ export function SoulTrackingTab({ studentId, studentName }: Props) {
             <div className="flex gap-1">
               {[1,2,3,4,5].map(n => (
                 <button key={n} onClick={() => setAttendanceRating(n)}
-                  className={`h-8 w-8 rounded-full text-sm font-medium transition-colors ${attendanceRating === n ? 'bg-or text-white' : 'bg-pierre/10 text-pierre hover:bg-or/20'}`}>
+                  className={`h-8 w-8 rounded-full text-sm font-medium transition-colors ${attendanceRating === n ? 'bg-or text-encre' : 'bg-pierre/10 text-pierre hover:bg-or/20'}`}>
                   {n}
                 </button>
               ))}
@@ -126,13 +126,13 @@ export function SoulTrackingTab({ studentId, studentName }: Props) {
       </div>
 
       {/* Méditation */}
-      <div className="rounded-card border border-pierre/15 bg-white p-4">
+      <div className="glass-card p-4">
         <h4 className="font-display text-base text-bordeaux">Contrôle de méditation</h4>
         <textarea className={input + " mt-3"} rows={3} value={meditationObs} onChange={e => setMeditationObs(e.target.value)} placeholder="Observations qualitatives sur la vie spirituelle..." />
       </div>
 
       {/* Situation sociale */}
-      <div className="rounded-card border border-pierre/15 bg-white p-4">
+      <div className="glass-card p-4">
         <h4 className="font-display text-base text-bordeaux">Situation sociale</h4>
         <textarea className={input + " mt-3"} rows={3} value={socialContext} onChange={e => setSocialContext(e.target.value)} placeholder="Contexte de vie, famille, travail, difficultés..." />
       </div>
@@ -143,7 +143,7 @@ export function SoulTrackingTab({ studentId, studentName }: Props) {
       {msg && <p className="text-sm text-olive">{msg}</p>}
 
       {/* Journal chronologique */}
-      <div className="rounded-card border border-pierre/15 bg-white p-4">
+      <div className="glass-card p-4">
         <h4 className="font-display text-base text-bordeaux">Journal de suivi</h4>
 
         <div className="mt-3 flex gap-2">
@@ -155,7 +155,7 @@ export function SoulTrackingTab({ studentId, studentName }: Props) {
             placeholder={`Observation (${CATEGORIES.find(c => c.key === newCategory)?.label})...`}
             onKeyDown={e => e.key === 'Enter' && handleAddEntry()} />
           <button onClick={handleAddEntry} disabled={addingEntry || !newContent.trim()}
-            className="shrink-0 rounded-md bg-or px-3 py-1.5 text-sm font-medium text-white hover:bg-or-light disabled:opacity-50">
+            className="shrink-0 rounded-md bg-or px-3 py-1.5 text-sm font-medium text-encre hover:bg-or-light disabled:opacity-50">
             + Ajouter
           </button>
         </div>

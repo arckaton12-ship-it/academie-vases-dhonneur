@@ -42,9 +42,9 @@ export function BadgeDrawer({
       <div className="absolute inset-0 bg-bordeaux/30 backdrop-blur-sm" onClick={onClose} />
       <div
         ref={panelRef}
-        className="relative z-50 flex h-full w-full max-w-sm flex-col overflow-y-auto bg-parchemin shadow-2xl animate-slide-in-right"
+        className="glass relative z-50 flex h-full w-full max-w-sm flex-col overflow-y-auto shadow-2xl animate-slide-in-right"
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-sable/60 bg-parchemin/95 px-5 py-4 backdrop-blur">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/40 bg-white/40 px-5 py-4 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/40">
           <div>
             <h2 className="font-display text-lg text-bordeaux">Salle des badges</h2>
             <p className="text-xs text-pierre">
@@ -90,7 +90,7 @@ export function BadgeDrawer({
                         {meta.label}
                       </p>
                       {isActive && (
-                        <span className="rounded-full bg-or/20 px-2 py-0.5 text-[10px] font-medium text-or">
+                        <span className="rounded-full bg-or/20 px-2 py-0.5 text-[10px] font-medium text-or-texte dark:text-or">
                           Actif
                         </span>
                       )}

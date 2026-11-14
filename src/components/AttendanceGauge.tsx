@@ -34,7 +34,7 @@ export function AttendanceGauge({ weeks, maxWeeks = 8, presenceRate, className =
               className="text-or transition-all duration-500"
             />
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-lg font-bold text-or sm:text-sm">
+          <span className="absolute inset-0 flex items-center justify-center text-lg font-bold text-or-texte dark:text-or sm:text-sm">
             {pct}%
           </span>
         </div>

@@ -57,8 +57,8 @@ export function ClassPicker({ userId, onPicked }: ClassPickerProps) {
 
   if (requestStatus === 'pending') {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-        <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-2xl">
+      <div className="fixed inset-0 z-50 flex items-center justify-center glass-scrim p-4">
+        <div className="w-full max-w-md glass-sheet p-8 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-or/15">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-or">
               <circle cx="12" cy="12" r="10" />
@@ -79,8 +79,8 @@ export function ClassPicker({ userId, onPicked }: ClassPickerProps) {
 
   if (requestStatus === 'approved') {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-        <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-2xl">
+      <div className="fixed inset-0 z-50 flex items-center justify-center glass-scrim p-4">
+        <div className="w-full max-w-md glass-sheet p-8 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-olive/15">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-olive">
               <path d="M20 6L9 17l-5-5" />
@@ -96,8 +96,8 @@ export function ClassPicker({ userId, onPicked }: ClassPickerProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center glass-scrim p-4">
+      <div className="w-full max-w-md glass-sheet p-6">
         <div className="mb-4 flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-or/15">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-or">

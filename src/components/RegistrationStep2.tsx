@@ -140,13 +140,13 @@ export default function RegistrationStep2({ profile, onComplete }: Props) {
     }
   }
 
-  const input = "w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or focus-visible:outline-none"
+  const input = "glass-input w-full px-3 py-2 text-sm text-bordeaux focus-visible:border-or"
   const label = "mb-1 block text-sm font-medium text-bordeaux"
   const select = input + " appearance-none"
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-card bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center glass-scrim p-4">
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto glass-sheet p-6">
         <h2 className="font-display text-xl text-bordeaux">Fiche d'inscription — Académie</h2>
         <p className="mt-1 text-sm text-pierre">Complète les informations ci-dessous.</p>
 

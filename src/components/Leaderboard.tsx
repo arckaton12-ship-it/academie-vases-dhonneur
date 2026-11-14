@@ -164,7 +164,7 @@ export function Leaderboard({ currentUserId, className = '' }: LeaderboardProps)
                   {RANK_MEDALS[entry.rank] ? (
                     <span className="text-base">{RANK_MEDALS[entry.rank]}</span>
                   ) : (
-                    <span className={`text-xs font-bold ${entry.rank <= 10 ? 'text-or' : 'text-pierre/50 dark:text-slate-500'}`}>
+                    <span className={`text-xs font-bold ${entry.rank <= 10 ? 'text-or-texte dark:text-or' : 'text-pierre/50 dark:text-slate-500'}`}>
                       {entry.rank}
                     </span>
                   )}
@@ -180,7 +180,7 @@ export function Leaderboard({ currentUserId, className = '' }: LeaderboardProps)
 
                 {/* Name + level */}
                 <div className="min-w-0 flex-1">
-                  <p className={`truncate text-xs font-semibold ${entry.is_me ? 'text-or' : 'text-bordeaux dark:text-slate-100'}`}>
+                  <p className={`truncate text-xs font-semibold ${entry.is_me ? 'text-or-texte dark:text-or' : 'text-bordeaux dark:text-slate-100'}`}>
                     {entry.first_name} {entry.last_name}
                     {entry.is_me && <span className="ml-1 text-[9px] font-normal text-or/70">(Toi)</span>}
                   </p>
@@ -191,7 +191,7 @@ export function Leaderboard({ currentUserId, className = '' }: LeaderboardProps)
 
                 {/* XP */}
                 <div className="text-right">
-                  <p className="text-xs font-bold text-or">{entry.period_xp.toLocaleString()}</p>
+                  <p className="text-xs font-bold text-or-texte dark:text-or">{entry.period_xp.toLocaleString()}</p>
                   <p className="text-[9px] text-pierre dark:text-slate-500">XP période</p>
                 </div>
 

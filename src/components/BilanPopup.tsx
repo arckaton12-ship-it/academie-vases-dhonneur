@@ -54,7 +54,7 @@ export default function BilanPopup({
 
   if (submitted) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center glass-scrim px-4">
         <Card className="w-full max-w-md text-center">
           <div className="mb-3 text-4xl">✅</div>
           <CardTitle>Bilan enregistré !</CardTitle>
@@ -103,7 +103,7 @@ export default function BilanPopup({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 px-4 py-8">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto glass-scrim px-4 py-8">
       <Card className="w-full max-w-md">
         <CardTitle>Ton Bilan de la Semaine</CardTitle>
         <CardDescription className="mt-1 mb-4">

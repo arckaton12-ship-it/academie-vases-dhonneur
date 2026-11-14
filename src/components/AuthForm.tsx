@@ -104,14 +104,14 @@ export function AuthForm({ mode, role, onSuccess }: AuthFormProps) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="tribe">Tribu</Label>
-              <select id="tribe" value={tribe} onChange={(e) => setTribe(e.target.value)} className="block w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or focus-visible:outline-none">
+              <select id="tribe" value={tribe} onChange={(e) => setTribe(e.target.value)} className="glass-input block w-full px-3 py-2 text-sm text-bordeaux focus-visible:border-or">
                 <option value="">—</option>
                 {TRIBUS.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>
               <Label htmlFor="department">Département</Label>
-              <select id="department" value={department} onChange={(e) => setDepartment(e.target.value)} className="block w-full rounded-md border border-pierre/30 bg-white px-3 py-2 text-sm text-bordeaux focus-visible:border-or focus-visible:outline-none">
+              <select id="department" value={department} onChange={(e) => setDepartment(e.target.value)} className="glass-input block w-full px-3 py-2 text-sm text-bordeaux focus-visible:border-or">
                 <option value="">—</option>
                 {DEPARTEMENTS.map(d => <option key={d} value={d}>{d}</option>)}
               </select>

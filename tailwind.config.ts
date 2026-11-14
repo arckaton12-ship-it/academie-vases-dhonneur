@@ -11,6 +11,8 @@ export default {
         olive: '#14524D',
         parchemin: '#FFFFFF',
         or: '#D4A017',
+        'or-texte': '#8A6508',
+        encre: '#0B2A28',
         pierre: '#6B6B6B',
         teal: '#1B6B63',
         'teal-dark': '#14524D',

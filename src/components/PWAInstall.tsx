@@ -89,7 +89,7 @@ export function PWAInstall() {
             <div className="mt-3 flex gap-2">
               <button
                 onClick={handleInstall}
-                className="rounded-lg bg-or px-3 py-1.5 text-xs font-bold text-bordeaux transition-colors hover:bg-or/80"
+                className="rounded-lg bg-or px-3 py-1.5 text-xs font-bold text-encre transition-colors hover:bg-or/80"
               >
                 Installer
               </button>
@@ -148,7 +148,7 @@ export function PWAInstallButton() {
   return (
     <button
       onClick={handleInstall}
-      className="fixed bottom-20 right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-or text-bordeaux shadow-lg transition-transform hover:scale-110 dark:text-slate-900 md:bottom-6 md:right-6"
+      className="fixed bottom-20 right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-or text-encre shadow-lg transition-transform hover:scale-110 dark:text-slate-900 md:bottom-6 md:right-6"
       title="Installer l'app"
     >
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
