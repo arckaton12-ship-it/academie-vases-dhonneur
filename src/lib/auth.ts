@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 import { uploadAvatar } from './avatars'
 import { Sentry } from './sentry'
+import { readStoredSession, ROLE_CHECK_TIMEOUT_MS, type StoredSession } from './session'
 
 export type UserRole = 'ETUDIANT' | 'MODERATEUR' | 'ADMINISTRATEUR' | 'ADMIN_CLASSE'
 
@@ -104,89 +105,48 @@ export async function signOut() {
   if (error) throw error
 }
 
-const STORAGE_KEY = 'academie-vh-auth'
-
-export function getSafeSession(): { access_token: string; user: { id: string; email?: string; user_metadata: Record<string, unknown> } } | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw)
-    const current = parsed?.current ?? parsed
-    if (current?.access_token && current?.user?.id) {
-      return {
-        access_token: current.access_token,
-        user: {
-          id: current.user.id,
-          email: current.user.email,
-          user_metadata: current.user.user_metadata ?? {},
-        },
-      }
-    }
-    return null
-  } catch {
-    return null
-  }
+/**
+ * Session courante, lue de façon synchrone dans localStorage.
+ * Aucun appel réseau : cette fonction ne peut pas bloquer.
+ */
+export function getSafeSession(): StoredSession | null {
+  return readStoredSession()
 }
 
 export async function getCurrentProfile() {
-  const STORAGE_KEY = 'academie-vh-auth'
+  const session = readStoredSession()
+  if (!session) return null
+
+  const userId = session.user.id
+  const ac = new AbortController()
+  const timer = setTimeout(() => ac.abort(), ROLE_CHECK_TIMEOUT_MS)
 
   try {
-    let userId: string | null = null
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+    const accessToken = session.access_token
 
-    // Read session directly from localStorage — never hangs
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      if (raw) {
-        const parsed = JSON.parse(raw)
-        const current = parsed?.current ?? parsed
-        if (current?.user?.id) userId = current.user.id
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/profiles?select=*&id=eq.${userId}&limit=1`,
+      {
+        headers: {
+          'apikey': anonKey,
+          'Authorization': `Bearer ${accessToken || anonKey}`,
+          'Content-Type': 'application/json',
+        },
+        signal: ac.signal,
       }
-    } catch {
-      // localStorage parse error
-    }
+    )
 
-    if (!userId) return null
-
-    const ac = new AbortController()
-    const timer = setTimeout(() => ac.abort(), 8000)
-
-    try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
-      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
-      // Read access_token from localStorage for the API call
-      let accessToken = ''
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY)
-        if (raw) {
-          const parsed = JSON.parse(raw)
-          const current = parsed?.current ?? parsed
-          accessToken = current?.access_token ?? ''
-        }
-      } catch { /* ignore */ }
-
-      const res = await fetch(
-        `${supabaseUrl}/rest/v1/profiles?select=*&id=eq.${userId}&limit=1`,
-        {
-          headers: {
-            'apikey': anonKey,
-            'Authorization': `Bearer ${accessToken || anonKey}`,
-            'Content-Type': 'application/json',
-          },
-          signal: ac.signal,
-        }
-      )
-
-      if (!res.ok) return null
-      const rows = await res.json()
-      return rows?.[0] ?? null
-    } finally {
-      clearTimeout(timer)
-    }
+    if (!res.ok) return null
+    const rows = await res.json()
+    return rows?.[0] ?? null
   } catch (err) {
     const msg = err instanceof Error ? JSON.stringify({ message: err.message, stack: err.stack }) : JSON.stringify(err)
     console.error('[getCurrentProfile] Unexpected error:', msg)
     return null
+  } finally {
+    clearTimeout(timer)
   }
 }
 

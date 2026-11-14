@@ -1,31 +1,12 @@
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useCallback, useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { UserRole } from '@/lib/auth'
+import { readStoredSession, clearStoredSession, ROLE_CHECK_TIMEOUT_MS } from '@/lib/session'
 import { FullResetButton } from '@/components/FullResetButton'
 
 interface RequireRoleProps {
   roles: UserRole[]
   children: ReactNode
-}
-
-const STORAGE_KEY = 'academie-vh-auth'
-
-interface StoredSession {
-  access_token: string
-  user: { id: string }
-}
-
-function readSessionFromStorage(): StoredSession | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw)
-    const current = parsed?.current ?? parsed
-    if (current?.access_token && current?.user?.id) return current as StoredSession
-    return null
-  } catch {
-    return null
-  }
 }
 
 function fetchJson(url: string, token: string, signal?: AbortSignal): Promise<any> {
@@ -47,20 +28,22 @@ export function RequireRole({ roles, children }: RequireRoleProps) {
   const location = useLocation()
   const isChangePasswordPage = /\/changer-mot-de-passe$/.test(location.pathname)
   const [allowed, setAllowed] = useState<boolean | null>(null)
-  const [timedOut, setTimedOut] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     let cancelled = false
     const ac = new AbortController()
-    const timer = setTimeout(() => ac.abort(), 10000)
-    const timeoutTimer = setTimeout(() => {
-      if (!cancelled) setTimedOut(true)
-    }, 8000)
+    const timer = setTimeout(() => ac.abort(), ROLE_CHECK_TIMEOUT_MS)
+
+    setAllowed(null)
+    setFailed(false)
 
     async function check() {
-      const session = readSessionFromStorage()
-      if (cancelled || !session) {
-        if (!cancelled) navigate('/', { replace: true })
+      const session = readStoredSession()
+      if (cancelled) return
+      if (!session) {
+        navigate('/', { replace: true })
         return
       }
 
@@ -82,7 +65,7 @@ export function RequireRole({ roles, children }: RequireRoleProps) {
           return
         }
         if (profile.active === false) {
-          localStorage.removeItem(STORAGE_KEY)
+          clearStoredSession()
           if (!cancelled) navigate('/', { replace: true })
           return
         }
@@ -98,8 +81,17 @@ export function RequireRole({ roles, children }: RequireRoleProps) {
         }
 
         if (!cancelled) setAllowed(true)
-      } catch {
-        if (!cancelled) navigate('/', { replace: true })
+      } catch (error) {
+        if (cancelled) return
+        // Un abandon signifie que la vérification a dépassé le délai : on ne
+        // déconnecte pas l'utilisateur, on lui propose de réessayer.
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          setFailed(true)
+          return
+        }
+        navigate('/', { replace: true })
+      } finally {
+        clearTimeout(timer)
       }
     }
 
@@ -109,25 +101,54 @@ export function RequireRole({ roles, children }: RequireRoleProps) {
       cancelled = true
       ac.abort()
       clearTimeout(timer)
-      clearTimeout(timeoutTimer)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isChangePasswordPage])
+  }, [isChangePasswordPage, attempt])
+
+  const retry = useCallback(() => setAttempt((value) => value + 1), [])
+
+  const reconnect = useCallback(() => {
+    clearStoredSession()
+    navigate('/', { replace: true })
+  }, [navigate])
 
   if (allowed === null) {
-    if (timedOut) {
+    if (failed) {
       return (
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="text-center p-8">
-            <p className="text-sm text-pierre mb-4">Le chargement prend plus de temps que prévu.</p>
-            <FullResetButton />
+        <div className="flex min-h-screen items-center justify-center px-6">
+          <div className="glass-panel w-full max-w-sm p-7 text-center">
+            <p className="font-display text-lg text-bordeaux dark:text-slate-100">
+              La vérification prend trop de temps
+            </p>
+            <p className="mt-2 text-sm text-pierre dark:text-slate-400">
+              Ta connexion est peut-être instable. Tu peux réessayer sans perdre ta session.
+            </p>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={retry}
+                className="rounded-full bg-bordeaux px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-bordeaux/90 dark:bg-or dark:text-slate-900"
+              >
+                Réessayer
+              </button>
+              <button
+                type="button"
+                onClick={reconnect}
+                className="glass-pill px-5 py-2.5 text-sm font-medium text-bordeaux dark:text-slate-200"
+              >
+                Se reconnecter
+              </button>
+            </div>
+            <div className="mt-4 border-t border-white/40 pt-3 dark:border-white/10">
+              <FullResetButton />
+            </div>
           </div>
         </div>
       )
     }
     return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-pierre">
-        <svg className="mr-2 animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+      <div className="flex min-h-screen items-center justify-center gap-2 text-sm text-pierre">
+        <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
         Chargement...
       </div>
     )
