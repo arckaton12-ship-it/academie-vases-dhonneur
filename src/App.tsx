@@ -1,12 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { useState, useCallback, useEffect } from 'react'
+import { lazy, Suspense, useState, useCallback, useEffect } from 'react'
 import { Sentry } from '@/lib/sentry'
 import Landing from '@/pages/Landing'
 import { StudentSignup, StudentLogin, AdminSignup, AdminLogin, ModeratorSignup, ModeratorLogin, AdminClasseLogin } from '@/pages/Auth'
-import StudentDashboard from '@/pages/StudentDashboard'
-import AdminDashboard from '@/pages/AdminDashboard'
-import ModeratorDashboard from '@/pages/ModeratorDashboard'
-import AdminClasseDashboard from '@/pages/AdminClasseDashboard'
 import { RequireRole } from '@/components/RequireRole'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { ThemeProvider } from '@/contexts/ThemeContext'
@@ -16,9 +12,32 @@ import { ToastContainer } from '@/components/ui/Toast'
 import { PWAInstall, PWAInstallButton } from '@/components/PWAInstall'
 import { ChangePasswordPage } from '@/pages/ChangePasswordPage'
 import { SentryTestPage } from '@/pages/SentryTestPage'
+import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
+import { ContactPage } from '@/pages/ContactPage'
+import { LegalPage } from '@/pages/LegalPage'
+import { NotFoundPage } from '@/pages/NotFoundPage'
 
 const MODERATOR_ROLES: UserRole[] = ['MODERATEUR', 'ADMINISTRATEUR']
 const ADMIN_CLASSE_ROLES: UserRole[] = ['ADMIN_CLASSE']
+
+// Les quatre tableaux de bord sont chargés à la demande : un visiteur qui
+// découvre l'accueil ne télécharge ni l'administration ni jsPDF.
+const StudentDashboard = lazy(() => import('@/pages/StudentDashboard'))
+const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'))
+const ModeratorDashboard = lazy(() => import('@/pages/ModeratorDashboard'))
+const AdminClasseDashboard = lazy(() => import('@/pages/AdminClasseDashboard'))
+
+function PageFallback() {
+  return (
+    <div className="flex min-h-screen items-center justify-center px-6">
+      <div className="glass-card flex items-center gap-3 px-6 py-4 text-sm text-pierre dark:text-slate-300">
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-or border-t-transparent" />
+        Chargement de ton espace…
+      </div>
+    </div>
+  )
+}
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(shouldShowSplash())
@@ -71,9 +90,15 @@ export default function App() {
       <ThemeProvider>
         {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
         <BrowserRouter>
+        <Suspense fallback={<PageFallback />}>
         <Routes>
           <Route path="/" element={<Landing />} />
-          <Route path="/test-sentry" element={<SentryTestPage />} />
+          {import.meta.env.DEV && <Route path="/test-sentry" element={<SentryTestPage />} />}
+
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/mentions-legales" element={<LegalPage />} />
+          <Route path="/mot-de-passe-oublie" element={<ForgotPasswordPage />} />
+          <Route path="/reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
 
           <Route path="/etudiant/inscription" element={<StudentSignup />} />
           <Route path="/etudiant/connexion" element={<StudentLogin />} />
@@ -119,16 +144,9 @@ export default function App() {
             }
           />
 
-          <Route path="*" element={
-            <div className="flex min-h-screen items-center justify-center px-4">
-              <div className="text-center">
-                <h1 className="font-display text-4xl text-bordeaux">404</h1>
-                <p className="mt-2 text-sm text-pierre">Page introuvable.</p>
-                <a href="/" className="mt-4 inline-block text-sm font-medium text-bordeaux underline">Retour à l'accueil</a>
-              </div>
-            </div>
-          } />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
+        </Suspense>
         </BrowserRouter>
         <PWAInstall />
         <PWAInstallButton />

@@ -1,6 +1,6 @@
 import RegistrationStep2 from '@/components/RegistrationStep2'
 import { Input } from '@/components/ui/Input'
-import { Sidebar, SidebarItem } from '@/components/ui/Sidebar'
+import { Sidebar, SidebarItem, MobileMenuButton } from '@/components/ui/Sidebar'
 import { Logo } from '@/components/Logo'
 import { Avatar } from '@/components/Avatar'
 import { NotificationPrompt } from '@/components/NotificationPrompt'
@@ -103,6 +103,7 @@ export default function StudentDashboard() {
       <header className="glass-nav sticky top-0 z-20 mb-4 pb-3 pt-3 md:static md:mb-6 md:border-0 md:bg-transparent md:pt-0 md:shadow-none md:backdrop-blur-none dark:md:bg-transparent">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 md:gap-3">
+            <MobileMenuButton />
             <Logo showText={false} size={28} className="md:hidden" />
             <Logo showText={false} size={34} className="hidden md:block" />
             <div>

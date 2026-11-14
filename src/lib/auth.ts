@@ -106,6 +106,44 @@ export async function signOut() {
 }
 
 /**
+ * Envoie un lien de réinitialisation si un compte existe pour cet email.
+ * On ne révèle jamais si l'adresse est connue ou non (anti-énumération).
+ */
+export async function requestPasswordReset(email: string) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+    redirectTo: `${window.location.origin}/reinitialiser-mot-de-passe`,
+  })
+  if (!error) return
+
+  const msg = error.message.toLowerCase()
+  if (msg.includes('rate') || msg.includes('too many') || msg.includes('429')) {
+    throw new Error('Trop de demandes. Réessaie dans quelques minutes.')
+  }
+  throw new Error("L'envoi de l'email a échoué. Vérifie ta connexion et réessaie.")
+}
+
+export async function changePassword(newPassword: string) {
+  const { data, error } = await supabase.auth.updateUser({ password: newPassword })
+  if (error) {
+    const msg = error.message.toLowerCase()
+    if (msg.includes('same') || msg.includes('different')) {
+      throw new Error('Choisis un mot de passe différent de l’ancien.')
+    }
+    if (msg.includes('weak') || msg.includes('password')) {
+      throw new Error('Mot de passe trop simple. Utilise au moins 8 caractères.')
+    }
+    throw new Error('Impossible de mettre à jour le mot de passe. Réessaie.')
+  }
+
+  // Un mot de passe réinitialisé ne doit plus être marqué comme temporaire.
+  const userId = data.user?.id ?? getSafeSession()?.user.id
+  if (userId) {
+    await supabase.from('profiles').update({ must_change_password: false }).eq('id', userId)
+  }
+  return data
+}
+
+/**
  * Session courante, lue de façon synchrone dans localStorage.
  * Aucun appel réseau : cette fonction ne peut pas bloquer.
  */

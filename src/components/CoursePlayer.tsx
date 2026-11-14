@@ -41,7 +41,7 @@ function AudioStrip({ parts, onSelect, activeIndex }: { parts: AudioPart[]; onSe
           className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition whitespace-nowrap ${
             activeIndex === i
               ? 'bg-or text-encre shadow-sm'
-              : 'border border-or/30 bg-or/5 text-terre hover:bg-or/15'
+              : 'border border-or/30 bg-or/5 text-bordeaux hover:bg-or/15 dark:text-or'
           }`}
         >
           {part.nom || `Partie ${i + 1}`}
@@ -148,7 +148,7 @@ export function CoursePlayer({ audioUrl, audioParts, videoUrl, week, title }: Co
 
           {selectedPart !== null && activePart?.audio && (
             <div className="rounded-card border border-sable/60 bg-creme/50 p-3 space-y-2">
-              <p className="text-sm font-medium text-terre">{activePart.nom || `Partie ${(selectedPart as number) + 1}`}</p>
+              <p className="text-sm font-medium text-bordeaux dark:text-slate-300">{activePart.nom || `Partie ${(selectedPart as number) + 1}`}</p>
               <AudioPlayer url={activePart.audio} name={activePart.nom} />
               <button onClick={handleDownload}
                 className="flex items-center gap-1.5 text-xs font-medium text-or-texte dark:text-or hover:underline">

@@ -1,8 +1,6 @@
-import { jsPDF } from 'jspdf'
-import autoTable from 'jspdf-autotable'
 import type { Course, Submission } from './courses'
 
-export function exportStudentBulletinPDF(input: {
+export async function exportStudentBulletinPDF(input: {
   filename: string
   studentName: string
   className: string
@@ -12,6 +10,10 @@ export function exportStudentBulletinPDF(input: {
   presenceRate: number
   resumeRate: number
 }) {
+  const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable'),
+  ])
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
   const pageWidth = doc.internal.pageSize.getWidth()
 
@@ -112,7 +114,11 @@ export function exportToCSV(filename: string, headers: string[], rows: ExportRow
   triggerDownload(blob, filename)
 }
 
-export function exportToPDF(filename: string, title: string, subtitle: string, headers: string[], rows: ExportRow[]) {
+export async function exportToPDF(filename: string, title: string, subtitle: string, headers: string[], rows: ExportRow[]) {
+  const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable'),
+  ])
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' })
 
   doc.setFont('helvetica', 'bold')

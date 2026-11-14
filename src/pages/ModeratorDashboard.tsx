@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SidebarLayout } from '@/components/ui/SidebarLayout'
+import { MobileMenuButton } from '@/components/ui/Sidebar'
 import { Logo } from '@/components/Logo'
 import { SectionWatermark } from '@/components/SectionWatermark'
 import { VerseReference } from '@/components/VerseReference'
@@ -208,6 +209,7 @@ export default function ModeratorDashboard() {
       <DayAccentBand />
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
+          <MobileMenuButton />
           <Logo showText={false} size={34} />
           <div>
             <h1 className="font-display text-2xl text-bordeaux">Espace modérateur</h1>

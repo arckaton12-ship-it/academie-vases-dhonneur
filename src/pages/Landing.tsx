@@ -11,7 +11,7 @@ const STATS = [
   { value: '3', label: 'Niveaux de formation' },
   { value: '28', label: 'Cours dispensés' },
   { value: '18', label: 'Badges à débloquer' },
-  { value: '100%', label: 'Gratuit' },
+  { value: '0 F', label: "Frais d'inscription" },
 ]
 
 const PILLARS = [
@@ -32,36 +32,36 @@ const PILLARS = [
   },
 ]
 
-const TESTIMONIALS = [
+const PARCOURS = [
   {
-    text: 'L\'académie m\'a appris à structurer ma vie de prière. Le suivi du modérateur fait toute la différence.',
-    name: 'Sarah M.',
-    role: 'Étudiante — Niveau 2',
+    step: 'Classe 1',
+    title: 'Connaître Christ',
+    text: 'Les fondements de la foi : la vision, le salut, la nouvelle création, la sanctification et la marche avec le Saint-Esprit.',
   },
   {
-    text: 'Les cours sont clairs, pratiques et directement applicables. J\'ai grandi en confiance.',
-    name: 'David K.',
-    role: 'Étudiant — Niveau 1',
+    step: 'Classe 2',
+    title: 'Croître avec Jésus',
+    text: 'Le disciple s’enracine : vie de prière, service, vigilance face aux fausses doctrines, croissance et fidélité.',
   },
   {
-    text: 'Le système de badges et la progression me motivent à rester assidu chaque semaine.',
-    name: 'Marie N.',
-    role: 'Étudiante — Niveau 3',
+    step: 'Classe 3',
+    title: 'Consécration & Service',
+    text: 'Le disciple affermi se consacre et prend sa place dans le service, accompagné par son modérateur jusqu’au bout du parcours.',
   },
 ]
 
 const FAQ = [
   {
     q: 'L\'académie est-elle vraiment gratuite ?',
-    a: 'Presque gratuit, une contribution de 10000 F seulement est demandée pour son Kit (T-Shirt de l\'Académie, Cahier de Méditation, Agapé) entièrement. Aucun frais d\'inscription. L\'Académie est une école de formation des disciples de l\'église Vases d\'Honneur, implémentée par l\'Assemblée Eaux Paisibles de Yaoundé.',
+    a: 'L\'inscription et la formation sont gratuites : aucun frais de scolarité n\'est demandé. Une contribution unique de 10 000 F couvre le kit de bienvenue (t-shirt de l\'Académie, cahier de méditation et agapé). L\'Académie est l\'école de formation des disciples de l\'église Vases d\'Honneur, portée par l\'Assemblée Eaux Paisibles de Yaoundé.',
   },
   {
     q: 'Comment ça marche concrètement ?',
-    a: 'Tu t\'inscris, on t\'attribue à une classe avec un modérateur. Chaque semaine tu suis un cours, tu soumets un résumé et tu reçois un retour personnalisé.',
+    a: 'Tu t\'inscris, puis l\'administration t\'attribue à une classe avec un modérateur. Chaque semaine, tu suis un cours, tu soumets un résumé et tu reçois un retour personnalisé.',
   },
   {
     q: 'Je peux rejoindre à tout moment ?',
-    a: 'Les inscriptions sont ouvertes 3 fois dans l\'année. Renseigne-toi pour la prochaine session, et tu commences au niveau 1 et tu progresses selon ton rythme et les recommandations de l\'administration de l\'École.',
+    a: 'Les inscriptions sont ouvertes trois fois dans l\'année. Renseigne-toi sur la prochaine session : tu commences au niveau 1, puis tu progresses selon ton rythme et les recommandations de l\'administration de l\'École.',
   },
   {
     q: 'Quel est le niveau requis ?',
@@ -73,6 +73,7 @@ export default function Landing() {
   const navigate = useNavigate()
   const [avatars, setAvatars] = useState<{ url: string | null; name: string }[]>([])
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const [videoOpen, setVideoOpen] = useState(false)
 
   useEffect(() => {
     getLandingAvatars().then(setAvatars).catch(() => undefined)
@@ -124,6 +125,16 @@ export default function Landing() {
         <DarkModeToggle />
       </div>
 
+      {/* Déjà inscrit */}
+      <div className="absolute left-4 top-4 z-20">
+        <Link
+          to="/etudiant/connexion"
+          className="text-xs font-medium text-bordeaux underline-offset-4 hover:underline dark:text-or sm:text-sm"
+        >
+          Déjà inscrit ? Se connecter
+        </Link>
+      </div>
+
       {/* ─── HERO ─── */}
       <section className="relative z-10 flex min-h-[90vh] flex-col items-center justify-center px-6 text-center">
         <div className="mb-6 animate-scale-in">
@@ -137,12 +148,12 @@ export default function Landing() {
         </h1>
 
         <p className="mt-5 max-w-lg text-base text-pierre sm:text-lg dark:text-slate-400">
-          L'académie biblique en ligne de l'Église Vases d'Honneur Assemblée Eaux Paisibles de Yaoundé. Un parcours structuré pour acquérir de solide fondements en Christ et devenir un disciple authentique de Jésus.
+          L'académie biblique en ligne de l'Assemblée Eaux Paisibles de Yaoundé, au sein de l'Église Vases d'Honneur. Un parcours structuré pour poser des fondements solides en Christ et devenir un disciple authentique de Jésus.
         </p>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Link
-            to="/etudiant/connexion"
+            to="/etudiant/inscription"
             className="inline-flex items-center justify-center gap-2 rounded-full bg-bordeaux px-7 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:bg-bordeaux/90 hover:shadow-xl hover:scale-105 active:scale-95 dark:bg-or dark:text-slate-900"
           >
             Commencer maintenant
@@ -231,43 +242,60 @@ export default function Landing() {
             Regarde un extrait de nos cours pour découvrir l'Académie.
           </p>
           <div className="glass-panel mx-auto mt-8 w-full overflow-hidden p-2">
-            <div className="relative overflow-hidden rounded-[1.15rem]" style={{ paddingBottom: '56.25%' }}>
-              <iframe
-                src="https://www.youtube.com/embed/plSLMiajkTg"
-                title="Aperçu — La Vision Vases d'Honneur"
-                className="absolute inset-0 h-full w-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
+            <div className="relative overflow-hidden rounded-[1.15rem] bg-gradient-to-br from-bordeaux to-bordeaux/80" style={{ paddingBottom: '56.25%' }}>
+              {videoOpen ? (
+                <iframe
+                  src="https://www.youtube.com/embed/plSLMiajkTg?autoplay=1"
+                  title="Aperçu — La Vision Vases d'Honneur"
+                  className="absolute inset-0 h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setVideoOpen(true)}
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-parchemin transition-colors hover:bg-black/10"
+                  aria-label="Lancer l'aperçu vidéo"
+                >
+                  <span className="flex h-16 w-16 items-center justify-center rounded-full bg-or text-encre shadow-lg transition-transform hover:scale-105">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </span>
+                  <span className="text-sm font-medium">Lancer l'aperçu</span>
+                  <span className="text-[11px] text-parchemin/70">La vidéo ne se charge qu'au clic.</span>
+                </button>
+              )}
             </div>
           </div>
           <p className="mt-3 text-xs text-pierre dark:text-slate-500">La Vision Vases d'Honneur — Semaine 2</p>
         </div>
       </section>
 
-      {/* ─── TESTIMONIALS ─── */}
+      {/* ─── PARCOURS ─── */}
       <section className="relative z-10 bg-bordeaux/[0.03] py-20 px-6 dark:bg-bordeaux/10">
         <div className="mx-auto max-w-4xl text-center">
           <h2 className="font-display text-2xl font-bold text-bordeaux sm:text-3xl dark:text-slate-100">
-            Ce qu'en disent nos étudiants
+            Ton parcours, en trois classes
           </h2>
+          <p className="mt-3 text-sm text-pierre dark:text-slate-400">
+            28 cours, un rythme hebdomadaire, un modérateur qui t'accompagne à chaque étape.
+          </p>
         </div>
         <div className="mx-auto mt-10 grid max-w-4xl gap-6 sm:grid-cols-3">
-          {TESTIMONIALS.map((t) => (
-            <div
-              key={t.name}
-              className="glass-card p-6"
-            >
-              <div className="mb-3 flex gap-1 text-or">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                ))}
-              </div>
-              <p className="text-sm text-pierre italic dark:text-slate-300">« {t.text} »</p>
-              <div className="mt-4">
-                <p className="text-xs font-semibold text-bordeaux dark:text-slate-100">{t.name}</p>
-                <p className="text-[10px] text-pierre dark:text-slate-500">{t.role}</p>
-              </div>
+          {PARCOURS.map((p, i) => (
+            <div key={p.step} className="glass-card p-6">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-or/15 font-display text-sm font-bold text-or-texte dark:text-or">
+                {i + 1}
+              </span>
+              <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-pierre dark:text-slate-500">
+                {p.step}
+              </p>
+              <h3 className="mt-1 font-display text-lg font-semibold text-bordeaux dark:text-slate-100">
+                {p.title}
+              </h3>
+              <p className="mt-2 text-sm text-pierre dark:text-slate-400">{p.text}</p>
             </div>
           ))}
         </div>
@@ -320,10 +348,11 @@ export default function Landing() {
             Prêt à commencer ton parcours ?
           </h2>
           <p className="mt-3 text-sm text-parchemin/80">
-            Rejoins l'Académie Vases d'Honneur. C'est gratuit, c'est structuré, et c'est pour toi.
+            Rejoins l'Académie Vases d'Honneur. L'inscription est gratuite ; seule une contribution
+            de 10 000 F couvre ton kit de bienvenue.
           </p>
           <Link
-            to="/etudiant/connexion"
+            to="/etudiant/inscription"
             className="mt-6 inline-flex items-center gap-2 rounded-full bg-or px-8 py-3 text-sm font-bold text-encre shadow-lg transition-all hover:bg-or/90 hover:shadow-xl hover:scale-105 active:scale-95"
           >
             Je m'inscris maintenant
@@ -337,7 +366,13 @@ export default function Landing() {
         <p className="text-xs text-pierre dark:text-slate-500">
           © 2026 Académie Vases d'Honneur — Assemblée Eaux Paisibles de Yaoundé
         </p>
-        <p className="mt-1 font-serif text-[11px] italic text-or/60 dark:text-or/50">
+        <nav aria-label="Liens du pied de page" className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs font-medium text-bordeaux dark:text-or">
+          <Link to="/contact" className="underline-offset-4 hover:underline">Contact</Link>
+          <Link to="/mentions-legales" className="underline-offset-4 hover:underline">Mentions légales</Link>
+          <Link to="/etudiant/inscription" className="underline-offset-4 hover:underline">Inscription</Link>
+          <Link to="/etudiant/connexion" className="underline-offset-4 hover:underline">Connexion</Link>
+        </nav>
+        <p className="mt-3 font-serif text-[11px] italic text-or/60 dark:text-or/50">
           « La Création attend avec un ardent désir la Révélation des Fils de Dieu » — Romains 8:19
         </p>
       </footer>

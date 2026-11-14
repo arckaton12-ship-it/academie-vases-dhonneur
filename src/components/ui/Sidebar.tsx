@@ -35,6 +35,13 @@ export function Sidebar({ items, activeKey, onSelect, header, footer }: SidebarP
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
+  // Les tableaux de bord peuvent ouvrir le tiroir depuis leur propre en-tête.
+  useEffect(() => {
+    const handler = () => setMobileOpen(true)
+    window.addEventListener('academie:open-mobile-sidebar', handler)
+    return () => window.removeEventListener('academie:open-mobile-sidebar', handler)
+  }, [])
+
   const sidebarContent = (
     <div className="flex h-full flex-col">
       {/* Header / Logo */}
@@ -81,24 +88,21 @@ export function Sidebar({ items, activeKey, onSelect, header, footer }: SidebarP
 
   return (
     <>
-      {/* Mobile hamburger */}
-      <button
-        onClick={() => setMobileOpen(true)}
-        className="fixed left-3 top-3 z-40 flex h-12 w-12 items-center justify-center rounded-lg border border-pierre/20 bg-white/80 backdrop-blur-sm md:hidden dark:border-white/10 dark:bg-slate-800/80"
-        aria-label="Ouvrir le menu"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <line x1="3" y1="6" x2="21" y2="6" />
-          <line x1="3" y1="12" x2="21" y2="12" />
-          <line x1="3" y1="18" x2="21" y2="18" />
-        </svg>
-      </button>
-
       {/* Mobile overlay + sidebar via createPortal to escape stacking context */}
       {mobileOpen && createPortal(
         <>
           <div className="fixed inset-0 z-[9998] bg-black/30 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          <div className="sidebar sidebar-expanded fixed inset-y-0 left-0 z-[9999] w-64 translate-x-0 shadow-2xl" style={{ transition: 'transform 0.3s ease' }}>
+          <div
+            className="sidebar sidebar-expanded fixed inset-y-0 left-0 z-[9999] w-64 translate-x-0 shadow-2xl"
+            style={{
+              transition: 'transform 0.3s ease',
+              paddingTop: 'env(safe-area-inset-top)',
+              paddingBottom: 'env(safe-area-inset-bottom)',
+            }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu de navigation"
+          >
             <div className="flex items-center justify-between border-b border-white/10 px-3 py-3">
               {header}
               <button onClick={() => setMobileOpen(false)} className="text-pierre hover:text-bordeaux dark:text-slate-400 dark:hover:text-or">
@@ -141,6 +145,23 @@ export function Sidebar({ items, activeKey, onSelect, header, footer }: SidebarP
 }
 
 // Shared icon components for sidebar
+export function MobileMenuButton({ className = '' }: { className?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={() => window.dispatchEvent(new Event('academie:open-mobile-sidebar'))}
+      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-pierre/20 bg-white/80 text-bordeaux backdrop-blur-sm transition-colors hover:border-or/60 hover:text-or dark:border-white/10 dark:bg-slate-800/80 dark:text-slate-200 md:hidden ${className}`}
+      aria-label="Ouvrir le menu"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <line x1="3" y1="12" x2="21" y2="12" />
+        <line x1="3" y1="18" x2="21" y2="18" />
+      </svg>
+    </button>
+  )
+}
+
 export function SidebarIcon({ d, strokeColor = 'currentColor' }: { d: string; strokeColor?: string }) {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={strokeColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

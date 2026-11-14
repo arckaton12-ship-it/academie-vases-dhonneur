@@ -8,6 +8,7 @@
     "build": "node -e \"require('fs').writeFileSync('public/version.json',JSON.stringify({version:String(Date.now())}))\" && tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:api": "vitest run --config vitest.api.config.ts",
     "test:watch": "vitest",
     "check:migrations": "node tools/check-migrations.mjs"
   },

@@ -19,6 +19,7 @@ export function VueSection() {
     averageGrade,
     byClass,
     courses,
+    setSection,
   } = useAdminDashboardContext()
 
   const weekAudit = useMemo(
@@ -162,6 +163,16 @@ export function VueSection() {
               Contrôle automatique : chaque classe doit proposer un cours pour chaque semaine, sans
               trou ni doublon. Une alerte ici signale un planning à compléter.
             </CardDescription>
+            {weekAudit.some(({ report }) => Boolean(report.message)) && (
+              <button
+                type="button"
+                onClick={() => setSection('cours')}
+                className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-or/40 px-3 py-1.5 text-xs font-medium text-or-texte transition-colors hover:bg-or/10 dark:text-or"
+              >
+                Corriger le planning des cours
+                <span aria-hidden>→</span>
+              </button>
+            )}
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
                 <thead>
@@ -184,7 +195,13 @@ export function VueSection() {
                         {report.empty ? (
                           <span className="text-pierre">Aucun cours enregistré.</span>
                         ) : report.message ? (
-                          <span className="text-red-600 dark:text-red-400">{report.message}</span>
+                          <button
+                            type="button"
+                            onClick={() => setSection('cours')}
+                            className="text-left text-red-600 underline underline-offset-2 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                          >
+                            {report.message}
+                          </button>
                         ) : (
                           <span className="text-olive">Complet, aucun doublon.</span>
                         )}

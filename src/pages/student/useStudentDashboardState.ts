@@ -87,7 +87,11 @@ interface ServiceDraft {
 
 export function useStudentDashboardState() {
   const navigate = useNavigate()
-  const [tab, setTab] = useState<Tab>('academie')
+  const [tab, setTab] = useState<Tab>(() => {
+    const requested = new URLSearchParams(window.location.search).get('tab')
+    const allowed: Tab[] = ['academie', 'annonces', 'devoirs', 'revue', 'parcours', 'service', 'messagerie', 'parametres']
+    return allowed.includes(requested as Tab) ? (requested as Tab) : 'academie'
+  })
 
   const TAB_ORDER: Tab[] = ['academie', 'annonces', 'devoirs', 'revue', 'parcours', 'service', 'messagerie', 'parametres']
   const swipeHandlers = useSwipeGesture({

@@ -1,4 +1,5 @@
 import { FormEvent, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Input, Label, FieldError } from '@/components/ui/Input'
 import { signUp, signIn, UserRole } from '@/lib/auth'
@@ -133,7 +134,14 @@ export function AuthForm({ mode, role, onSuccess }: AuthFormProps) {
 
       <div>
         <Label htmlFor="email">Email</Label>
-        <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Input
+          id="email"
+          type="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
       </div>
 
       <div>
@@ -142,6 +150,7 @@ export function AuthForm({ mode, role, onSuccess }: AuthFormProps) {
           <Input
             id="password"
             type={showPassword ? 'text' : 'password'}
+            autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
             required
             minLength={6}
             value={password}
@@ -164,6 +173,17 @@ export function AuthForm({ mode, role, onSuccess }: AuthFormProps) {
         </div>
         {mode === 'signup' && <p className="mt-1 text-xs text-pierre">Au moins 6 caractères</p>}
       </div>
+
+      {mode === 'signin' && (
+        <div className="-mt-1 text-right">
+          <Link
+            to="/mot-de-passe-oublie"
+            className="text-xs font-medium text-bordeaux underline-offset-2 hover:underline dark:text-or"
+          >
+            Mot de passe oublié ?
+          </Link>
+        </div>
+      )}
 
       <FieldError>{error ?? undefined}</FieldError>
 

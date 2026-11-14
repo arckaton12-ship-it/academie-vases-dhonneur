@@ -21,7 +21,7 @@
     {
       "name": "Messages",
       "short_name": "Messages",
-      "url": "/etudiant/tableau-de-bord",
+      "url": "/etudiant/tableau-de-bord?tab=messagerie",
       "icons": [{ "src": "/icon-96x96.png", "sizes": "96x96" }]
     }
   ],

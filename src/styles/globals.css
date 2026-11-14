@@ -425,52 +425,15 @@ h1, h2, h3, h4 {
   animation: slideInRight 0.3s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-  }
-}
-
-/* Mobile touch targets: ensure minimum 44×44px on all interactive elements */
+/* Cibles tactiles : on agrandit les contrôles, jamais les liens inline */
 @media (max-width: 767px) {
-  button, a, input, select, textarea {
+  button,
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea,
+  .sidebar-item,
+  .touch-target {
     min-height: 44px;
-  }
-
-  /* Small buttons get adequate touch padding */
-  button[class*="text-xs"], button[class*="text-sm"] {
-    padding-left: 12px !important;
-    padding-right: 12px !important;
-    padding-top: 10px !important;
-    padding-bottom: 10px !important;
-  }
-
-  /* Cards: tighter padding on mobile */
-  .glass-card {
-    padding: 16px !important;
-  }
-
-  /* Sidebar: better touch targets on mobile */
-  .sidebar-item {
-    padding-top: 12px !important;
-    padding-bottom: 12px !important;
-    font-size: 0.9rem !important;
-  }
-}
-
-/* Tablet (768px–1024px) */
-@media (min-width: 768px) and (max-width: 1024px) {
-  .glass-card {
-    padding: 20px !important;
-  }
-}
-
-/* Desktop (≥1024px) */
-@media (min-width: 1024px) {
-  .glass-card {
-    padding: 24px !important;
   }
 }
 
@@ -801,5 +764,46 @@ h1, h2, h3, h4 {
   .splash-copy-enter,
   .onboarding-step {
     animation: none !important;
+  }
+}
+
+/* ========= Fin de feuille : primes sur toutes les animations déclarées ========= */
+/* Repli quand le flou d'arrière-plan n'est pas supporté (anciens Android, navigateurs intégrés) */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .glass-card,
+  .glass-panel,
+  .glass-nav,
+  .glass-band,
+  .glass-pill,
+  .glass-sheet,
+  .glass-input,
+  .glass-scrim {
+    background: rgba(255, 253, 248, 0.96);
+  }
+
+  .dark .glass,
+  .dark .glass-card,
+  .dark .glass-panel,
+  .dark .glass-nav,
+  .dark .glass-band,
+  .dark .glass-pill,
+  .dark .glass-sheet,
+  .dark .glass-input,
+  .dark .glass-scrim {
+    background: rgba(11, 21, 25, 0.96);
+  }
+}
+
+/* Mouvement réduit : placé en dernier pour neutraliser aussi les animations infinies */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

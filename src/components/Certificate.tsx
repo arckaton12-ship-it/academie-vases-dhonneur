@@ -1,4 +1,3 @@
-import { jsPDF } from 'jspdf'
 import { Button } from '@/components/ui/Button'
 import { Logo } from '@/components/Logo'
 import { sanitizeForPdf } from '@/lib/pdfFonts'
@@ -40,6 +39,7 @@ export function CertificateView({ certificate, firstName, lastName, className = 
     : ''
 
   async function downloadPdf() {
+    const { jsPDF } = await import('jspdf')
     const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' })
     const pageWidth = doc.internal.pageSize.getWidth()
     const pageHeight = doc.internal.pageSize.getHeight()
