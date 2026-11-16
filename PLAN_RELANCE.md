@@ -128,3 +128,4 @@ pour un nouvel utilisateur, et verre flouté transparent partout, sans refonte t
 | 2026-11-14 | 6 | Alerte de couverture des semaines rendue actionnable : bouton « Corriger le planning des cours » et message cliquable vers la section Cours de l'administration |
 | 2026-11-14 | 1 | Suite de tests scindée : `npm test` ne lance que les tests hors ligne (43/43 en 2 s), `npm run test:api` réserve la campagne réseau Supabase (`tests/api.test.ts`) aux postes connectés |
 | 2026-11-14 | 7 | Lighthouse local : accueil et connexion à 100 en accessibilité, bonnes pratiques et SEO ; pages publiques, 404 et états du lien de réinitialisation vérifiés sans erreur console |
+| 2026-11-16 | 6 | Contenu de l'accueil aligné sur le planning réel : 15 semaines par classe (au lieu de « 28 cours »), section « Une semaine à l'Académie » en quatre étapes, encart du kit de bienvenue, deux questions ajoutées à la FAQ (kit, résumé hebdomadaire) ; Lighthouse toujours à 100 |

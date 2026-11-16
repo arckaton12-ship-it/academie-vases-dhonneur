@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase'
 
 const STATS = [
   { value: '3', label: 'Niveaux de formation' },
-  { value: '28', label: 'Cours dispensés' },
+  { value: '15', label: 'Semaines par classe' },
   { value: '18', label: 'Badges à débloquer' },
   { value: '0 F', label: "Frais d'inscription" },
 ]
@@ -18,7 +18,7 @@ const PILLARS = [
   {
     icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
     title: 'Parcours structuré',
-    desc: '3 niveaux, 28 cours, un suivi rigoureux de ta progression spirituelle.',
+    desc: '3 niveaux de 15 semaines, un cours par semaine et un suivi rigoureux de ta progression spirituelle.',
   },
   {
     icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>,
@@ -50,14 +50,41 @@ const PARCOURS = [
   },
 ]
 
+const RYTHME = [
+  {
+    title: 'Le cours de la semaine',
+    text: 'Une vidéo et ses parties audio, avec le support écrit. Tu avances à ton rythme, depuis ton téléphone ou ton ordinateur.',
+  },
+  {
+    title: 'Ton résumé',
+    text: 'Tu rédiges un résumé personnel et tu l\'envoies depuis l\'application avant 22H59 le jour du cours.',
+  },
+  {
+    title: 'Quiz et méditation',
+    text: 'Un quiz pour vérifier ce que tu as retenu, et un temps de méditation guidé pour enraciner la Parole.',
+  },
+  {
+    title: 'Le retour de ton modérateur',
+    text: 'Ton modérateur lit ton résumé, te corrige et t\'accompagne. Ton assiduité construit ton bulletin et tes badges.',
+  },
+]
+
 const FAQ = [
   {
     q: 'L\'académie est-elle vraiment gratuite ?',
     a: 'L\'inscription et la formation sont gratuites : aucun frais de scolarité n\'est demandé. Une contribution unique de 10 000 F couvre le kit de bienvenue (t-shirt de l\'Académie, cahier de méditation et agapé). L\'Académie est l\'école de formation des disciples de l\'église Vases d\'Honneur, portée par l\'Assemblée Eaux Paisibles de Yaoundé.',
   },
   {
+    q: 'Que comprend le kit de bienvenue ?',
+    a: 'Le kit réunit le t-shirt de l\'Académie, le cahier de méditation et l\'agapé. La contribution de 10 000 F est unique et sert uniquement à le couvrir : elle n\'est pas des frais de scolarité et aucun autre paiement n\'est demandé pour suivre les cours.',
+  },
+  {
     q: 'Comment ça marche concrètement ?',
-    a: 'Tu t\'inscris, puis l\'administration t\'attribue à une classe avec un modérateur. Chaque semaine, tu suis un cours, tu soumets un résumé et tu reçois un retour personnalisé.',
+    a: 'Tu t\'inscris, puis l\'administration t\'attribue à une classe avec un modérateur. Chaque semaine, tu suis un cours, tu soumets un résumé avant 22H59 le jour du cours et tu reçois un retour personnalisé.',
+  },
+  {
+    q: 'Le résumé est-il obligatoire ?',
+    a: 'Il est attendu chaque semaine : c\'est le cœur de ta formation. Ton modérateur le lit et te répond. Il compte dans ton suivi et dans ton bulletin, au même titre que ta présence et tes quiz.',
   },
   {
     q: 'Je peux rejoindre à tout moment ?',
@@ -273,6 +300,45 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ─── RYTHME HEBDOMADAIRE ─── */}
+      <section className="relative z-10 px-6 py-20">
+        <div className="mx-auto max-w-4xl text-center">
+          <h2 className="font-display text-2xl font-bold text-bordeaux sm:text-3xl dark:text-slate-100">
+            Une semaine à l'Académie
+          </h2>
+          <p className="mt-3 text-sm text-pierre dark:text-slate-400">
+            Un rythme simple, tenu du début à la fin : un cours, un résumé, un retour.
+          </p>
+        </div>
+        <div className="mx-auto mt-10 grid max-w-4xl gap-6 sm:grid-cols-2">
+          {RYTHME.map((r, i) => (
+            <div key={r.title} className="glass-panel flex gap-4 p-6">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bordeaux/10 font-display text-sm font-bold text-bordeaux dark:bg-or/15 dark:text-or">
+                {i + 1}
+              </span>
+              <div>
+                <h3 className="font-display text-base font-semibold text-bordeaux dark:text-slate-100">
+                  {r.title}
+                </h3>
+                <p className="mt-1.5 text-sm text-pierre dark:text-slate-400">{r.text}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mx-auto mt-6 max-w-4xl">
+          <div className="glass-card p-6">
+            <h3 className="font-display text-base font-semibold text-bordeaux dark:text-slate-100">
+              Le kit de bienvenue
+            </h3>
+            <p className="mt-1.5 text-sm text-pierre dark:text-slate-400">
+              Une contribution unique de 10 000 F réunit le t-shirt de l'Académie, le cahier de
+              méditation et l'agapé. L'inscription et les cours restent gratuits ; aucun autre
+              paiement n'est demandé pour la formation.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* ─── PARCOURS ─── */}
       <section className="relative z-10 bg-bordeaux/[0.03] py-20 px-6 dark:bg-bordeaux/10">
         <div className="mx-auto max-w-4xl text-center">
@@ -280,7 +346,8 @@ export default function Landing() {
             Ton parcours, en trois classes
           </h2>
           <p className="mt-3 text-sm text-pierre dark:text-slate-400">
-            28 cours, un rythme hebdomadaire, un modérateur qui t'accompagne à chaque étape.
+            15 semaines par classe, un cours par semaine, un modérateur qui t'accompagne à chaque
+            étape.
           </p>
         </div>
         <div className="mx-auto mt-10 grid max-w-4xl gap-6 sm:grid-cols-3">
