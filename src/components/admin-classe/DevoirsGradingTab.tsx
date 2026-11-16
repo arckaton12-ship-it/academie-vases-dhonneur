@@ -63,34 +63,34 @@ export function DevoirsGradingTab({
           <p className="text-sm text-pierre">Aucun devoir soumis pour le moment.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
+            <table className="w-full border-collapse text-sm leading-relaxed">
               <thead>
-                <tr className="border-b-2 border-or bg-white/60 text-left">
-                  <th className="px-3 py-2 font-medium text-bordeaux">Étudiant</th>
-                  <th className="px-3 py-2 font-medium text-bordeaux">Cours</th>
-                  <th className="px-3 py-2 font-medium text-bordeaux">Soumis le</th>
-                  <th className="px-3 py-2 font-medium text-bordeaux">Note</th>
-                  <th className="px-3 py-2 font-medium text-bordeaux">Action</th>
+                <tr className="border-b-2 border-or bg-white/60 text-left dark:bg-white/5">
+                  <th className="px-4 py-3 font-medium text-bordeaux">Étudiant</th>
+                  <th className="px-4 py-3 font-medium text-bordeaux">Cours</th>
+                  <th className="px-4 py-3 font-medium text-bordeaux">Soumis le</th>
+                  <th className="px-4 py-3 font-medium text-bordeaux">Note</th>
+                  <th className="px-4 py-3 font-medium text-bordeaux">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {mySubmissions.map((s) => {
                   const student = students.find((st) => st.id === s.student_id)
                   return (
-                    <tr key={s.id} className="border-b border-pierre/15">
-                      <td className="px-3 py-2 text-bordeaux">
+                    <tr key={s.id} className="border-b border-pierre/15 transition-colors last:border-0 hover:bg-or/5 dark:hover:bg-or/5">
+                      <td className="px-4 py-3 text-bordeaux">
                         {student ? `${student.last_name} ${student.first_name}` : '—'}
                       </td>
-                      <td className="px-3 py-2 text-pierre">
+                      <td className="px-4 py-3 text-pierre">
                         {s.assignment?.description ?? '—'}
                       </td>
-                      <td className="px-3 py-2 text-pierre text-xs">
+                      <td className="px-4 py-3 text-pierre text-xs">
                         {s.submitted_at ? formatShortDate(s.submitted_at) : '—'}
                       </td>
-                      <td className="px-3 py-2 font-mono text-bordeaux">
+                      <td className="px-4 py-3 font-mono text-bordeaux">
                         {s.grade ?? '—'}
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-4 py-3">
                         <Button variant="outline" className="!px-3 !py-1.5 text-xs" onClick={() => { setSelectedId(s.id); setGrade(s.grade?.toString() ?? ''); setFeedback(s.feedback ?? '') }}>
                           Noter
                         </Button>

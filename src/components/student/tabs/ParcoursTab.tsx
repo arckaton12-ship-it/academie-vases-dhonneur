@@ -6,11 +6,12 @@ import { AttendanceGauge } from '@/components/AttendanceGauge'
 import { CoursePath } from '@/components/CoursePath'
 import { BadgePath } from '@/components/BadgePath'
 import { Leaderboard } from '@/components/Leaderboard'
+import { DailyGoalCard } from '@/components/student/DailyGoalCard'
 import { BADGES, BADGE_ORDER, isBadgeKey } from '@/lib/badges'
 import { useStudentDashboardContext } from '@/pages/student/StudentDashboardContext'
 
 export function ParcoursTab() {
-  const { earnedBadgeKeys, badgeProgress, earnedBadges, weeks, progress, xpData, allCourses, currentWeek, followed, handleSelectCourse, mascotMood, handleSelectActiveBadge, openBadgeDrawer, profile } = useStudentDashboardContext()
+  const { earnedBadgeKeys, badgeProgress, earnedBadges, weeks, progress, xpData, xpStats, dailyGoal, updateDailyGoal, allCourses, course, currentWeek, followed, handleSelectCourse, mascotMood, handleSelectActiveBadge, openBadgeDrawer, profile, setTab } = useStudentDashboardContext()
 
         const nextBadgeKey = BADGE_ORDER.find(k => !earnedBadgeKeys.has(k))
         const nextBadgeMeta = nextBadgeKey && isBadgeKey(nextBadgeKey) ? BADGES[nextBadgeKey] : null
@@ -18,9 +19,31 @@ export function ParcoursTab() {
         const recentEarnedBadges = earnedBadges.slice(-5).reverse()
         const totalBadges = BADGE_ORDER.length
         const earnedCount = earnedBadges.length
+        const currentCourse = course ?? allCourses.find(c => c.week === currentWeek) ?? null
+        const currentCourseDone = currentCourse ? followed.some(c => c.id === currentCourse.id) : false
 
   return (
           <div className="space-y-5">
+            {xpStats && (
+              <DailyGoalCard
+                todayXp={xpStats.todayXp}
+                weekXp={xpStats.weekXp}
+                goal={dailyGoal}
+                streakWeeks={weeks}
+                hasCourse={Boolean(currentCourse)}
+                courseDone={currentCourseDone}
+                onGoalChange={updateDailyGoal}
+                onAction={(target) => {
+                  if (target === 'course' && currentCourse) {
+                    setTab('academie')
+                    void handleSelectCourse(currentCourse)
+                    return
+                  }
+                  setTab(target === 'course' ? 'academie' : 'devoirs')
+                }}
+              />
+            )}
+
             <Card>
               <CardTitle>Statut gamification</CardTitle>
               <div className="mt-3 space-y-4">

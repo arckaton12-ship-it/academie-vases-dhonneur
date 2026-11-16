@@ -400,6 +400,9 @@ export async function awardXp(
       ...(bonusXp ? { p_bonus_xp: bonusXp } : {}),
     })
     if (error) return null
+    if (data?.success && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('academie:xp-awarded', { detail: data }))
+    }
     return data
   } catch {
     return null

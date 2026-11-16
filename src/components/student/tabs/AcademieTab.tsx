@@ -5,14 +5,31 @@ import { CoursePlayer } from '@/components/CoursePlayer'
 import { CertificateView } from '@/components/Certificate'
 import { AllQuizzesSection } from '@/components/student/AllQuizzesSection'
 import { ProgressStat } from '@/components/student/ProgressStat'
+import { DailyGoalCard } from '@/components/student/DailyGoalCard'
 import { formatDateFR } from '@/lib/date'
 import { useStudentDashboardContext } from '@/pages/student/StudentDashboardContext'
 
 export function AcademieTab() {
-  const { course, summary, setSummary, handleSummaryFile, summaryUploading, summaryFileUrl, summaryFileName, resumeFileIsImage, handleRemoveSummaryFile, handleSaveSummary, summarySaving, summarySaved, miniTask, miniTaskResponse, setMiniTaskResponse, miniTaskSaved, miniTaskSaving, handleSaveMiniTask, dailyVerse, allCourses, profile, setActiveQuizId, followedCount, progress, followed, certificates } = useStudentDashboardContext()
+  const { course, summary, setSummary, handleSummaryFile, summaryUploading, summaryFileUrl, summaryFileName, resumeFileIsImage, handleRemoveSummaryFile, handleSaveSummary, summarySaving, summarySaved, miniTask, miniTaskResponse, setMiniTaskResponse, miniTaskSaved, miniTaskSaving, handleSaveMiniTask, dailyVerse, allCourses, profile, setActiveQuizId, followedCount, progress, followed, certificates, xpStats, dailyGoal, updateDailyGoal, setTab, weeks } = useStudentDashboardContext()
+  const courseDone = course ? followed.some(c => c.id === course.id) : false
 
   return (
         <div className="space-y-5">
+          {xpStats && (
+            <DailyGoalCard
+              variant="compact"
+              todayXp={xpStats.todayXp}
+              weekXp={xpStats.weekXp}
+              goal={dailyGoal}
+              streakWeeks={weeks}
+              hasCourse={Boolean(course)}
+              courseDone={courseDone}
+              onGoalChange={updateDailyGoal}
+              onAction={() => setTab('parcours')}
+              onOpenParcours={() => setTab('parcours')}
+            />
+          )}
+
           <Card>
             <p className="text-xs font-semibold uppercase tracking-wide text-or-texte dark:text-or mb-1">Ton prochain cours</p>
             <CardTitle>{course ? course.title : 'Cours de la semaine'}</CardTitle>

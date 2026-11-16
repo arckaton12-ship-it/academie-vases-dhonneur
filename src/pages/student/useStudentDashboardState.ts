@@ -62,8 +62,16 @@ import {
   ClosingReflection,
 } from '@/lib/courses'
 import { BADGE_ORDER } from '@/lib/badges'
+import { readDailyGoal, writeDailyGoal, type DailyGoal } from '@/lib/dailyGoal'
 
 export type Tab = 'academie' | 'annonces' | 'devoirs' | 'service' | 'revue' | 'parametres' | 'messagerie' | 'parcours'
+
+interface XpStatsState {
+  totalXp: number
+  todayXp: number
+  weekXp: number
+  totalActions: number
+}
 
 interface ProfileState {
   id: string
@@ -139,6 +147,8 @@ export function useStudentDashboardState() {
 
   // ---- XP / Gamification
   const [xpData, setXpData] = useState<{ xp: number; level: number; levelLabel: string; nextLevelLabel: string | null; xpInLevel: number; xpForNextLevel: number } | null>(null)
+  const [xpStats, setXpStats] = useState<XpStatsState | null>(null)
+  const [dailyGoal, setDailyGoal] = useState<DailyGoal>(() => readDailyGoal())
 
   // ---- Mascot companion mood
   const mascotMood = useMemo<MascotMood>(() => {
@@ -343,21 +353,6 @@ export function useStudentDashboardState() {
         setResumesReview(resumeReviewsRes.status === 'fulfilled' ? resumeReviewsRes.value : [])
         setReflections(reflectionsRes.status === 'fulfilled' ? reflectionsRes.value : [])
 
-        // XP / Gamification (non-blocking)
-        supabase.rpc('get_student_level', { p_student_id: p.id })
-          .then(({ data }) => {
-            if (data && !cancelled) {
-              setXpData({
-                xp: data.xp,
-                level: data.level,
-                levelLabel: data.level_label,
-                nextLevelLabel: data.next_level_label,
-                xpInLevel: data.xp_in_level,
-                xpForNextLevel: data.xp_for_next_level,
-              })
-            }
-          }, () => {})
-
         const serviceRec = serviceRes.status === 'fulfilled' ? serviceRes.value : null
         if (serviceRec) {
           setServiceDraft({
@@ -451,6 +446,54 @@ export function useStudentDashboardState() {
       cancelled = true
     }
   }, [loadProfile, loadCourse])
+
+  // XP et objectif quotidien : chargement initial + rafraîchissement après chaque gain.
+  useEffect(() => {
+    const studentId = profile?.id
+    if (!studentId) return
+    let cancelled = false
+
+    const refreshXp = () => {
+      void Promise.all([
+        supabase.rpc('get_student_level', { p_student_id: studentId }),
+        supabase.rpc('get_xp_stats', { p_student_id: studentId }),
+      ]).then(([levelRes, statsRes]) => {
+        if (cancelled) return
+        const level = levelRes.data
+        if (level) {
+          setXpData({
+            xp: level.xp,
+            level: level.level,
+            levelLabel: level.level_label,
+            nextLevelLabel: level.next_level_label,
+            xpInLevel: level.xp_in_level,
+            xpForNextLevel: level.xp_for_next_level,
+          })
+        }
+        const stats = statsRes.data
+        if (stats) {
+          setXpStats({
+            totalXp: stats.total_xp ?? 0,
+            todayXp: stats.today_xp ?? 0,
+            weekXp: stats.week_xp ?? 0,
+            totalActions: stats.total_actions ?? 0,
+          })
+        }
+      }, () => {})
+    }
+
+    refreshXp()
+    window.addEventListener('academie:xp-awarded', refreshXp)
+    return () => {
+      cancelled = true
+      window.removeEventListener('academie:xp-awarded', refreshXp)
+    }
+  }, [profile?.id])
+
+  const updateDailyGoal = useCallback((goal: DailyGoal) => {
+    setDailyGoal(goal)
+    writeDailyGoal(goal)
+  }, [])
 
   // Realtime: reload courses when a new course is published or updated for this class
   useEffect(() => {
@@ -1047,6 +1090,9 @@ export function useStudentDashboardState() {
     setMiniTaskSaved,
     xpData,
     setXpData,
+    xpStats,
+    dailyGoal,
+    updateDailyGoal,
     mascotMood,
     badgeProgress,
     setBadgeProgress,

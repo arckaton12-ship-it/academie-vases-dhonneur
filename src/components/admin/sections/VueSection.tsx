@@ -87,33 +87,33 @@ export function VueSection() {
               Présence, résumés, badges et notes corrigées — la vie de chaque classe en un regard.
             </CardDescription>
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
+              <table className="w-full border-collapse text-sm leading-relaxed">
                 <thead>
-                  <tr className="border-b-2 border-or bg-white/60 text-left">
-                    <th className="px-3 py-2 font-medium text-bordeaux">Classe</th>
-                    <th className="px-3 py-2 font-medium text-bordeaux">Étudiants actifs</th>
-                    <th className="px-3 py-2 font-medium text-bordeaux">Présence</th>
-                    <th className="px-3 py-2 font-medium text-bordeaux">Résumés</th>
-                    <th className="px-3 py-2 font-medium text-bordeaux">Badges</th>
-                    <th className="px-3 py-2 font-medium text-bordeaux">Devoirs notés</th>
-                    <th className="px-3 py-2 font-medium text-bordeaux">Moyenne</th>
+                  <tr className="border-b-2 border-or bg-white/60 text-left dark:bg-white/5">
+                    <th className="px-4 py-3 font-medium text-bordeaux">Classe</th>
+                    <th className="px-4 py-3 font-medium text-bordeaux">Étudiants actifs</th>
+                    <th className="px-4 py-3 font-medium text-bordeaux">Présence</th>
+                    <th className="px-4 py-3 font-medium text-bordeaux">Résumés</th>
+                    <th className="px-4 py-3 font-medium text-bordeaux">Badges</th>
+                    <th className="px-4 py-3 font-medium text-bordeaux">Devoirs notés</th>
+                    <th className="px-4 py-3 font-medium text-bordeaux">Moyenne</th>
                   </tr>
                 </thead>
                 <tbody>
                   {engagementByClass.map((r) => (
-                    <tr key={r.className} className="border-b border-pierre/15">
-                      <td className="px-3 py-2 text-bordeaux">{r.className}</td>
-                      <td className="px-3 py-2 font-mono text-pierre">{r.students}</td>
-                      <td className="px-3 py-2 font-mono text-pierre">{r.presence}</td>
-                      <td className="px-3 py-2 font-mono text-pierre">{r.resumes}</td>
-                      <td className="px-3 py-2 font-mono text-pierre">{r.badges}</td>
-                      <td className="px-3 py-2 font-mono text-pierre">{r.graded}</td>
-                      <td className="px-3 py-2 font-mono text-pierre">{r.avgGrade}</td>
+                    <tr key={r.className} className="border-b border-pierre/15 transition-colors last:border-0 hover:bg-or/5 dark:hover:bg-or/5">
+                      <td className="px-4 py-3 text-bordeaux">{r.className}</td>
+                      <td className="px-4 py-3 font-mono text-pierre">{r.students}</td>
+                      <td className="px-4 py-3 font-mono text-pierre">{r.presence}</td>
+                      <td className="px-4 py-3 font-mono text-pierre">{r.resumes}</td>
+                      <td className="px-4 py-3 font-mono text-pierre">{r.badges}</td>
+                      <td className="px-4 py-3 font-mono text-pierre">{r.graded}</td>
+                      <td className="px-4 py-3 font-mono text-pierre">{r.avgGrade}</td>
                     </tr>
                   ))}
                   {engagementByClass.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="px-3 py-4 text-center text-pierre">
+                      <td colSpan={7} className="px-4 py-6 text-center text-pierre">
                         Aucune donnée d'engagement disponible.
                       </td>
                     </tr>
@@ -129,25 +129,25 @@ export function VueSection() {
               Effectif et nombre de cours publiés par classe. Moyenne générale des soumissions notées : {averageGrade}.
             </CardDescription>
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
+              <table className="w-full border-collapse text-sm leading-relaxed">
                 <thead>
-                  <tr className="border-b-2 border-or bg-white/60 text-left">
-                    <th className="px-3 py-2 font-medium text-bordeaux">Classe</th>
-                    <th className="px-3 py-2 font-medium text-bordeaux">Étudiants</th>
-                    <th className="px-3 py-2 font-medium text-bordeaux">Cours publiés</th>
+                  <tr className="border-b-2 border-or bg-white/60 text-left dark:bg-white/5">
+                    <th className="px-4 py-3 font-medium text-bordeaux">Classe</th>
+                    <th className="px-4 py-3 font-medium text-bordeaux">Étudiants</th>
+                    <th className="px-4 py-3 font-medium text-bordeaux">Cours publiés</th>
                   </tr>
                 </thead>
                 <tbody>
                   {byClass.map((r) => (
-                    <tr key={r.className} className="border-b border-pierre/15">
-                      <td className="px-3 py-2 text-bordeaux">{r.className}</td>
-                      <td className="px-3 py-2 font-mono text-pierre">{r.students}</td>
-                      <td className="px-3 py-2 font-mono text-pierre">{r.courses}</td>
+                    <tr key={r.className} className="border-b border-pierre/15 transition-colors last:border-0 hover:bg-or/5 dark:hover:bg-or/5">
+                      <td className="px-4 py-3 text-bordeaux">{r.className}</td>
+                      <td className="px-4 py-3 font-mono text-pierre">{r.students}</td>
+                      <td className="px-4 py-3 font-mono text-pierre">{r.courses}</td>
                     </tr>
                   ))}
                   {byClass.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="px-3 py-4 text-center text-pierre">
+                      <td colSpan={3} className="px-4 py-6 text-center text-pierre">
                         Aucune classe disponible.
                       </td>
                     </tr>
@@ -174,24 +174,24 @@ export function VueSection() {
               </button>
             )}
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
+              <table className="w-full border-collapse text-sm leading-relaxed">
                 <thead>
-                  <tr className="border-b-2 border-or bg-white/60 text-left">
-                    <th className="px-3 py-2 font-medium text-bordeaux">Classe</th>
-                    <th className="px-3 py-2 font-medium text-bordeaux">Semaines couvertes</th>
-                    <th className="px-3 py-2 font-medium text-bordeaux">Contrôle</th>
+                  <tr className="border-b-2 border-or bg-white/60 text-left dark:bg-white/5">
+                    <th className="px-4 py-3 font-medium text-bordeaux">Classe</th>
+                    <th className="px-4 py-3 font-medium text-bordeaux">Semaines couvertes</th>
+                    <th className="px-4 py-3 font-medium text-bordeaux">Contrôle</th>
                   </tr>
                 </thead>
                 <tbody>
                   {weekAudit.map(({ id, name, report }) => (
-                    <tr key={id} className="border-b border-pierre/15">
-                      <td className="px-3 py-2 text-bordeaux">{name}</td>
-                      <td className="px-3 py-2 font-mono text-pierre">
+                    <tr key={id} className="border-b border-pierre/15 transition-colors last:border-0 hover:bg-or/5 dark:hover:bg-or/5">
+                      <td className="px-4 py-3 text-bordeaux">{name}</td>
+                      <td className="px-4 py-3 font-mono text-pierre">
                         {report.empty
                           ? '—'
                           : `${report.weeks.length} (${report.weeks[0]} à ${report.weeks[report.weeks.length - 1]})`}
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-4 py-3">
                         {report.empty ? (
                           <span className="text-pierre">Aucun cours enregistré.</span>
                         ) : report.message ? (
@@ -210,7 +210,7 @@ export function VueSection() {
                   ))}
                   {weekAudit.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="px-3 py-4 text-center text-pierre">
+                      <td colSpan={3} className="px-4 py-6 text-center text-pierre">
                         Aucune classe disponible.
                       </td>
                     </tr>

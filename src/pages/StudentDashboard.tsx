@@ -14,6 +14,7 @@ import { BadgeEarnModal } from '@/components/BadgeEarnModal'
 import { QuizPlayer } from '@/components/QuizPlayer'
 import { ClassPicker } from '@/components/ClassPicker'
 import { FloatingMascot } from '@/components/FloatingMascot'
+import { XpBurst } from '@/components/student/XpBurst'
 import BilanPopup from '@/components/BilanPopup'
 import { useStudentDashboardState, type Tab } from './student/useStudentDashboardState'
 import { StudentDashboardProvider } from './student/StudentDashboardContext'
@@ -87,6 +88,7 @@ export default function StudentDashboard() {
     <div className="relative min-h-screen md:pl-[68px]">
       {currentNotif && <NotificationBanner notification={currentNotif} onDismiss={dismissNotif} />}
       <FloatingMascot mood={mascotMood} />
+      <XpBurst />
       <NotificationPrompt />
       <Sidebar
         items={studentSidebarItems}

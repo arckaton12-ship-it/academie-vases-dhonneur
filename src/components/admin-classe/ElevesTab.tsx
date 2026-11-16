@@ -51,18 +51,18 @@ export function ElevesTab({
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
+            <table className="w-full border-collapse text-sm leading-relaxed">
               <thead>
-                <tr className="border-b-2 border-or bg-white/60 text-left">
-                  <th className="px-3 py-2 font-medium text-bordeaux">Nom</th>
-                  <th className="px-3 py-2 font-medium text-bordeaux">Classe</th>
-                  <th className="px-3 py-2 font-medium text-bordeaux">Statut</th>
+                <tr className="border-b-2 border-or bg-white/60 text-left dark:bg-white/5">
+                  <th className="px-4 py-3 font-medium text-bordeaux">Nom</th>
+                  <th className="px-4 py-3 font-medium text-bordeaux">Classe</th>
+                  <th className="px-4 py-3 font-medium text-bordeaux">Statut</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((s) => (
-                  <tr key={s.id} className="border-b border-pierre/15">
-                    <td className="px-3 py-2">
+                  <tr key={s.id} className="border-b border-pierre/15 transition-colors last:border-0 hover:bg-or/5 dark:hover:bg-or/5">
+                    <td className="px-4 py-3">
                       <button
                         onClick={() => { setSelectedId(s.id); playClick() }}
                         className={`flex items-center gap-2.5 rounded-card px-1 py-0.5 text-left transition-colors ${
@@ -80,10 +80,10 @@ export function ElevesTab({
                         </span>
                       </button>
                     </td>
-                    <td className="px-3 py-2 text-pierre">
+                    <td className="px-4 py-3 text-pierre">
                       {classById.get(s.class_id ?? '')?.name ?? '—'}
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-4 py-3">
                       {s.active ? (
                         <span className="rounded-full bg-olive/15 px-2 py-0.5 text-xs text-olive">Actif</span>
                       ) : (

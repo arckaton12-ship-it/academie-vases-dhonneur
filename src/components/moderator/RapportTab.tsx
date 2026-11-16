@@ -262,31 +262,31 @@ export function RapportTab({
         </div>
 
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
+          <table className="w-full border-collapse text-sm leading-relaxed">
             <thead>
-              <tr className="border-b-2 border-or bg-white/60 text-left">
-                <th className="px-3 py-2 font-medium text-bordeaux">Étudiant</th>
-                <th className="px-3 py-2 font-medium text-bordeaux">Classe</th>
-                <th className="px-3 py-2 font-medium text-bordeaux">Soumissions</th>
-                <th className="px-3 py-2 font-medium text-bordeaux">Moyenne</th>
-                <th className="px-3 py-2 font-medium text-bordeaux">Méditation</th>
+              <tr className="border-b-2 border-or bg-white/60 text-left dark:bg-white/5">
+                <th className="px-4 py-3 font-medium text-bordeaux">Étudiant</th>
+                <th className="px-4 py-3 font-medium text-bordeaux">Classe</th>
+                <th className="px-4 py-3 font-medium text-bordeaux">Soumissions</th>
+                <th className="px-4 py-3 font-medium text-bordeaux">Moyenne</th>
+                <th className="px-4 py-3 font-medium text-bordeaux">Méditation</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.student.id} className="border-b border-pierre/15">
-                  <td className="px-3 py-2 text-bordeaux">
+                <tr key={r.student.id} className="border-b border-pierre/15 transition-colors last:border-0 hover:bg-or/5 dark:hover:bg-or/5">
+                  <td className="px-4 py-3 text-bordeaux">
                     {r.student.last_name} {r.student.first_name}
                   </td>
-                  <td className="px-3 py-2 text-pierre">{r.className}</td>
-                  <td className="px-3 py-2 font-mono text-pierre">{r.submissionCount}</td>
-                  <td className="px-3 py-2 font-mono text-pierre">{r.avg}</td>
-                  <td className="px-3 py-2 font-mono text-pierre">{r.streak}</td>
+                  <td className="px-4 py-3 text-pierre">{r.className}</td>
+                  <td className="px-4 py-3 font-mono text-pierre">{r.submissionCount}</td>
+                  <td className="px-4 py-3 font-mono text-pierre">{r.avg}</td>
+                  <td className="px-4 py-3 font-mono text-pierre">{r.streak}</td>
                 </tr>
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-3 py-4 text-center text-pierre">
+                  <td colSpan={5} className="px-4 py-6 text-center text-pierre">
                     Aucun étudiant inscrit pour le moment.
                   </td>
                 </tr>

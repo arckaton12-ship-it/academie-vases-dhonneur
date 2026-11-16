@@ -795,6 +795,22 @@ h1, h2, h3, h4 {
   }
 }
 
+/* Retour immédiat après un gain d'XP */
+.xp-burst {
+  animation: xpBurstIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes xpBurstIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 /* Mouvement réduit : placé en dernier pour neutraliser aussi les animations infinies */
 @media (prefers-reduced-motion: reduce) {
   *,
