@@ -84,10 +84,6 @@ export function ResetPasswordPage() {
 
   return (
     <main className="relative flex min-h-screen items-center justify-center px-6 py-12">
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="aurora-blob absolute -left-24 -top-32 h-[420px] w-[420px] rounded-full bg-bordeaux/20 blur-[110px] dark:bg-bordeaux/30" />
-        <div className="aurora-blob absolute -right-24 bottom-0 h-[380px] w-[380px] rounded-full bg-or/20 blur-[110px] [animation-delay:-6s] dark:bg-or/15" />
-      </div>
       <SectionWatermark kind="croix" />
       <div className="absolute right-4 top-4 z-20">
         <DarkModeToggle />

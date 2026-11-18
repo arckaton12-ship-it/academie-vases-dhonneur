@@ -340,7 +340,7 @@ export function ModerateursSection() {
                             ))}
                           </ul>
                         )}
-                        <div className="grid gap-2 sm:grid-cols-[120px_130px_100px_100px_1fr_auto]">
+                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[120px_130px_100px_100px_minmax(0,1fr)_auto]">
                           <select
                             value={draft.day}
                             onChange={(e) =>

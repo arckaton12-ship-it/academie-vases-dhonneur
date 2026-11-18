@@ -140,14 +140,7 @@ export default function Landing() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-bordeaux/5 via-or/5 to-olive/5" />
-        <div className="absolute top-[-20%] right-[-10%] h-[500px] w-[500px] rounded-full bg-or/8 blur-[120px]" />
-        <div className="absolute bottom-[-15%] left-[-10%] h-[400px] w-[400px] rounded-full bg-bordeaux/8 blur-[100px]" />
-      </div>
-
-      {/* Dark mode */}
+      {/* Déjà inscrit */}
       <div className="absolute right-4 top-4 z-20">
         <DarkModeToggle />
       </div>

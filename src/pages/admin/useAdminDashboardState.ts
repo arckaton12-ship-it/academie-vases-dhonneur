@@ -46,6 +46,13 @@ import {
   MeditationVerse,
 } from '@/lib/courses'
 import { getCurrentProfile } from '@/lib/auth'
+import {
+  graduationLevelFor,
+  isAlumni,
+  promotionFromDate,
+  studentStatus,
+  type StudentStatus,
+} from '@/lib/promotions'
 import { ExportRow, exportStudentBulletinPDF } from '@/lib/export'
 import { createConversation } from '@/lib/messaging'
 
@@ -142,6 +149,8 @@ export function useAdminDashboardState() {
 
   // ---- Students filter + sort
   const [studentFilterClass, setStudentFilterClass] = useState('')
+  const [studentFilterPromotion, setStudentFilterPromotion] = useState('')
+  const [studentFilterStatus, setStudentFilterStatus] = useState<'' | StudentStatus | 'ANCIENS'>('')
   const [studentSort, setStudentSort] = useState<'name' | 'class' | 'date'>('name')
   const [studentSearch, setStudentSearch] = useState('')
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
@@ -390,11 +399,26 @@ export function useAdminDashboardState() {
 
   const classById = useMemo(() => new Map(classes.map((c) => [c.id, c])), [classes])
 
+  const graduationLevel = useMemo(() => graduationLevelFor(classes), [classes])
+
   // Filtered + sorted students
   const filteredStudents = useMemo(() => {
     let list = [...students]
     if (studentFilterClass) {
       list = list.filter((s) => s.class_id === studentFilterClass)
+    }
+    if (studentFilterPromotion) {
+      list = list.filter(
+        (s) => promotionFromDate(s.created_at)?.shortLabel === studentFilterPromotion
+      )
+    }
+    if (studentFilterStatus) {
+      list = list.filter((s) => {
+        const status = studentStatus(s, graduationLevel)
+        return studentFilterStatus === 'ANCIENS'
+          ? isAlumni(status)
+          : status === studentFilterStatus
+      })
     }
     if (studentSearch.trim()) {
       const q = studentSearch.toLowerCase()
@@ -407,7 +431,15 @@ export function useAdminDashboardState() {
     else if (studentSort === 'class') list.sort((a, b) => (a.class?.name ?? 'ZZZ').localeCompare(b.class?.name ?? 'ZZZ'))
     else list.sort((a, b) => (a.created_at ?? '').localeCompare(b.created_at ?? ''))
     return list
-  }, [students, studentFilterClass, studentSearch, studentSort])
+  }, [
+    students,
+    studentFilterClass,
+    studentFilterPromotion,
+    studentFilterStatus,
+    graduationLevel,
+    studentSearch,
+    studentSort,
+  ])
 
   const studentTotal = filteredStudents.length
   const paginatedStudents = useMemo(() => {
@@ -843,6 +875,7 @@ export function useAdminDashboardState() {
     setStudents,
     classes,
     setClasses,
+    graduationLevel,
     courses,
     setCourses,
     submissions,
@@ -932,6 +965,10 @@ export function useAdminDashboardState() {
     setVerseDayVal,
     studentFilterClass,
     setStudentFilterClass,
+    studentFilterPromotion,
+    setStudentFilterPromotion,
+    studentFilterStatus,
+    setStudentFilterStatus,
     studentSort,
     setStudentSort,
     studentSearch,

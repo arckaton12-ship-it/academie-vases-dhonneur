@@ -83,10 +83,12 @@ function GoalRing({ todayXp, goal, size = 92 }: { todayXp: number; goal: number;
 function StreakChip({ weeks }: { weeks: number }) {
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full border border-or/30 bg-or/10 px-2.5 py-1 text-[11px] font-semibold text-or-texte dark:text-or"
+      className="inline-flex items-center gap-1.5 rounded-full border border-pierre/15 bg-white/60 px-2.5 py-1 text-[11px] font-medium text-pierre dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
       title={weeks > 0 ? `Série de ${weeks} semaine${weeks > 1 ? 's' : ''}` : 'Nouvelle série à démarrer'}
     >
-      <span aria-hidden>🔥</span>
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M12 3c1.2 3.2-.6 4.4-1.7 6.1A5.7 5.7 0 0 0 12 19a5 5 0 0 0 5-5c0-2.2-1.2-3.6-2.4-5.1C13.4 7.4 12.6 5.4 12 3Z" />
+      </svg>
       {weeks > 0 ? `${weeks} sem.` : 'Nouvelle série'}
     </span>
   )
@@ -116,13 +118,13 @@ export function DailyGoalCard({
           <GoalRing todayXp={todayXp} goal={goal} size={58} />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-or-texte dark:text-or">
+              <p className="text-xs font-medium text-pierre dark:text-slate-400">
                 Objectif du jour
               </p>
               <StreakChip weeks={streakWeeks} />
             </div>
             <p
-              className="mt-1 text-sm font-semibold text-bordeaux dark:text-slate-100"
+              className="mt-0.5 text-sm font-semibold text-bordeaux dark:text-slate-100"
               aria-live="polite"
             >
               {message}
@@ -160,10 +162,7 @@ export function DailyGoalCard({
     <Card className="p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-or-texte dark:text-or">
-            Boucle quotidienne
-          </p>
-          <CardTitle className="mt-1">Objectif du jour</CardTitle>
+          <CardTitle>Objectif du jour</CardTitle>
           <CardDescription className="mt-1">
             Un petit pas chaque jour : cours, résumé, quiz ou méditation.
           </CardDescription>
@@ -233,8 +232,8 @@ export function DailyGoalCard({
           </div>
         </div>
       ) : (
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-olive/30 bg-olive/10 px-4 py-3">
-          <p className="text-sm font-semibold text-olive">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-teal/20 bg-teal/5 px-4 py-3">
+          <p className="text-sm font-semibold text-bordeaux dark:text-slate-100">
             {goalReached ? 'Objectif atteint. Tu peux t’arrêter là ou continuer pour ta série.' : ''}
           </p>
           <Button size="sm" variant="outline" onClick={() => onAction('devoirs')}>

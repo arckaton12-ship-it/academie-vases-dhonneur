@@ -10,11 +10,6 @@ import { DarkModeToggle } from '@/components/DarkModeToggle'
 export function PublicShell({ children }: { children: ReactNode }) {
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden">
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="aurora-blob absolute -left-24 -top-32 h-[420px] w-[420px] rounded-full bg-bordeaux/15 blur-[110px] dark:bg-bordeaux/25" />
-        <div className="aurora-blob absolute -right-24 bottom-0 h-[380px] w-[380px] rounded-full bg-or/15 blur-[110px] [animation-delay:-6s] dark:bg-or/10" />
-      </div>
-
       <header className="relative z-20 border-b border-pierre/10">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-5 py-4 sm:px-6">
           <Link to="/" className="flex min-w-0 items-center gap-2.5" aria-label="Retour à l'accueil">

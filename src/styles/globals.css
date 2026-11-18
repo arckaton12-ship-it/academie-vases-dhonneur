@@ -11,27 +11,32 @@ html {
 
 body {
   min-height: 100vh;
-  background-color: #FBFAF7;
+  background-color: #FAF8F3;
   background-image:
-    radial-gradient(1100px 760px at 8% -12%, rgba(27, 107, 99, 0.12), transparent 62%),
-    radial-gradient(900px 680px at 102% -4%, rgba(212, 160, 23, 0.12), transparent 58%),
-    radial-gradient(900px 820px at 50% 112%, rgba(20, 82, 77, 0.09), transparent 62%),
-    linear-gradient(180deg, #FFFDF8 0%, #F7F5EF 100%);
+    radial-gradient(1200px 820px at 18% -18%, rgba(27, 107, 99, 0.11), transparent 68%),
+    radial-gradient(1000px 760px at 108% 108%, rgba(212, 160, 23, 0.09), transparent 66%),
+    linear-gradient(180deg, #FCFAF5 0%, #F4F1E9 100%);
   background-attachment: fixed;
+  background-repeat: no-repeat;
 }
 
 .dark html, html.dark {
-  background-color: #0B1519;
+  background-color: #0A1418;
   color: #E2E8F0;
 }
 
 .dark body {
-  background-color: #0B1519;
+  background-color: #0A1418;
   background-image:
-    radial-gradient(1100px 760px at 8% -12%, rgba(27, 107, 99, 0.28), transparent 62%),
-    radial-gradient(900px 680px at 102% -4%, rgba(212, 160, 23, 0.13), transparent 58%),
-    radial-gradient(900px 820px at 50% 112%, rgba(20, 82, 77, 0.22), transparent 62%),
-    linear-gradient(180deg, #0C171B 0%, #0A1317 100%);
+    radial-gradient(1200px 820px at 15% -15%, rgba(27, 107, 99, 0.26), transparent 66%),
+    radial-gradient(1000px 760px at 105% 110%, rgba(212, 160, 23, 0.1), transparent 64%),
+    linear-gradient(180deg, #0B171C 0%, #071013 100%);
+}
+
+@media (max-width: 767px) {
+  body {
+    background-attachment: scroll;
+  }
 }
 
 h1, h2, h3, h4 {
@@ -44,35 +49,35 @@ h1, h2, h3, h4 {
 }
 
 :root {
-  --bg-primary: #FBFAF7;
-  --bg-surface: rgba(255,255,255,0.6);
+  --bg-primary: #FAF8F3;
+  --bg-surface: rgba(255,255,255,0.66);
   --text-primary: #1B6B63;
   --text-secondary: #6B6B6B;
-  --border-color: rgba(217,184,158,0.6);
+  --border-color: rgba(27, 107, 99, 0.12);
   --accent-gold: #D4A017;
-  --glass-bg: rgba(255, 255, 255, 0.42);
-  --glass-bg-strong: rgba(255, 255, 255, 0.66);
-  --glass-border: rgba(255, 255, 255, 0.62);
-  --glass-highlight: rgba(255, 255, 255, 0.85);
-  --glass-shadow: 0 24px 60px -20px rgba(13, 48, 43, 0.28), 0 2px 10px rgba(13, 48, 43, 0.06);
-  --glass-tint: rgba(255, 255, 255, 0.18);
-  --sidebar-bg: rgba(255, 255, 255, 0.62);
+  --glass-bg: rgba(255, 255, 255, 0.52);
+  --glass-bg-strong: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.85);
+  --glass-highlight: rgba(255, 255, 255, 0.95);
+  --glass-shadow: 0 1px 2px rgba(17, 48, 43, 0.04), 0 18px 44px -26px rgba(17, 48, 43, 0.28);
+  --glass-tint: rgba(255, 255, 255, 0.24);
+  --sidebar-bg: rgba(255, 255, 255, 0.72);
 }
 
 .dark {
-  --bg-primary: #0B1519;
+  --bg-primary: #0A1418;
   --bg-surface: rgba(15,26,30,0.7);
   --text-primary: #E2E8F0;
   --text-secondary: #94A3B8;
   --border-color: rgba(255,255,255,0.1);
   --accent-gold: #D4A017;
-  --glass-bg: rgba(17, 30, 35, 0.44);
-  --glass-bg-strong: rgba(20, 34, 40, 0.66);
-  --glass-border: rgba(255, 255, 255, 0.12);
-  --glass-highlight: rgba(255, 255, 255, 0.16);
-  --glass-shadow: 0 24px 60px -18px rgba(0, 0, 0, 0.65), 0 2px 10px rgba(0, 0, 0, 0.3);
+  --glass-bg: rgba(17, 30, 35, 0.55);
+  --glass-bg-strong: rgba(20, 34, 40, 0.74);
+  --glass-border: rgba(255, 255, 255, 0.13);
+  --glass-highlight: rgba(255, 255, 255, 0.14);
+  --glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 20px 48px -26px rgba(0, 0, 0, 0.72);
   --glass-tint: rgba(255, 255, 255, 0.04);
-  --sidebar-bg: rgba(13, 24, 28, 0.72);
+  --sidebar-bg: rgba(13, 24, 28, 0.78);
 }
 
 :focus-visible {
@@ -84,8 +89,8 @@ h1, h2, h3, h4 {
 @layer components {
   .glass {
     background: linear-gradient(150deg, var(--glass-bg-strong) 0%, var(--glass-bg) 100%);
-    backdrop-filter: blur(22px) saturate(1.5);
-    -webkit-backdrop-filter: blur(22px) saturate(1.5);
+    backdrop-filter: blur(22px) saturate(1.2);
+    -webkit-backdrop-filter: blur(22px) saturate(1.2);
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-highlight);
   }
@@ -93,8 +98,8 @@ h1, h2, h3, h4 {
   /* Grande surface : panneaux, feuilles, conteneurs de section */
   .glass-panel {
     background: linear-gradient(155deg, var(--glass-bg-strong) 0%, var(--glass-bg) 55%, var(--glass-tint) 100%);
-    backdrop-filter: blur(28px) saturate(1.45);
-    -webkit-backdrop-filter: blur(28px) saturate(1.45);
+    backdrop-filter: blur(28px) saturate(1.2);
+    -webkit-backdrop-filter: blur(28px) saturate(1.2);
     border: 1px solid var(--glass-border);
     border-radius: 1.5rem;
     box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-highlight);
@@ -104,30 +109,29 @@ h1, h2, h3, h4 {
   .glass-card {
     position: relative;
     background: linear-gradient(150deg, var(--glass-bg-strong) 0%, var(--glass-bg) 100%);
-    backdrop-filter: blur(22px) saturate(1.5);
-    -webkit-backdrop-filter: blur(22px) saturate(1.5);
+    backdrop-filter: blur(22px) saturate(1.2);
+    -webkit-backdrop-filter: blur(22px) saturate(1.2);
     border: 1px solid var(--glass-border);
-    border-radius: 1.25rem;
+    border-radius: 1.125rem;
     box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-highlight);
-    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s ease, border-color 0.28s ease;
+    transition: box-shadow 0.28s ease, border-color 0.28s ease;
   }
 
   .glass-card:hover {
-    transform: translateY(-2px);
-    border-color: rgba(212, 160, 23, 0.35);
-    box-shadow: 0 30px 70px -24px rgba(13, 48, 43, 0.34), inset 0 1px 0 var(--glass-highlight);
+    border-color: rgba(212, 160, 23, 0.32);
+    box-shadow: 0 1px 2px rgba(17, 48, 43, 0.05), 0 24px 54px -28px rgba(17, 48, 43, 0.3), inset 0 1px 0 var(--glass-highlight);
   }
 
   .dark .glass-card:hover {
-    border-color: rgba(212, 160, 23, 0.28);
-    box-shadow: 0 30px 70px -22px rgba(0, 0, 0, 0.7), inset 0 1px 0 var(--glass-highlight);
+    border-color: rgba(212, 160, 23, 0.26);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 24px 54px -26px rgba(0, 0, 0, 0.7), inset 0 1px 0 var(--glass-highlight);
   }
 
   /* Barre de navigation / en-tête collant */
   .glass-nav {
     background: linear-gradient(180deg, var(--glass-bg-strong) 0%, var(--glass-bg) 100%);
-    backdrop-filter: blur(26px) saturate(1.6);
-    -webkit-backdrop-filter: blur(26px) saturate(1.6);
+    backdrop-filter: blur(26px) saturate(1.25);
+    -webkit-backdrop-filter: blur(26px) saturate(1.25);
     border-bottom: 1px solid var(--glass-border);
     box-shadow: 0 10px 30px -18px rgba(13, 48, 43, 0.3);
   }
@@ -139,8 +143,8 @@ h1, h2, h3, h4 {
   /* Bande pleine largeur (statistiques, rappels) */
   .glass-band {
     background: linear-gradient(90deg, rgba(255,255,255,0.55), rgba(255,255,255,0.28));
-    backdrop-filter: blur(24px) saturate(1.5);
-    -webkit-backdrop-filter: blur(24px) saturate(1.5);
+    backdrop-filter: blur(24px) saturate(1.2);
+    -webkit-backdrop-filter: blur(24px) saturate(1.2);
     border-top: 1px solid var(--glass-border);
     border-bottom: 1px solid var(--glass-border);
   }
@@ -152,8 +156,8 @@ h1, h2, h3, h4 {
   /* Petite pastille de verre (chips, badges, filtres) */
   .glass-pill {
     background: linear-gradient(150deg, var(--glass-bg-strong), var(--glass-bg));
-    backdrop-filter: blur(16px) saturate(1.4);
-    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 1px solid var(--glass-border);
     border-radius: 9999px;
     box-shadow: inset 0 1px 0 var(--glass-highlight);
@@ -190,8 +194,8 @@ h1, h2, h3, h4 {
   /* Feuille / modale en verre */
   .glass-sheet {
     background: linear-gradient(160deg, var(--glass-bg-strong) 0%, var(--glass-bg) 100%);
-    backdrop-filter: blur(34px) saturate(1.6);
-    -webkit-backdrop-filter: blur(34px) saturate(1.6);
+    backdrop-filter: blur(34px) saturate(1.25);
+    -webkit-backdrop-filter: blur(34px) saturate(1.25);
     border: 1px solid var(--glass-border);
     border-radius: 1.75rem;
     box-shadow: 0 40px 100px -30px rgba(8, 30, 27, 0.55), inset 0 1px 0 var(--glass-highlight);
@@ -753,6 +757,46 @@ h1, h2, h3, h4 {
 
 .onboarding-step {
   animation: onboardingIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ========= Compatibilité mode sombre des formulaires et messages ========= */
+/* Les pages d'administration utilisent encore des classes claires codées en dur.
+   Ces règles évitent les blocs blancs et les textes illisibles en mode sombre. */
+.dark select,
+.dark input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']),
+.dark textarea {
+  background-color: rgba(12, 22, 26, 0.72);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #E2E8F0;
+  color-scheme: dark;
+}
+
+.dark select option,
+.dark select optgroup {
+  background-color: #0F1A1E;
+  color: #E2E8F0;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: rgba(226, 232, 240, 0.45);
+}
+
+.dark .text-olive {
+  color: #8FD8CC;
+}
+
+.dark .text-or-texte {
+  color: #E8C547;
+}
+
+.dark .text-red-700,
+.dark .text-red-600 {
+  color: #FCA5A5;
+}
+
+.dark .bg-white {
+  background-color: rgba(15, 26, 30, 0.78);
 }
 
 /* Respect strict du réglage système */

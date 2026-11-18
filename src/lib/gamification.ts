@@ -365,13 +365,15 @@ export async function saveModNotes(courseId: string, notes: string): Promise<voi
 }
 
 export async function getBilanPreferences(studentId: string) {
+  // Pas de .single() : un étudiant sans préférence enregistrée renvoie
+  // normalement 0 ligne. .single() produisait un 406 dans la console.
   const { data, error } = await supabase
     .from('bilan_preferences')
     .select('*')
     .eq('student_id', studentId)
-    .single()
-  if (error && error.code !== 'PGRST116') throw error
-  return data
+    .limit(1)
+  if (error) throw error
+  return data && data.length > 0 ? data[0] : null
 }
 
 export async function saveBilanPreferences(studentId: string, days: number[]) {

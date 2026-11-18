@@ -5,6 +5,21 @@ import { Avatar } from '@/components/Avatar'
 import { StudentProfileCard } from '@/components/StudentProfileCard'
 import { playClick } from '@/lib/sound'
 import { ClassRow, StudentProfile } from '@/lib/courses'
+import {
+  graduationLevelFor,
+  isAlumni,
+  promotionFromDate,
+  studentStatus,
+  studentStatusLabel,
+  type StudentStatus,
+} from '@/lib/promotions'
+
+const STATUS_STYLES: Record<StudentStatus, string> = {
+  ACTIF: 'bg-olive/15 text-olive',
+  DIPLOME: 'bg-or/15 text-or-texte dark:text-or',
+  ARCHIVE: 'bg-pierre/10 text-pierre',
+  SANS_CLASSE: 'bg-sable/20 text-[#8a5a2b] dark:text-sable',
+}
 
 export function ElevesTab({
   students,
@@ -26,12 +41,27 @@ export function ElevesTab({
     )
   }, [students, search])
 
+  const graduationLevel = useMemo(
+    () =>
+      graduationLevelFor(
+        [...classById.values()].map((c) => ({ name: c.name, level: c.level }))
+      ),
+    [classById]
+  )
+
+  const anciens = useMemo(
+    () =>
+      students.filter((s) => isAlumni(studentStatus(s, graduationLevel))).length,
+    [students, graduationLevel]
+  )
+
   return (
     <div className="space-y-4">
       <Card>
         <CardTitle>Élèves</CardTitle>
         <CardDescription className="mt-1 mb-3">
           {students.length} élève{students.length > 1 ? 's' : ''} dans tes classes
+          {anciens > 0 ? ` · ${anciens} ancien${anciens > 1 ? 's' : ''}` : ''}
         </CardDescription>
 
         <div className="mb-3">
@@ -56,6 +86,7 @@ export function ElevesTab({
                 <tr className="border-b-2 border-or bg-white/60 text-left dark:bg-white/5">
                   <th className="px-4 py-3 font-medium text-bordeaux">Nom</th>
                   <th className="px-4 py-3 font-medium text-bordeaux">Classe</th>
+                  <th className="px-4 py-3 font-medium text-bordeaux">Promotion</th>
                   <th className="px-4 py-3 font-medium text-bordeaux">Statut</th>
                 </tr>
               </thead>
@@ -83,12 +114,18 @@ export function ElevesTab({
                     <td className="px-4 py-3 text-pierre">
                       {classById.get(s.class_id ?? '')?.name ?? '—'}
                     </td>
+                    <td className="px-4 py-3 text-pierre">
+                      {promotionFromDate(s.created_at)?.shortLabel ?? '—'}
+                    </td>
                     <td className="px-4 py-3">
-                      {s.active ? (
-                        <span className="rounded-full bg-olive/15 px-2 py-0.5 text-xs text-olive">Actif</span>
-                      ) : (
-                        <span className="rounded-full bg-pierre/10 px-2 py-0.5 text-xs text-pierre">Inactif</span>
-                      )}
+                      {(() => {
+                        const status = studentStatus(s, graduationLevel)
+                        return (
+                          <span className={`rounded-full px-2 py-0.5 text-xs ${STATUS_STYLES[status]}`}>
+                            {studentStatusLabel(status)}
+                          </span>
+                        )
+                      })()}
                     </td>
                   </tr>
                 ))}
